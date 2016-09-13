@@ -250,3 +250,8 @@ paket-files/
 # JetBrains Rider
 .idea/
 *.sln.iml
+/assembly/bios.lst
+/assembly/bios.o
+/assembly/bios.out
+/assembly/bios.rom
+/assembly/xMemLayout.map
