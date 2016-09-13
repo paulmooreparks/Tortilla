@@ -7,6 +7,30 @@
 .ascii "SALSABIOS v1.00 Paul M. Parks\0"
 .align 16
 
+.section main, "ax"
+
+.global init
+
+init:
+   mov ax, cs
+   mov ss, ax
+   mov esp, init
+   push 2
+   pop ax
+   mov bx, 0xb800
+   lea esi, [ebx + 8 * eax + 4]
+   mov es, bx
+   mov bx, 0xA0
+   mov word ptr es:[bx], 0x0e41
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0F2D
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0E4F
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0E4B
+
+   hlt
+
 /* This winds up directly in video memory */
 .section video, "a"
    .byte 'S'
@@ -68,30 +92,6 @@
    .byte 's'
    .byte 0x0F
    .fill 3840, 2, 0x0f20
-
-.section main, "ax"
-
-.global init
-
-init:
-   mov ax, cs
-   mov ss, ax
-   mov esp, init
-   push 2
-   pop ax
-   mov bx, 0xb800
-   lea esi, [ebx + 8 * eax + 4]
-   mov es, bx
-   mov bx, 0xA0
-   mov word ptr es:[bx], 0x0e41
-   lea bx, [bx + 2]
-   mov es:[bx], word ptr 0x0F2D
-   lea bx, [bx + 2]
-   mov es:[bx], word ptr 0x0E4F
-   lea bx, [bx + 2]
-   mov es:[bx], word ptr 0x0E4B
-
-   hlt
 
 hello_string:
         .string "SALSABIOS v1.00 Paul M. Parks" 
