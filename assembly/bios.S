@@ -71,7 +71,6 @@
 
 .section main, "ax"
 
-/* init must be declared global for the linker and must point to the first instruction of your code section  */
 .global init
 
 init:
@@ -99,6 +98,4 @@ hello_string:
 
 .section reset, "ax"
    jmp init
-   /* .byte  0xe9 */
-   /* .int   init - ( . + 2 ) */
-   .align 16, 0xff /* fills section to end of ROM (with 0xFF)              */
+   .align 16, 0xff
