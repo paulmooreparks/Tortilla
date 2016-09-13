@@ -1,0 +1,104 @@
+.intel_syntax noprefix
+.code16
+
+.section begin, "a"
+
+/* ID string */
+.ascii "SALSABIOS v1.00 Paul M. Parks\0"
+.align 16
+
+/* This winds up directly in video memory */
+.section video, "a"
+   .byte 'S'
+   .byte 0x0A
+   .byte 'A'
+   .byte 0x0A
+   .byte 'L'
+   .byte 0x0A
+   .byte 'S'
+   .byte 0x0A
+   .byte 'A'
+   .byte 0x0A
+   .byte 'B'
+   .byte 0x0C
+   .byte 'I'
+   .byte 0x0C
+   .byte 'O'
+   .byte 0x0C
+   .byte 'S'
+   .byte 0x0C
+   .byte ' '
+   .byte 0x0f
+   .byte 'v'
+   .byte 0x0F
+   .byte '1'
+   .byte 0x0F
+   .byte '.'
+   .byte 0x0F
+   .byte '0'
+   .byte 0x0F
+   .byte '0'
+   .byte 0x0F
+   .byte ' '
+   .byte 0x0F
+   .byte 'P'
+   .byte 0x0F
+   .byte 'a'
+   .byte 0x0F
+   .byte 'u'
+   .byte 0x0F
+   .byte 'l'
+   .byte 0x0F
+   .byte ' '
+   .byte 0x0F
+   .byte 'M'
+   .byte 0x0F
+   .byte '.'
+   .byte 0x0F
+   .byte ' '
+   .byte 0x0F
+   .byte 'P'
+   .byte 0x0F
+   .byte 'a'
+   .byte 0x0F
+   .byte 'r'
+   .byte 0x0F
+   .byte 'k'
+   .byte 0x0F
+   .byte 's'
+   .byte 0x0F
+   .fill 3840, 2, 0x0f20
+
+.section main, "ax"
+
+/* init must be declared global for the linker and must point to the first instruction of your code section  */
+.global init
+
+init:
+   mov ax, cs
+   mov ss, ax
+   mov esp, init
+   push 2
+   pop ax
+   mov bx, 0xb800
+   lea esi, [ebx + 8 * eax + 4]
+   mov es, bx
+   mov bx, 0xA0
+   mov word ptr es:[bx], 0x0e41
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0F2D
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0E4F
+   lea bx, [bx + 2]
+   mov es:[bx], word ptr 0x0E4B
+
+   hlt
+
+hello_string:
+        .string "SALSABIOS v1.00 Paul M. Parks" 
+
+.section reset, "ax"
+   jmp init
+   /* .byte  0xe9 */
+   /* .int   init - ( . + 2 ) */
+   .align 16, 0xff /* fills section to end of ROM (with 0xFF)              */
