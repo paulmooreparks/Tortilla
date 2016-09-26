@@ -14,9 +14,16 @@
 init:
    mov ax, cs
    mov ss, ax
-   mov esp, init
+   /* mov ah, 4
+   mov bl, 6 */
+   add ah, bl
+   add [eax], bl
+   xor bl, [eax]
+   xor ah, bl
+   mov sp, 0xF000
    push 2
    pop ax
+   sub ax, 0x1002
    mov bx, 0xb800
    lea esi, [ebx + 8 * eax + 4]
    mov es, bx

@@ -88,6 +88,15 @@ namespace Tortilla {
         const int ESI_INDEX = 6;
         const int EDI_INDEX = 7;
 
+        const int AX_INDEX = 0;
+        const int CX_INDEX = 1;
+        const int DX_INDEX = 2;
+        const int BX_INDEX = 3;
+        const int SP_INDEX = 4;
+        const int BP_INDEX = 5;
+        const int SI_INDEX = 6;
+        const int DI_INDEX = 7;
+
         public UInt32 EAX {
             get { return generalRegisters[EAX_INDEX]; }
             set { generalRegisters[EAX_INDEX] = value; }
@@ -265,73 +274,84 @@ namespace Tortilla {
 
 
         public UInt32 CF {
-            get { return EFLAGS & 0x00000001; }
+            get { return (EFLAGS & 0x00000001); }
             set { EFLAGS = (value & 0x01); }
         }
 
         public UInt32 PF {
-            get { return EFLAGS & 0x00000004; }
+            get { return (EFLAGS & 0x00000004) >> 2; }
             set { EFLAGS |= (value & 0x01) << 2; }
         }
 
         public UInt32 AF {
-            get { return EFLAGS & 0x00000010; }
+            get { return (EFLAGS & 0x00000010) >> 4; }
             set { EFLAGS |= (value & 0x01) << 4; }
         }
 
         public UInt32 ZF {
-            get { return EFLAGS & 0x00000040; }
+            get { return (EFLAGS & 0x00000040) >> 6; }
             set { EFLAGS |= (value & 0x01) << 6; }
         }
 
         public UInt32 SF {
-            get { return EFLAGS & 0x00000080; }
+            get { return (EFLAGS & 0x00000080) >> 7; }
             set { EFLAGS |= (value & 0x01) << 7; }
         }
 
         public UInt32 TF {
-            get { return EFLAGS & 0x00000100; }
+            get { return (EFLAGS & 0x00000100) >> 8; }
             set { EFLAGS |= (value & 0x01) << 8; }
         }
 
         public UInt32 IF {
-            get { return EFLAGS & 0x00000200; }
+            get { return (EFLAGS & 0x00000200) >> 9; }
             set { EFLAGS |= (value & 0x01) << 9; }
         }
 
         public UInt32 DF {
-            get { return EFLAGS & 0x00000400; }
+            get { return (EFLAGS & 0x00000400) >> 10; }
             set { EFLAGS |= (value & 0x01) << 10; }
         }
 
         public UInt32 OF {
-            get { return EFLAGS & 0x00000800; }
+            get { return (EFLAGS & 0x00000800) >> 11; }
             set { EFLAGS |= (value & 0x01) << 11; }
         }
 
         public UInt32 IOPL {
-            get { return EFLAGS & 0x00003000; }
+            get { return (EFLAGS & 0x00003000) >> 12; }
             set { EFLAGS |= (value & 0x11) << 12; }
         }
 
         public UInt32 NT {
-            get { return EFLAGS & 0x00004000; }
+            get { return (EFLAGS & 0x00004000) >> 14; }
             set { EFLAGS |= (value & 0x01) << 14; }
         }
 
         public UInt32 RF {
-            get { return EFLAGS & 0x00010000; }
+            get { return (EFLAGS & 0x00010000) >> 16; }
             set { EFLAGS |= (value & 0x01) << 16; }
         }
 
         public UInt32 VM {
-            get { return EFLAGS & 0x00020000; }
+            get { return (EFLAGS & 0x00020000) >> 17; }
             set { EFLAGS |= (value & 0x01) << 17; }
         }
 
         public UInt32 PE {
-            get { return CR0 & 0x00000001; }
+            get { return (CR0 & 0x00000001); }
             set { CR0 |= (value & 0x01); }
+        }
+
+        enum Instruction {
+            ADD, PUSH, POP, OR, ADC, SBB, AND, DAA, SUB, DAS, XOR, AAA, CMP, AAS,
+            INC, DEC, PUSHA, POPA, BOUND, ARPL, IMUL, INSB, INSW, OUTSB, OUTSW, 
+            JO, JNO, JB, JNB, JZ, JNZ, JBE, JA, JS, JNS, JP, JNP, JL, JNL, JLE, JNLE,
+            TEST, XCHG, MOV, LEA, NOP, CBW, CWD, CALL, WAIT, PUSHF, POPF, SAHF, LAHF,
+            MOVSB, MOVSW, CMPSB, CMPSW, STOSB, STOSW, LODSB, LODSW, SCASB, SCASW, 
+            RETN, LES, LDS, ENTER, LEAVE, RETF, INT3, INT, INTO, IRET, 
+            AAM, AAD, SALC, XLAT, ESC, LOOPNZ, LOOP, JCXZ, IN, OUT, JMP, INT1, HLT,
+            CMC, CLC, STC, CLI, STI, CLD, STD
         }
 
         public IHardware Hardware { get; set; }
@@ -363,6 +383,10 @@ namespace Tortilla {
 
                         if (methodAttr.OpCodes != null) {
                             foreach (byte opCode in methodAttr.OpCodes) {
+                                if (OpCodeMap.ContainsKey(opCode)) {
+                                    throw new Exception(string.Format("Duplicate handler for opcode {0:X2}", opCode));
+                                }
+
                                 OpCodeMap[opCode] = (OpCodeDelegate)OpCodeDelegate.CreateDelegate(typeof(OpCodeDelegate), this, method);
                             }
                         }
@@ -379,6 +403,7 @@ namespace Tortilla {
             return Cycles != 0;
         }
 
+        string[] regArray8 = { "AL", "CL", "DL", "BL", "AH", "CH", "DH", "BH" };
         string[] regArray16 = { "AX", "CX", "DX", "BX", "SP", "BP", "SI", "DI" };
         string[] regArray32 = { "EAX", "ECX", "EDX", "EBX", "ESP", "EBP", "ESI", "EDI" };
         string[] segArray = { "ES", "CS", "SS", "DS", "FS", "GS" };
@@ -386,18 +411,19 @@ namespace Tortilla {
         int Flags { get; set; }
 
         const int REAL_MODE = 0x01;
-        const int ADDR_SIZE_OVERRIDE = 0x02;
-        const int REG_SIZE_OVERRIDE = 0x04;
+        const int ADDR_SIZE_32 = 0x02;
+        const int OPERAND_SIZE_32 = 0x04;
 
         const int DEFAULT_SEGMENT_SELECT = GS_INDEX;
         int segSelect = DEFAULT_SEGMENT_SELECT;
 
-        string dbgAddress = "";
-        string dbgSegSelect = "";
+        string _dbgAddress = "";
+        string _dbgImm = string.Empty;
+        string _dbgSegSelect = "";
 
         public void Run(IHardware hardware) {
             Hardware = hardware;
-            Flags = 0;
+            Flags = REAL_MODE;
             CS = 0xF000;
             EIP = 0xFFF0;
             SS = CS;
@@ -405,20 +431,12 @@ namespace Tortilla {
             for (;;) {
                 var oldPE = PE;
                 segSelect = DEFAULT_SEGMENT_SELECT;
-                dbgAddress = string.Format("{0:X8}", (CS << 4) + EIP);
-                dbgSegSelect = "";
-                Decode(ReadImm8());
+                ExecuteInstruction();
 
-                Flags = 0;
-
-                if (oldPE != PE) {
-                    if (PE == 1) {
-                        Flags |= 1;
-                    }
-                    else {
-                        Flags &= ~(1 << 0);
-                    }
-                }
+                /* For now, restore flags to REAL_MODE after every instruction, until I get 
+                protected mode implemented. */
+                Flags = REAL_MODE;
+                // TODO: Protected mode
 
                 if (powerEvent.WaitOne(0)) {
                     return;
@@ -426,41 +444,249 @@ namespace Tortilla {
             }
         }
 
-        protected void Decode(byte opCode) {
+        protected void ExecuteInstruction() {
+            _dbgAddress = string.Format("{0:X8}", (CS << 4) + EIP);
+            _dbgSegSelect = string.Empty;
+            _dbgLastOperand = string.Empty;
+            DecodeOpcode(ReadImm8());
+        }
+
+        protected void DecodeOpcode(byte opcode) {
             OpCodeDelegate handler = null;
 
-            if (OpCodeMap.TryGetValue(opCode, out handler) && handler != null) {
+            if (OpCodeMap.TryGetValue(opcode, out handler) && handler != null) {
                 handler();
             }
             else {
-                DbgIns(string.Format("#GP(0) Unknown instruction: {0:X}", opCode));
+                DbgIns(string.Format("#GP(0) Unknown instruction: {0:X}", opcode));
                 Hardware.RaiseException(0);
                 Hlt();
             }
         }
 
         UInt32 lastResult = 0;
+#if false
         UInt32 lastAddResult = 0;
         UInt32 lastOp1 = 0;
         UInt32 lastOp2 = 0;
         UInt32 lastOpSize = 0;
+#endif
 
-        string dbgLastOperand = string.Empty;
+        string _dbgLastOperand = string.Empty;
 
-        protected UInt16 Subtract16(UInt16 dest, UInt16 source) {
-            lastAddResult = dest;
-            lastOp2 = source;
-            lastOp1 = lastResult = (UInt32)((dest - source) & 0x0000FFFF);
-            lastOpSize = 32;
-            return (UInt16)(lastResult & 0x0000FFFF);
+        private void SetFlags8(byte dest, byte source, UInt16 result) {
+            var dsign = (dest >> 7) & 0x01;
+            var ssign = (source >> 7) & 0x01;
+            var rsign = (result >> 7) & 0x01;
+
+            CF = (UInt32)((result >> 8) & 0x01);
+            OF = (UInt32)((rsign != dsign && rsign != ssign) ? 1 : 0);
+            ZF = (UInt32)((result == 0) ? 0 : 1);
+            SF = (UInt32)(((Int16)lastResult < 0) ? 1 : 0);
         }
 
-        protected UInt32 Subtract32(UInt32 dest, UInt32 source) {
-            lastAddResult = dest;
-            lastOp2 = source;
-            lastOp1 = lastResult = dest - source;
-            lastOpSize = 32;
+        private void SetFlags16(UInt16 dest, UInt16 source, UInt32 result) {
+            var dsign = (dest >> 15) & 0x01;
+            var ssign = (source >> 15) & 0x01;
+            var rsign = (result >> 15) & 0x01;
+
+            CF = (UInt32)((result >> 16) & 0x01);
+            OF = (UInt32)((rsign != dsign && rsign != ssign) ? 1 : 0);
+            ZF = (UInt32)((result == 0) ? 0 : 1);
+            SF = (UInt32)(((Int16)lastResult < 0) ? 1 : 0);
+        }
+
+        private void SetFlags32(UInt32 dest, UInt32 source, UInt64 result) {
+            var dsign = (dest >> 31) & 0x01;
+            var ssign = (source >> 31) & 0x01;
+            var rsign = (result >> 31) & 0x01;
+
+            CF = (UInt32)((result >> 32) & 0x01);
+            OF = (UInt32)((rsign != dsign && rsign != ssign) ? 1 : 0);
+            ZF = (UInt32)((result == 0) ? 0 : 1);
+            SF = (UInt32)(((Int32)lastResult < 0) ? 1 : 0);
+        }
+
+        byte Move8(ref byte op1, ref byte op2) {
+            return (byte)(op2 & 0xFF);
+        }
+
+        UInt16 Move16(ref UInt16 op1, ref UInt16 op2) {
+            return (UInt16)(op2 & 0xFFFF);
+        }
+
+        UInt32 Move32(ref UInt32 op1, ref UInt32 op2) {
+            return (op2);
+        }
+
+        protected byte Subtract8(ref byte op1, ref byte op2) {
+            UInt16 result = (UInt16)(op1 - op2);
+            lastResult = (UInt16)(result & 0x000000FF);
+            op1 = (byte)lastResult;
+            SetFlags8(op1, op2, result);
+            return op1;
+        }
+
+        protected UInt16 Subtract16(ref UInt16 op1, ref UInt16 op2) {
+            UInt32 result = (UInt32)(op1 - op2);
+            lastResult = (UInt32)(result & 0x0000FFFF);
+            op1 = (UInt16)lastResult;
+            SetFlags16(op1, op2, result);
+            return op1;
+        }
+
+        protected UInt32 Subtract32(ref UInt32 op1, ref UInt32 op2) {
+            UInt64 result = (UInt64)(op1 - op2);
+            lastResult = (UInt32)(result & 0x00000000FFFFFFFF);
+            op1 = (UInt32)lastResult;
+            SetFlags32(op1, op2, result);
+            return op1;
+        }
+
+        protected byte Compare8(ref byte op1, ref byte op2) {
+            byte temp = op1;
+            return Subtract8(ref temp, ref op2);
+        }
+
+        protected UInt16 Compare16(ref UInt16 op1, ref UInt16 op2) {
+            UInt16 temp = op1;
+            return Subtract16(ref temp, ref op2);
+        }
+
+        protected UInt32 Compare32(ref UInt32 op1, ref UInt32 op2) {
+            UInt32 temp = op1;
+            return Subtract32(ref temp, ref op2);
+        }
+
+        protected byte Add8(ref byte dest, ref byte source) {
+            UInt16 result = (UInt16)(dest + source);
+            lastResult = (UInt16)(result & 0x000000FF);
+            SetFlags8(dest, source, result);
+            return (byte)(lastResult);
+        }
+
+        protected UInt16 Add16(ref UInt16 dest, ref UInt16 source) {
+            UInt32 result = (UInt32)(dest + source);
+            lastResult = (UInt32)(result & 0x0000FFFF);
+            SetFlags16(dest, source, result);
+            return (UInt16)(lastResult);
+        }
+
+        protected UInt32 Add32(ref UInt32 dest, ref UInt32 source) {
+            UInt64 result = (UInt64)(dest + source);
+            lastResult = (UInt32)(result & 0x00000000FFFFFFFF);
+            SetFlags32(dest, source, result);
             return lastResult;
+        }
+
+        byte And8(ref byte op1, ref byte op2) {
+            byte result = (byte)(op1 & op2);
+            SetFlags8(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt16 And16(ref UInt16 op1, ref UInt16 op2) {
+            UInt16 result = (UInt16)(op1 & op2);
+            SetFlags16(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt32 And32(ref UInt32 op1, ref UInt32 op2) {
+            UInt32 result = (op1 & op2);
+            SetFlags32(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        byte Or8(ref byte op1, ref byte op2) {
+            byte result = (byte)(op1 | op2);
+            SetFlags8(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt16 Or16(ref UInt16 op1, ref UInt16 op2) {
+            UInt16 result = (UInt16)(op1 | op2);
+            SetFlags16(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt32 Or32(ref UInt32 op1, ref UInt32 op2) {
+            UInt32 result = (op1 | op2);
+            SetFlags32(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        byte Xor8(ref byte op1, ref byte op2) {
+            byte result = (byte)(op1 ^ op2);
+            SetFlags8(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt16 Xor16(ref UInt16 op1, ref UInt16 op2) {
+            UInt16 result = (UInt16)(op1 ^ op2);
+            SetFlags16(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt32 Xor32(ref UInt32 op1, ref UInt32 op2) {
+            UInt32 result = (op1 ^ op2);
+            SetFlags32(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        byte Xchg8(ref byte op1, ref byte op2) {
+            byte temp = op2;
+            op2 = op1;
+            op1 = temp;
+            return temp;
+        }
+
+        UInt16 Xchg16(ref UInt16 op1, ref UInt16 op2) {
+            UInt16 result = (UInt16)(op1 ^ op2);
+            SetFlags16(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        UInt32 Xchg32(ref UInt32 op1, ref UInt32 op2) {
+            UInt32 result = (op1 ^ op2);
+            SetFlags32(op1, op2, result);
+            OF = 0;
+            CF = 0;
+            return result;
+        }
+
+        byte Not8(ref byte op1, ref byte op2) {
+            op1 = (byte)(~op1);
+            return op1;
+        }
+
+        UInt16 Not16(ref UInt16 op1, ref UInt16 op2) {
+            op1 = (UInt16)(~op1);
+            return op1;
+        }
+
+        UInt32 Not32(ref UInt32 op1, ref UInt32 op2) {
+            op1 = (~op1);
+            return op1;
         }
 
         protected UInt16 Read16ModRm(ModRm modrm) {
@@ -547,7 +773,7 @@ namespace Tortilla {
             uint value;
             if (sib.index == 0x04) {
                 value = (UInt32)(generalRegisters[sib.index] + displacement);
-                dbgLastOperand = string.Format("[{0}{1}]", regArray32[sib.index], dbgLastOperand);
+                _dbgLastOperand = string.Format("[{0}{1}]", regArray32[sib.index], _dbgLastOperand);
             }
             else {
                 var scale = 1 << sib.scale;
@@ -558,7 +784,7 @@ namespace Tortilla {
                 }
 
                 value = (UInt32)(generalRegisters[sib.bse] + generalRegisters[sib.bse] * scale + displacement);
-                dbgLastOperand = string.Format("[{0} + {1}{2}{3}]", regArray32[sib.bse], regArray32[sib.index], dbgScale, dbgLastOperand);
+                _dbgLastOperand = string.Format("[{0} + {1}{2}{3}]", regArray32[sib.bse], regArray32[sib.index], dbgScale, _dbgLastOperand);
             }
 
             return value;
@@ -570,42 +796,42 @@ namespace Tortilla {
             switch (sel) {
                 case 0x00:
                     value = (UInt16)(BX + SI);
-                    dbgLastOperand = "[BX + SI]";
+                    _dbgLastOperand = "[BX + SI]";
                     break;
 
                 case 0x01:
                     value = (UInt16)(BX + DI);
-                    dbgLastOperand = "[BX + DI]";
+                    _dbgLastOperand = "[BX + DI]";
                     break;
 
                 case 0x02:
                     value = (UInt16)(BP + SI);
-                    dbgLastOperand = "[BP + SI]";
+                    _dbgLastOperand = "[BP + SI]";
                     break;
 
                 case 0x03:
                     value = (UInt16)(BP + DI);
-                    dbgLastOperand = "[BP + DI]";
+                    _dbgLastOperand = "[BP + DI]";
                     break;
 
                 case 0x04:
                     value = (UInt16)(SI);
-                    dbgLastOperand = "[SI]";
+                    _dbgLastOperand = "[SI]";
                     break;
 
                 case 0x05:
                     value = (UInt16)(DI);
-                    dbgLastOperand = "[DI]";
+                    _dbgLastOperand = "[DI]";
                     break;
 
                 case 0x06:
                     value = ReadImm16();
-                    dbgLastOperand = string.Format("0x{0:X4}", value);
+                    _dbgLastOperand = string.Format("0x{0:X4}", value);
                     break;
 
                 case 0x07:
                     value = (UInt16)(BX);
-                    dbgLastOperand = "[BX]";
+                    _dbgLastOperand = "[BX]";
                     break;
             }
 
@@ -617,7 +843,7 @@ namespace Tortilla {
 
             if (sel == 0x06) {
                 value = ReadImm16();
-                dbgLastOperand = string.Format("0x{0:X4}", value);
+                _dbgLastOperand = string.Format("0x{0:X4}", value);
                 return value;
             }
 
@@ -627,45 +853,46 @@ namespace Tortilla {
                 sib = ReadSIB();
             }
 
-            byte displacement = ReadImm8();
-
-            if (displacement > 0) {
-                dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
-            }
-
             switch (sel) {
-                case 0x00:
+                case EAX_INDEX:
                     value = (UInt32)(EAX);
-                    dbgLastOperand = string.Format("[EAX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
                     break;
 
-                case 0x01:
+                case ECX_INDEX:
                     value = (UInt32)(ECX);
-                    dbgLastOperand = string.Format("[ECX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
                     break;
 
-                case 0x02:
+                case EDX_INDEX:
                     value = (UInt32)(EDX);
-                    dbgLastOperand = string.Format("[EDX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
                     break;
 
-                case 0x03:
+                case EBX_INDEX:
                     value = (UInt32)(EBX);
-                    dbgLastOperand = string.Format("[EBX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
                     break;
 
-                case 0x04:
-                    value = CalcSib(sib, displacement);
+                case 0x04: {
+                        byte displacement = ReadImm8();
+
+                        if (displacement > 0) {
+                            _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                        }
+
+                        value = CalcSib(sib, displacement);
+                    }
                     break;
 
-                case 0x05:
+                case EBP_INDEX:
                     value = (UInt32)(EBP);
-                    dbgLastOperand = string.Format("[EBP{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
                     break;
 
-                case 0x07:
+                case EDI_INDEX:
                     value = (UInt32)(EDI);
-                    dbgLastOperand = string.Format("[EDI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
                     break;
             }
 
@@ -677,48 +904,48 @@ namespace Tortilla {
             byte displacement = ReadImm8();
 
             if (displacement > 0) {
-                dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt16)(BX + SI + displacement);
-                    dbgLastOperand = string.Format("[BX + SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX + SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x01:
                     value = (UInt16)(BX + DI + displacement);
-                    dbgLastOperand = string.Format("[BX + DI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX + DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x02:
                     value = (UInt16)(BP + SI + displacement);
-                    dbgLastOperand = string.Format("[BP + SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP + SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x03:
                     value = (UInt16)(BP + DI + displacement);
-                    dbgLastOperand = string.Format("[BP + DI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP + DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x04:
                     value = (UInt16)(SI + displacement);
-                    dbgLastOperand = string.Format("[SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x05:
                     value = (UInt16)(DI + displacement);
-                    dbgLastOperand = string.Format("[DI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt16)(BP + displacement);
-                    dbgLastOperand = string.Format("[BP{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
                     break;
 
                 case 0x07:
                     value = (UInt16)(BX + displacement);
-                    dbgLastOperand = string.Format("[BX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX{0}]", _dbgLastOperand);
                     break;
             }
 
@@ -736,28 +963,28 @@ namespace Tortilla {
             byte displacement = ReadImm8();
 
             if (displacement > 0) {
-                dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt32)(EAX + displacement);
-                    dbgLastOperand = string.Format("[EAX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x01:
                     value = (UInt32)(ECX + displacement);
-                    dbgLastOperand = string.Format("[ECX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x02:
                     value = (UInt32)(EDX + displacement);
-                    dbgLastOperand = string.Format("[EDX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x03:
                     value = (UInt32)(EBX + displacement);
-                    dbgLastOperand = string.Format("[EBX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x04:
@@ -766,17 +993,17 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt32)(EBP + displacement);
-                    dbgLastOperand = string.Format("[EBP{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt32)(ESI + displacement);
-                    dbgLastOperand = string.Format("[ESI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[ESI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x07:
                     value = (UInt32)(EDI + displacement);
-                    dbgLastOperand = string.Format("[EDI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
                     break;
             }
 
@@ -788,48 +1015,48 @@ namespace Tortilla {
             UInt16 displacement = ReadImm16();
 
             if (displacement > 0) {
-                dbgLastOperand = string.Format(" + 0x{0:X4}", displacement);
+                _dbgLastOperand = string.Format(" + 0x{0:X4}", displacement);
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt16)(BX + SI + displacement);
-                    dbgLastOperand = string.Format("[BX + SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX + SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x01:
                     value = (UInt16)(BX + DI + displacement);
-                    dbgLastOperand = string.Format("[BX + DI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX + DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x02:
                     value = (UInt16)(BP + SI + displacement);
-                    dbgLastOperand = string.Format("[BP + SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP + SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x03:
                     value = (UInt16)(BP + DI + displacement);
-                    dbgLastOperand = string.Format("[BP + DI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP + DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x04:
                     value = (UInt16)(SI + displacement);
-                    dbgLastOperand = string.Format("[SI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[SI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x05:
                     value = (UInt16)(DI + displacement);
-                    dbgLastOperand = string.Format("[DI]{0}", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[DI]{0}", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt16)(BP + displacement);
-                    dbgLastOperand = string.Format("[BP{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
                     break;
 
                 case 0x07:
                     value = (UInt16)(BX + displacement);
-                    dbgLastOperand = string.Format("[BX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[BX{0}]", _dbgLastOperand);
                     break;
             }
 
@@ -847,28 +1074,28 @@ namespace Tortilla {
             UInt32 displacement = ReadImm8();
 
             if (displacement > 0) {
-                dbgLastOperand = string.Format(" + 0x{0:X8}", displacement);
+                _dbgLastOperand = string.Format(" + 0x{0:X8}", displacement);
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt32)(EAX + displacement);
-                    dbgLastOperand = string.Format("[EAX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x01:
                     value = (UInt32)(ECX + displacement);
-                    dbgLastOperand = string.Format("[ECX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x02:
                     value = (UInt32)(EDX + displacement);
-                    dbgLastOperand = string.Format("[EDX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x03:
                     value = (UInt32)(EBX + displacement);
-                    dbgLastOperand = string.Format("[EBX{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
                     break;
 
                 case 0x04:
@@ -877,21 +1104,69 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt32)(EBP + displacement);
-                    dbgLastOperand = string.Format("[EBP{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt32)(ESI + displacement);
-                    dbgLastOperand = string.Format("[ESI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[ESI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x07:
                     value = (UInt32)(EDI + displacement);
-                    dbgLastOperand = string.Format("[EDI{0}]", dbgLastOperand);
+                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
                     break;
             }
 
             return value;
+        }
+
+        private UInt32 GetRegMask8(int index) {
+            UInt32 mask = 0;
+
+            switch (index) {
+                case 0x00: // AL
+                    mask = 0x000000FF;
+                    break;
+
+                case 0x01: // CL
+                    mask = 0x000000FF;
+                    break;
+
+                case 0x02: // DL
+                    mask = 0x000000FF;
+                    break;
+
+                case 0x03: // BL
+                    mask = 0x000000FF;
+                    break;
+
+                case 0x04: // AH
+                    mask = 0x0000FF00;
+                    break;
+
+                case 0x05: // CH
+                    mask = 0x0000FF00;
+                    break;
+
+                case 0x06: // DH
+                    mask = 0x0000FF00;
+                    break;
+
+                case 0x07: // BH
+                    mask = 0x0000FF00;
+                    break;
+            }
+
+            return mask;
+        }
+
+        protected UInt32 GetRegMaskRm8(ModRm modrm) {
+            return GetRegMask8(modrm.rm);
+        }
+
+        protected UInt32 GetRegMaskReg8(ModRm modrm) {
+            return GetRegMask8(modrm.reg);
         }
 
         protected ModRm ReadModRm() {
@@ -904,18 +1179,21 @@ namespace Tortilla {
 
         protected byte ReadImm8() {
             byte value = Read8((UInt32)(CS << 4) + EIP);
+            DbgImm(value);
             ++EIP;
             return value;
         }
 
         protected UInt16 ReadImm16() {
             UInt16 value = Read16((UInt32)(CS << 4) + EIP);
+            DbgImm(value);
             EIP += 2;
             return value;
         }
 
         protected UInt32 ReadImm32() {
             UInt32 value = Read32((UInt32)(CS << 4) + EIP);
+            DbgImm(value);
             EIP += 4;
             return value;
         }
@@ -1020,14 +1298,361 @@ namespace Tortilla {
             return (UInt32)(segmentRegisters[segSelect] << 4) + offset;
         }
 
+
+        void DbgImm(byte opcode) {
+            _dbgImm += string.Format("{0:X2} ", opcode);
+        }
+
+        void DbgImm(UInt16 opcode) {
+            _dbgImm += string.Format("{0:X2} {1:X2} ", opcode & 0x00FF, (opcode >> 8) & 0x00FF);
+        }
+
+        void DbgImm(UInt32 opcode) {
+            _dbgImm += string.Format("{0:X2} {1:X2} {2:X2} {3:X2} ", opcode & 0x000000FF, (opcode >> 8) & 0x000000FF, (opcode >> 16) & 0x000000FF, (opcode >> 24) & 0x000000FF);
+        }
+
         void DbgIns(string s) {
-            Hardware.Debug(string.Format("{0} {1}", dbgAddress, s), this);
+            Hardware.Debug(string.Format("{0} {1,-21} {2}", _dbgAddress, _dbgImm, s), this);
+            _dbgImm = string.Empty;
         }
 
 
         /*********************************************************************
+        Common instruction execution patterns
+        *********************************************************************/
+
+        delegate R InstructionOperation<R, Op1, Op2>(ref Op1 op1, ref Op2 op2);
+
+        void EbGb(Instruction instruction, InstructionOperation<byte, byte, byte> operation) {
+            Cycles = 1;
+            byte op1 = 0;
+            byte op2 = 0;
+            var modrm = ReadModRm();
+
+            if (modrm.mod == 0x03) {
+                var op1Index = modrm.rm;
+                var op1Mask = GetRegMask8(op1Index);
+                op1 = (byte)(generalRegisters[op1Index] & op1Mask);
+
+                var op2Index = modrm.reg;
+                var op2Mask = GetRegMask8(op2Index);
+                op2 = (byte)(generalRegisters[op2Index] & op2Mask);
+
+                generalRegisters[op1Index] = operation(ref op1, ref op2);
+
+                DbgIns(string.Format("{0} {1}, {2}", instruction, regArray8[op1Index], regArray8[op2Index]));
+            }
+            else {
+                UInt32 address = Read32ModRm(modrm);
+                address = CalcOffset32(address);
+                op1 = Read8(address);
+
+                int op2Index = modrm.reg;
+                UInt32 op2Mask = GetRegMask8(op2Index);
+                op2 = (byte)(generalRegisters[op2Index] & op2Mask);
+
+                Write8(address, operation(ref op1, ref op2));
+
+                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, regArray8[op2Index]));
+            }
+        }
+
+        void EbIb(Instruction instruction, InstructionOperation<byte, byte, byte> operation) {
+            Cycles = 1;
+            byte op1 = 0;
+            byte op2 = 0;
+            var modrm = ReadModRm();
+
+            if (modrm.mod == 0x03) {
+                var op1Index = modrm.rm;
+                var op1Mask = GetRegMask8(op1Index);
+                op1 = (byte)(generalRegisters[op1Index] & op1Mask);
+                op2 = (byte)ReadImm8();
+
+                generalRegisters[op1Index] = operation(ref op1, ref op2);
+
+                DbgIns(string.Format("{0} {1}, {2:X2}", instruction, regArray8[op1Index], op2));
+            }
+            else {
+                UInt32 address = Read32ModRm(modrm);
+                address = CalcOffset32(address);
+                op1 = Read8(address);
+                op2 = (byte)ReadImm8();
+
+                Write8(address, operation(ref op1, ref op2));
+
+                DbgIns(string.Format("{0} {1}{2}, {3:X2}", instruction, _dbgSegSelect, _dbgLastOperand, op2));
+            }
+        }
+
+        void EvIv(Instruction instruction, InstructionOperation<UInt16, UInt16, UInt16> operation16, InstructionOperation<UInt32, UInt32, UInt32> operation32) {
+            Cycles = 1;
+            var modrm = ReadModRm();
+
+            if (modrm.mod == 0x03) {
+                var op1Index = modrm.rm;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    UInt32 op1 = generalRegisters[op1Index];
+                    UInt32 op2 = ReadImm32();
+
+                    generalRegisters[op1Index] = operation32(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2:X8}", instruction, regArray32[op1Index], op2));
+                }
+                else {
+                    UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
+                    UInt16 op2 = ReadImm16();
+
+                    generalRegisters[op1Index] = operation16(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2:X4}", instruction, regArray16[op1Index], op2));
+                }
+            }
+            else {
+                UInt32 address = 0;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    address = Read32ModRm(modrm);
+                }
+                else {
+                    address = Read16ModRm(modrm);
+                }
+
+                string src = "";
+
+                if ((Flags & OPERAND_SIZE_32) != 0) {
+                    address = CalcOffset32(address);
+                    UInt32 op1 = Read32(address);
+                    UInt32 op2 = ReadImm32();
+                    src = string.Format("{0:X8}", op2);
+
+                    Write32(address, operation32(ref op1, ref op2));
+                }
+                else {
+                    address = CalcOffset32(address);
+                    UInt16 op1 = Read16(address);
+                    UInt16 op2 = ReadImm16();
+                    src = string.Format("{0:X4}", op2);
+
+                    Write16(address, operation16(ref op1, ref op2));
+                }
+
+                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, src));
+            }
+        }
+
+        void EvGv(Instruction instruction, InstructionOperation<UInt16, UInt16, UInt16> operation16, InstructionOperation<UInt32, UInt32, UInt32> operation32) {
+            Cycles = 1;
+            var modrm = ReadModRm();
+
+            if (modrm.mod == 0x03) {
+                var op1Index = modrm.rm;
+                var op2Index = modrm.reg;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    UInt32 op1 = generalRegisters[op1Index];
+                    UInt32 op2 = generalRegisters[op2Index];
+
+                    generalRegisters[op1Index] = operation32(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                }
+                else {
+                    UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
+                    UInt16 op2 = (UInt16)(generalRegisters[op2Index] & 0x0000FFFF);
+
+                    generalRegisters[op1Index] = operation16(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray16[op1Index], regArray16[op2Index]));
+                }
+            }
+            else {
+                UInt32 address = 0;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    address = Read32ModRm(modrm);
+                }
+                else {
+                    address = Read16ModRm(modrm);
+                }
+
+                string src = "";
+
+                if ((Flags & OPERAND_SIZE_32) != 0) {
+                    address = CalcOffset32(address);
+                    UInt32 op1 = Read32(address);
+                    UInt32 op2 = generalRegisters[modrm.reg];
+                    src = regArray32[modrm.reg];
+
+                    Write32(address, operation32(ref op1, ref op2));
+                }
+                else {
+                    address = CalcOffset32(address);
+                    UInt16 op1 = Read16(address);
+                    UInt16 op2 = (UInt16)(generalRegisters[modrm.reg] & 0x0000ffff);
+                    src = regArray16[modrm.reg];
+
+                    Write16(address, operation16(ref op1, ref op2));
+                }
+
+                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, src));
+            }
+        }
+
+        void GbEb(Instruction instruction, InstructionOperation<byte, byte, byte> operation) {
+            Cycles = 1;
+            byte op1 = 0;
+            byte op2 = 0;
+            var modrm = ReadModRm();
+            var op1Index = modrm.reg;
+
+            if (modrm.mod == 0x03) {
+                var op1Mask = GetRegMask8(op1Index);
+                op1 = (byte)(generalRegisters[op1Index] & op1Mask);
+
+                var op2Index = modrm.rm;
+                var op2Mask = GetRegMask8(op2Index);
+                op2 = (byte)(generalRegisters[op2Index] & op2Mask);
+
+                generalRegisters[op1Index] = operation(ref op1, ref op2);
+
+                DbgIns(string.Format("{0} {1}, {2}", instruction, regArray8[op1Index], regArray8[op2Index]));
+            }
+            else {
+                UInt32 address = Read32ModRm(modrm);
+                address = CalcOffset32(address);
+                op2 = Read8(address);
+
+                UInt32 op1Mask = GetRegMask8(op1Index);
+                op1 = (byte)(generalRegisters[op1Index] & op1Mask);
+
+                Write8(address, operation(ref op1, ref op2));
+
+                DbgIns(string.Format("{0} {1}, {2}{3}", instruction, regArray8[op1Index], _dbgSegSelect, _dbgLastOperand));
+            }
+        }
+
+        void GvEv(Instruction instruction, InstructionOperation<UInt16, UInt16, UInt16> operation16, InstructionOperation<UInt32, UInt32, UInt32> operation32) {
+            Cycles = 1;
+            var modrm = ReadModRm();
+
+            if (modrm.mod == 0x03) {
+                var op1Index = modrm.reg;
+                var op2Index = modrm.rm;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    UInt32 op1 = generalRegisters[op1Index];
+                    UInt32 op2 = generalRegisters[op2Index];
+
+                    generalRegisters[op1Index] = operation32(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                }
+                else {
+                    UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
+                    UInt16 op2 = (UInt16)(generalRegisters[op2Index] & 0x0000FFFF);
+
+                    generalRegisters[op1Index] = operation16(ref op1, ref op2);
+
+                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                }
+            }
+            else {
+                UInt32 address = 0;
+
+                if ((Flags & ADDR_SIZE_32) != 0) {
+                    address = Read32ModRm(modrm);
+                }
+                else {
+                    address = Read16ModRm(modrm);
+                }
+
+                string dest = "";
+
+                if ((Flags & OPERAND_SIZE_32) != 0) {
+                    address = CalcOffset32(address);
+                    UInt32 op1 = generalRegisters[modrm.reg];
+                    UInt32 op2 = Read32(address);
+                    dest = regArray32[modrm.reg];
+
+                    Write32(address, operation32(ref op1, ref op2));
+                }
+                else {
+                    address = CalcOffset32(address);
+                    UInt16 op1 = (UInt16)(generalRegisters[modrm.reg] & 0x0000ffff);
+                    UInt16 op2 = Read16(address);
+                    dest = regArray16[modrm.reg];
+
+                    Write16(address, operation16(ref op1, ref op2));
+                }
+
+                DbgIns(string.Format("{0} {1}{2}, [{3}]", instruction, _dbgSegSelect, dest, _dbgLastOperand));
+            }
+        }
+
+        void ALIb(Instruction instruction, InstructionOperation<byte, byte, byte> operation) {
+            byte op2 = ReadImm8();
+            byte temp = AL;
+            AL = operation(ref temp, ref op2);
+
+            DbgIns(string.Format("{0} {1}{2}, {3:X2}", instruction, _dbgSegSelect, _dbgLastOperand, op2));
+        }
+
+        void eAXIv(Instruction instruction, InstructionOperation<UInt16, UInt16, UInt16> operation16, InstructionOperation<UInt32, UInt32, UInt32> operation32) {
+            string src = "";
+            string size = "";
+
+            if ((Flags & OPERAND_SIZE_32) != 0) {
+                UInt32 op2 = ReadImm32();
+                operation32(ref generalRegisters[EAX_INDEX], ref op2);
+                src = string.Format("0x{0:X8}", op2);
+                size = "DWORD PTR";
+            }
+            else {
+                UInt16 op2 = ReadImm16();
+                UInt16 temp = AX;
+                AX = operation16(ref temp, ref op2);
+                src = string.Format("0x{0:X4}", op2);
+                size = "WORD PTR";
+            }
+
+            DbgIns(string.Format("{0} {1} {2}{3}, {4}", instruction, size, _dbgSegSelect, _dbgLastOperand, src));
+        }
+
+        /*********************************************************************
         OpCodes
         *********************************************************************/
+
+        [OpCode(0x00)]
+        void AddEbGb() {
+            EbGb(Instruction.ADD, Add8);
+        }
+
+        [OpCode(0x01)]
+        void AddEvGv() {
+            EvGv(Instruction.ADD, Add16, Add32);
+        }
+
+        [OpCode(0x02)]
+        void AddGbEb() {
+            GbEb(Instruction.ADD, Add8);
+        }
+
+        [OpCode(0x03)]
+        void AddGvEv() {
+            GvEv(Instruction.ADD, Add16, Add32);
+        }
+
+        [OpCode(0x04)]
+        void AddALIb() {
+            ALIb(Instruction.ADD, Add8);
+        }
+
+        [OpCode(0x05)]
+        void AddeAXIv() {
+            eAXIv(Instruction.ADD, Add16, Add32);
+        }
 
         [OpCode(0x06)]
         void PushES() {
@@ -1035,6 +1660,11 @@ namespace Tortilla {
             DbgIns("PUSH ES");
         }
 
+        [OpCode(0x07)]
+        void PopES() {
+            ES = Pop16();
+            DbgIns("POP ES");
+        }
 
         [OpCode(0x0e)]
         void PushCS() {
@@ -1077,219 +1707,181 @@ namespace Tortilla {
             DbgIns("PUSH SS");
         }
 
+        [OpCode(0x17)]
+        void PopSS() {
+            SS = Pop16();
+            DbgIns("POP SS");
+        }
+
         [OpCode(0x1E)]
         void PushDS() {
             Push16(DS);
             DbgIns("PUSH DS");
         }
 
+        [OpCode(0x1F)]
+        void PopDS() {
+            DS = Pop16();
+            DbgIns("POP DS");
+        }
+
+        [OpCode(0x20)]
+        void AndEbGb() {
+            EbGb(Instruction.AND, And8);
+        }
+
+        [OpCode(0x21)]
+        void AndEvGv() {
+            EvGv(Instruction.AND, And16, And32);
+        }
+
+        [OpCode(0x22)]
+        void AndGbEb() {
+            GbEb(Instruction.AND, And8);
+        }
+
+        [OpCode(0x23)]
+        void AndGvEv() {
+            GvEv(Instruction.AND, And16, And32);
+        }
+
+        [OpCode(0x24)]
+        void AndALIb() {
+            ALIb(Instruction.AND, And8);
+        }
+
+        [OpCode(0x25)]
+        void AndeAXIv() {
+            eAXIv(Instruction.AND, And16, And32);
+        }
+
         [OpCode(0x26)]
         void ESPrefix() {
             segSelect = ES_INDEX;
-            dbgSegSelect = "ES:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "ES:";
+            DecodeOpcode(ReadImm8());
+        }
+
+        [OpCode(0x28)]
+        void SubEbGb() {
+            EbGb(Instruction.SUB, Subtract8);
+        }
+
+        [OpCode(0x29)]
+        void SubEvGv() {
+            EvGv(Instruction.SUB, Subtract16, Subtract32);
+        }
+
+        [OpCode(0x2A)]
+        void SubGbEb() {
+            GbEb(Instruction.SUB, Subtract8);
+        }
+
+        [OpCode(0x2B)]
+        void SubGvEv() {
+            GvEv(Instruction.SUB, Subtract16, Subtract32);
+        }
+
+        [OpCode(0x2C)]
+        void SubALIb() {
+            ALIb(Instruction.SUB, Subtract8);
+        }
+
+        [OpCode(0x2D)]
+        void SubAXIv() {
+            eAXIv(Instruction.SUB, Subtract16, Subtract32);
         }
 
         [OpCode(0x2E)]
         void CSPrefix() {
             segSelect = CS_INDEX;
-            dbgSegSelect = "CS:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "CS:";
+            DecodeOpcode(ReadImm8());
         }
 
         // XOR
         [OpCode(0x30)]
         void XorEbGb() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                generalRegisters[modrm.rm] ^= generalRegisters[modrm.reg] & 0x000000FF;
-                DbgIns(string.Format("XOR {0}, {1}", regArray16[modrm.rm], regArray16[modrm.reg]));
-            }
-            else {
-                UInt32 address = 0;
-                address = Read16ModRm(modrm);
-
-                byte value = 0;
-                value = (byte)(generalRegisters[modrm.reg] & 0x000000ff);
-                address = CalcOffset32(address);
-                var dvalue = Read8(address);
-                Write8(address, (byte)(value ^ dvalue));
-
-                DbgIns(string.Format("XOR {0}{1}, {2}", dbgSegSelect, dbgLastOperand, regArray16[modrm.reg]));
-            }
+            EbGb(Instruction.XOR, Xor8);
         }
 
         // XOR Ev, Gv
         [OpCode(0x31)]
         void XorEvGv() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    generalRegisters[modrm.rm] ^= generalRegisters[modrm.reg];
-                    DbgIns(string.Format("XOR {0}, {1}", regArray32[modrm.rm], regArray32[modrm.reg]));
-                }
-                else {
-                    generalRegisters[modrm.rm] ^= generalRegisters[modrm.reg] & 0x0000FFFF;
-                    DbgIns(string.Format("XOR {0}, {1}", regArray16[modrm.rm], regArray16[modrm.reg]));
-                }
-            }
-            else {
-                UInt32 address = 0;
-
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    address = Read32ModRm(modrm);
-                }
-                else {
-                    address = Read16ModRm(modrm);
-                }
-
-                string src = "";
-
-                if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                    UInt32 value = 0;
-                    value = generalRegisters[modrm.reg];
-                    address = CalcOffset32(address);
-                    UInt32 dvalue = Read32(address);
-                    Write32(address, dvalue ^ value);
-                    src = regArray32[modrm.reg];
-                }
-                else {
-                    UInt16 value = 0;
-                    value = (UInt16)(generalRegisters[modrm.reg] & 0x0000ffff);
-                    address = CalcOffset32(address);
-                    var dvalue = Read16(address);
-                    Write16(address, (UInt16)(dvalue ^ value));
-                    src = regArray16[modrm.reg];
-                }
-
-                DbgIns(string.Format("XOR {0}{1}, {2}", dbgSegSelect, dbgLastOperand, src));
-            }
+            EvGv(Instruction.XOR, Xor16, Xor32);
         }
 
         // XOR Gb, Eb
         [OpCode(0x32)]
         void XorGbEb() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                generalRegisters[modrm.reg] ^= generalRegisters[modrm.rm] & 0x000000FF;
-                DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.reg], regArray16[modrm.rm]));
-            }
-            else {
-                UInt32 address = 0;
-                address = Read16ModReg(modrm);
-
-                byte value = 0;
-                value = (byte)(generalRegisters[modrm.rm] & 0x000000ff);
-                address = CalcOffset32(address);
-                var dvalue = Read8(address);
-                Write8(address, (byte)(dvalue ^ value));
-
-                DbgIns(string.Format("MOV {0}{1}, {2}", dbgSegSelect, dbgLastOperand, regArray16[modrm.rm]));
-            }
+            GbEb(Instruction.XOR, Xor8);
         }
 
         // XOR Gv, Ev
         [OpCode(0x33)]
         void XorGvEv() {
-            Cycles = 1;
-            var modrm = ReadModRm();
+            GvEv(Instruction.XOR, Xor16, Xor32);
+        }
 
-            if (modrm.mod == 0x03) {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    generalRegisters[modrm.reg] ^= generalRegisters[modrm.rm];
-                    DbgIns(string.Format("MOV {0}, {1}", regArray32[modrm.reg], regArray32[modrm.rm]));
-                }
-                else {
-                    generalRegisters[modrm.reg] ^= generalRegisters[modrm.rm] & 0x0000FFFF;
-                    DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.reg], regArray16[modrm.rm]));
-                }
-            }
-            else {
-                UInt32 address = 0;
-                string dest = "";
+        [OpCode(0x34)]
+        void XorALIb() {
+            ALIb(Instruction.XOR, Xor8);
+        }
 
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    address = generalRegisters[modrm.reg];
-                    dest = regArray32[modrm.reg];
-                }
-                else {
-                    address = generalRegisters[modrm.reg] & 0x0000FFFF;
-                    dest = regArray16[modrm.reg];
-                }
-
-                if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                    UInt32 value = Read32ModRm(modrm);
-                    UInt32 dvalue = Read32(address);
-                    Write32(address, dvalue ^ CalcOffset32(value));
-                }
-                else {
-                    UInt16 value = Read16ModRm(modrm);
-                    UInt16 dvalue = Read16(address);
-                    Write16(address, (UInt16)(dvalue ^ CalcOffset16(value)));
-                }
-
-                DbgIns(string.Format("XOR {0}, {1}{2}", dest, dbgSegSelect, dbgLastOperand));
-            }
+        [OpCode(0x35)]
+        void XoreAXIv() {
+            eAXIv(Instruction.XOR, Xor16, Xor32);
         }
 
         [OpCode(0x36)]
         void SSPrefix() {
             segSelect = SS_INDEX;
-            dbgSegSelect = "SS:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "SS:";
+            DecodeOpcode(ReadImm8());
         }
 
-        // SUB AX, imm16
-        // SUB EAX, imm32
-        [OpCode(0x2D)]
-        void SubAXIv() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                UInt32 value = ReadImm32();
-                EAX = Subtract32(EAX, value);
-                DbgIns(string.Format("SUB EAX, {0:X8}", value));
-            }
-            else {
-                UInt16 value = ReadImm16();
-                AX = Subtract16(AX, value);
-                DbgIns(string.Format("SUB AX, {0:X4}", value));
-            }
+        [OpCode(0x38)]
+        void CmpEbGb() {
+            EbGb(Instruction.SUB, Compare8);
         }
 
-        // CMP AX, imm16
-        // CMP EAX, imm32
+        [OpCode(0x39)]
+        void CmpEvGv() {
+            EvGv(Instruction.SUB, Compare16, Compare32);
+        }
+
+        [OpCode(0x3A)]
+        void CmpGbEb() {
+            GbEb(Instruction.SUB, Compare8);
+        }
+
+        [OpCode(0x3B)]
+        void CmpGvEv() {
+            GvEv(Instruction.SUB, Compare16, Compare32);
+        }
+
+        [OpCode(0x3C)]
+        void CmpALIb() {
+            ALIb(Instruction.SUB, Compare8);
+        }
+
         [OpCode(0x3D)]
         void CmpAXIv() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                UInt32 value = ReadImm32();
-                /*EAX = */
-                Subtract32(EAX, value);
-                DbgIns(string.Format("CMP EAX, {0:X8}", value));
-            }
-            else {
-                UInt16 value = ReadImm16();
-                /*AX = */
-                Subtract16(AX, value);
-                DbgIns(string.Format("CMP AX, {0:X4}", value));
-            }
+            eAXIv(Instruction.SUB, Compare16, Compare32);
         }
+
 
         [OpCode(0x3E)]
         void DSPrefix() {
             segSelect = DS_INDEX;
-            dbgSegSelect = "DS:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "DS:";
+            DecodeOpcode(ReadImm8());
         }
 
         // INC
         [OpCode(0x40)]
         void IncAX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++EAX;
                 DbgIns("INC EAX");
             }
@@ -1302,7 +1894,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x41)]
         void IncCX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++ECX;
                 DbgIns("INC ECX");
             }
@@ -1315,7 +1907,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x42)]
         void IncDX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++EDX;
                 DbgIns("INC EDX");
             }
@@ -1328,7 +1920,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x43)]
         void IncBX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++EBX;
                 DbgIns("INC EBX");
             }
@@ -1341,7 +1933,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x44)]
         void IncSP() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++ESP;
                 DbgIns("INC ESP");
             }
@@ -1354,7 +1946,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x45)]
         void IncBP() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++EBP;
                 DbgIns("INC EBP");
             }
@@ -1367,7 +1959,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x46)]
         void IncSI() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++ESI;
                 DbgIns("INC ESI");
             }
@@ -1380,7 +1972,7 @@ namespace Tortilla {
         // INC
         [OpCode(0x47)]
         void IncDI() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 ++EDI;
                 DbgIns("INC EDI");
             }
@@ -1393,7 +1985,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x48)]
         void DecAX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --EAX;
                 DbgIns("DEC EAX");
             }
@@ -1406,7 +1998,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x49)]
         void DecCX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --ECX;
                 DbgIns("DEC ECX");
             }
@@ -1419,7 +2011,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4A)]
         void DecDX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --EDX;
                 DbgIns("DEC EDX");
             }
@@ -1432,7 +2024,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4B)]
         void DecBX() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --EBX;
                 DbgIns("DEC EBX");
             }
@@ -1445,7 +2037,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4C)]
         void DecSP() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --ESP;
                 DbgIns("DEC ESP");
             }
@@ -1458,7 +2050,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4D)]
         void DecBP() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --EBP;
                 DbgIns("DEC EBP");
             }
@@ -1471,7 +2063,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4E)]
         void DecSI() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --ESI;
                 DbgIns("DEC ESI");
             }
@@ -1484,7 +2076,7 @@ namespace Tortilla {
         // DEC
         [OpCode(0x4F)]
         void DecDI() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 --EDI;
                 DbgIns("DEC EDI");
             }
@@ -1593,35 +2185,42 @@ namespace Tortilla {
         [OpCode(0x64)]
         void FSPrefix() {
             segSelect = FS_INDEX;
-            dbgSegSelect = "FS:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "FS:";
+            DecodeOpcode(ReadImm8());
         }
 
         [OpCode(0x65)]
         void GSPrefix() {
             segSelect = GS_INDEX;
-            dbgSegSelect = "GS:";
-            Decode(ReadImm8());
+            _dbgSegSelect = "GS:";
+            DecodeOpcode(ReadImm8());
         }
 
         [OpCode(0x66)]
         void OperandSize() {
-            Flags |= REG_SIZE_OVERRIDE;
-            Decode(ReadImm8());
+            Flags ^= OPERAND_SIZE_32;
+            DecodeOpcode(ReadImm8());
         }
 
         [OpCode(0x67)]
         void AddressSize() {
-            Flags |= ADDR_SIZE_OVERRIDE;
-            Decode(ReadImm8());
+            Flags ^= ADDR_SIZE_32;
+            DecodeOpcode(ReadImm8());
         }
 
         // PUSH imm16
         [OpCode(0x68)]
         void PushIv() {
-            var value = ReadImm16();
-            Push16(value);
-            DbgIns(string.Format("PUSH 0x{0:X4}", value));
+            if ((Flags & OPERAND_SIZE_32) != 0) {
+                var value = ReadImm32();
+                Push32(value);
+                DbgIns(string.Format("PUSH 0x{0:X8}", value));
+            }
+            else {
+                var value = ReadImm16();
+                Push16(value);
+                DbgIns(string.Format("PUSH 0x{0:X4}", value));
+            }
         }
 
         // PUSH imm8
@@ -1635,137 +2234,25 @@ namespace Tortilla {
         // MOV Eb, Gb
         [OpCode(0x88)]
         void MovEbGb() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                generalRegisters[modrm.rm] = generalRegisters[modrm.reg] & 0x000000FF;
-                DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.rm], regArray16[modrm.reg]));
-            }
-            else {
-                UInt32 address = 0;
-                address = Read16ModRm(modrm);
-
-                byte value = 0;
-                value = (byte)(generalRegisters[modrm.reg] & 0x000000ff);
-                address = CalcOffset32(address);
-                Write8(address, value);
-
-                DbgIns(string.Format("MOV {0}{1}, {2}", dbgSegSelect, dbgLastOperand, regArray16[modrm.reg]));
-            }
+            EbGb(Instruction.MOV, Move8);
         }
 
         // MOV Ev, Gv
         [OpCode(0x89)]
         void MovEvGv() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    generalRegisters[modrm.rm] = generalRegisters[modrm.reg];
-                    DbgIns(string.Format("MOV {0}, {1}", regArray32[modrm.rm], regArray32[modrm.reg]));
-                }
-                else {
-                    generalRegisters[modrm.rm] = generalRegisters[modrm.reg] & 0x0000FFFF;
-                    DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.rm], regArray16[modrm.reg]));
-                }
-            }
-            else {
-                UInt32 address = 0;
-
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    address = Read32ModRm(modrm);
-                }
-                else {
-                    address = Read16ModRm(modrm);
-                }
-
-                string src = "";
-
-                if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                    UInt32 value = generalRegisters[modrm.reg];
-                    Write32(CalcOffset32(address), value);
-                    src = regArray32[modrm.reg];
-                }
-                else {
-                    UInt16 value = (UInt16)(generalRegisters[modrm.reg] & 0x0000ffff);
-                    address = CalcOffset32(address);
-                    Write16(address, value);
-                    src = regArray16[modrm.reg];
-                }
-
-                DbgIns(string.Format("MOV {0}{1}, {2}", dbgSegSelect, dbgLastOperand, src));
-            }
+            EvGv(Instruction.MOV, Move16, Move32);
         }
 
         // MOV Gb, Eb
         [OpCode(0x8A)]
         void MovGbEb() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                generalRegisters[modrm.reg] = generalRegisters[modrm.rm] & 0x000000FF;
-                DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.reg], regArray16[modrm.rm]));
-            }
-            else {
-                UInt32 address = 0;
-                address = Read16ModReg(modrm);
-
-                byte value = 0;
-                value = (byte)(generalRegisters[modrm.rm] & 0x000000ff);
-                address = CalcOffset32(address);
-                Write8(address, value);
-
-                DbgIns(string.Format("MOV {0}{1}, {2}", dbgSegSelect, dbgLastOperand, regArray16[modrm.rm]));
-            }
+            GbEb(Instruction.MOV, Move8);
         }
 
         // MOV Gv, Ev
         [OpCode(0x8B)]
         void MovGvEv() {
-            Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    generalRegisters[modrm.reg] = generalRegisters[modrm.rm];
-                    DbgIns(string.Format("MOV {0}, {1}", regArray32[modrm.reg], regArray32[modrm.rm]));
-                }
-                else {
-                    generalRegisters[modrm.reg] = generalRegisters[modrm.rm] & 0x0000FFFF;
-                    DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.reg], regArray16[modrm.rm]));
-                }
-            }
-            else {
-                string dest = "";
-
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    UInt32 value = Read32ModRm(modrm);
-                    if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                        generalRegisters[modrm.reg] = value;
-                        dest = regArray32[modrm.reg];
-                    }
-                    else {
-                        generalRegisters[modrm.reg] |= value & 0x0000FFFF;
-                        dest = regArray16[modrm.reg];
-                    }
-                }
-                else {
-                    UInt16 value = Read16ModRm(modrm);
-                    if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                        generalRegisters[modrm.reg] = value;
-                        dest = regArray32[modrm.reg];
-                    }
-                    else {
-                        generalRegisters[modrm.reg] |= value;
-                        dest = regArray16[modrm.reg];
-                    }
-                }
-
-                DbgIns(string.Format("MOV {0}, {1}{2}", dest, dbgSegSelect, dbgLastOperand));
-            }
+            GvEv(Instruction.MOV, Move16, Move32);
         }
 
         [OpCode(0x8C)]
@@ -1778,7 +2265,7 @@ namespace Tortilla {
                 DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.rm], segArray[modrm.reg]));
             }
             else {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+                if ((Flags & ADDR_SIZE_32) != 0) {
                     UInt32 address = Read32ModRm(modrm);
                     Write32(CalcOffset32(address), segmentRegisters[modrm.reg]);
                 }
@@ -1787,7 +2274,7 @@ namespace Tortilla {
                     Write16(CalcOffset32(address), segmentRegisters[modrm.reg]);
                 }
 
-                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], dbgSegSelect, dbgLastOperand));
+                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], _dbgSegSelect, _dbgLastOperand));
             }
         }
 
@@ -1797,7 +2284,7 @@ namespace Tortilla {
             Cycles = 1;
             var modrm = ReadModRm();
 
-            if ((Flags & REG_SIZE_OVERRIDE) != 0) {
+            if ((Flags & OPERAND_SIZE_32) != 0) {
                 UInt32 value = Read32ModRm(modrm);
                 generalRegisters[modrm.reg] = CalcOffset32(value);
             }
@@ -1806,7 +2293,7 @@ namespace Tortilla {
                 generalRegisters[modrm.reg] = (UInt32)(CalcOffset16(value) & 0x0000FFFF);
             }
 
-            DbgIns(string.Format("LEA {0}, {1}{2}", regArray16[modrm.reg], dbgSegSelect, dbgLastOperand));
+            DbgIns(string.Format("LEA {0}, {1}{2}", regArray16[modrm.reg], _dbgSegSelect, _dbgLastOperand));
         }
 
         [OpCode(0x8e)]
@@ -1819,7 +2306,7 @@ namespace Tortilla {
                 DbgIns(string.Format("MOV {0}, {1}", segArray[modrm.reg], regArray16[modrm.rm]));
             }
             else {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+                if ((Flags & ADDR_SIZE_32) != 0) {
                     UInt32 value = Read32ModRm(modrm);
                     segmentRegisters[modrm.reg] = (UInt16)(CalcOffset32(value) & 0x0000FFFF);
                 }
@@ -1828,12 +2315,12 @@ namespace Tortilla {
                     segmentRegisters[modrm.reg] = CalcOffset16(value);
                 }
 
-                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], dbgSegSelect, dbgLastOperand));
+                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], _dbgSegSelect, _dbgLastOperand));
             }
 
             if (modrm.reg == SS_INDEX) {
                 /* Run next instruction without handling interrupts */
-                Decode(ReadImm8());
+                DecodeOpcode(ReadImm8());
             }
         }
 
@@ -1848,7 +2335,7 @@ namespace Tortilla {
         [OpCode(0xB8)]
         void MovRM8R8() {
             Cycles = 1;
-            if ((Flags & REG_SIZE_OVERRIDE) != 0) {
+            if ((Flags & OPERAND_SIZE_32) != 0) {
                 EAX = ReadImm32();
                 DbgIns(string.Format("MOV EAX, 0x{0:X8}", EAX));
             }
@@ -1861,7 +2348,7 @@ namespace Tortilla {
         [OpCode(0xB9)]
         void MovCXIv() {
             Cycles = 1;
-            if ((Flags & REG_SIZE_OVERRIDE) != 0) {
+            if ((Flags & OPERAND_SIZE_32) != 0) {
                 ECX = ReadImm32();
                 DbgIns(string.Format("MOV ECX, 0x{0:X8}", ECX));
             }
@@ -1874,9 +2361,9 @@ namespace Tortilla {
         [OpCode(0xBA)]
         void MovDXIv() {
             Cycles = 1;
-            if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                DX = ReadImm16();
-                DbgIns(string.Format("MOV DX, 0x{0:X4}", DX));
+            if ((Flags & OPERAND_SIZE_32) != 0) {
+                EDX = ReadImm32();
+                DbgIns(string.Format("MOV EDX, 0x{0:X8}", DX));
             }
             else {
                 DX = ReadImm16();
@@ -1887,7 +2374,7 @@ namespace Tortilla {
         [OpCode(0xBB)]
         void MovBXIv() {
             Cycles = 1;
-            if ((Flags & REG_SIZE_OVERRIDE) != 0) {
+            if ((Flags & OPERAND_SIZE_32) != 0) {
                 EBX = ReadImm32();
                 DbgIns(string.Format("MOV EBX, 0x{0:X8}", EBX));
             }
@@ -1897,51 +2384,27 @@ namespace Tortilla {
             }
         }
 
-        // MOV Ev, Iv
-        [OpCode(0xC7)]
-        void MovEvIv() {
+        [OpCode(0xBC)]
+        void MoveSPIv() {
             Cycles = 1;
-            var modrm = ReadModRm();
-
-            if (modrm.mod == 0x03) {
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    generalRegisters[modrm.rm] = ReadImm32();
-                    DbgIns(string.Format("MOV {0}, {1:X8}", regArray32[modrm.rm], generalRegisters[modrm.rm]));
-                }
-                else {
-                    generalRegisters[modrm.rm] = ReadImm16();
-                    DbgIns(string.Format("MOV {0}, {1:X4}", regArray16[modrm.rm], generalRegisters[modrm.rm]));
-                }
+            if ((Flags & OPERAND_SIZE_32) != 0) {
+                ESP = ReadImm32();
+                DbgIns(string.Format("MOV ESP, 0x{0:X8}", ESP));
             }
             else {
-                UInt32 address = 0;
-
-                if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
-                    address = Read32ModRm(modrm);
-                }
-                else {
-                    address = Read16ModRm(modrm);
-                }
-
-                string src = "";
-                string size = "";
-
-                if ((Flags & REG_SIZE_OVERRIDE) != 0) {
-                    UInt32 value = ReadImm32();
-                    Write32(CalcOffset32(address), value);
-                    src = string.Format("0x{0:X8}", value);
-                    size = "DWORD PTR";
-                }
-                else {
-                    UInt16 value = ReadImm16();
-                    address = CalcOffset32(address);
-                    Write16(address, value);
-                    src = string.Format("0x{0:X4}", value);
-                    size = "WORD PTR";
-                }
-
-                DbgIns(string.Format("MOV {3} {0}{1}, {2}", dbgSegSelect, dbgLastOperand, src, size));
+                SP = ReadImm16();
+                DbgIns(string.Format("MOV SP, 0x{0:X4}", SP));
             }
+        }
+
+        [OpCode(0xC6)]
+        void MovEbIb() {
+            EbIb(Instruction.MOV, Move8);
+        }
+
+        [OpCode(0xC7)]
+        void MovEvIv() {
+            EvIv(Instruction.MOV, Move16, Move32);
         }
 
         // INT imm8
@@ -1953,14 +2416,6 @@ namespace Tortilla {
             TF = 0;
             Hardware.RaiseInterrupt(id);
             DbgIns(string.Format("INT 0x{0:X2}", id));
-        }
-
-        // HLT
-        [OpCode(0xF4)]
-        void Hlt() {
-            DbgIns("HLT");
-            interruptEvent.WaitOne();
-            Hardware.Debug("CPU awake", this);
         }
 
         // JMP b
@@ -1981,7 +2436,7 @@ namespace Tortilla {
         // JMP w
         [OpCode(0xE9)]
         void Jmpw() {
-            if ((Flags & ADDR_SIZE_OVERRIDE) != 0) {
+            if ((Flags & ADDR_SIZE_32) != 0) {
                 var o = ReadImm32();
 
                 if ((o & 0x8000) == 0) {
@@ -2005,12 +2460,51 @@ namespace Tortilla {
             DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
         }
 
-        // CLI
-        [OpCode(0xFA)]
+        // HLT
+        [OpCode(0xF4)]
+        void Hlt() {
+            DbgIns("HLT");
+            interruptEvent.WaitOne();
+            Hardware.Debug("CPU awake", this);
+        }
+
+        [OpCode(0xF8)]
+        void Clc() {
+            CF = 0;
+            DbgIns("CLC");
+        }
+
+        [OpCode(0XF9)]
+        void Stc() {
+            CF = 1;
+            DbgIns("STC");
+        }
+
+        // [OpCode(0xFA)]
         void Cli() {
             Cycles = 3;
             IF = 0;
+            // TODO: More work needed here
             DbgIns("CLI");
+        }
+
+        // [OpCode(0xFB)]
+        void Sti() {
+            IF = 1;
+            // TODO: More work needed here
+            DbgIns("STI");
+        }
+
+        [OpCode(0xFC)]
+        void Cld() {
+            DF = 0;
+            DbgIns("CLD");
+        }
+
+        [OpCode(0xFD)]
+        void Std() {
+            DF = 1;
+            DbgIns("STD");
         }
 
         [OpCode(0xFF)]
@@ -2020,7 +2514,7 @@ namespace Tortilla {
                 case 6:
                     var value = ReadImm16();
                     Push16(value);
-                    DbgIns(string.Format("PUSH 0x{0:X4}", value));
+                    DbgIns(string.Format("PUSH 0x{1:X4}", value));
                     break;
             }
         }
