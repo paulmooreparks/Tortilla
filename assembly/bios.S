@@ -14,7 +14,6 @@ init:
 	mov ax, cs
 	mov ds, ax
 	mov ss, ax
-	xor ax, ax
 	mov sp, 0xF000
 	mov bx, 0xb800
 	mov es, bx
@@ -24,9 +23,8 @@ init:
 
 read_string:
 	mov bx, si
-	mov al, ds:[bx]
+	mov dl, ds:[bx]
 	jz done
-	mov dl, al
 	mov dh, 0x0F
 	mov bx, di
 	mov word ptr es:[bx], dx
@@ -53,7 +51,7 @@ done:
 
 
 hello_string:
-	.string "salsaBIOS v1.00 Paul M. Parks\0\0" 
+	.string "salsaBIOS v1.00 Paul M. Parks\0" 
 
 /* This winds up directly in video memory */
 .section video, "a"
