@@ -9,8 +9,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TortillaUI", "TortillaUI\To
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembly", "assembly", "{9291D06E-4B41-4C5F-B83F-4895EB9B8D6C}"
 	ProjectSection(SolutionItems) = preProject
+		assembly\bios.asm = assembly\bios.asm
 		assembly\bios.ld = assembly\bios.ld
-		assembly\bios.S = assembly\bios.S
+		assembly\makefile = assembly\makefile
 		assembly\quesos.asm = assembly\quesos.asm
 	EndProjectSection
 EndProject

@@ -256,3 +256,4 @@ paket-files/
 /assembly/bios.rom
 /assembly/xMemLayout.map
 /TortillaIA32/docs
+/assembly/a.out

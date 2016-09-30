@@ -1,4 +1,4 @@
-ASM       = gcc
+ASM       = as
 CC        = gcc
 LD        = ld
 OBJDUMP   = objdump
@@ -22,9 +22,9 @@ clean:
 	@echo "[CC]  $@"
 	@$(CC) -c -o $*.o $(CFLAGS) $<
  
-%.o: %.S Makefile
+$(TARGET).o: $(TARGET).asm Makefile
 	@echo "[AS]  $<"
-	@$(ASM) -c -o $*.o $(CFLAGS) $<
+	@$(ASM) -c -o $(TARGET).o $<
  
 # Produce a disassembly dump of the main section, for verification purposes
 dis: $(TARGET).out

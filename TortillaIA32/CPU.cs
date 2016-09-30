@@ -732,31 +732,46 @@ namespace Tortilla {
             return op1;
         }
 
-        void Jb(byte offset) {
+        UInt32 Jb() {
+            byte offset = ReadImm8();
+            UInt32 targetIP = EIP;
+
             if ((offset & 0x80) == 0) {
-                EIP = EIP + (offset);
+                targetIP = targetIP + (offset);
             }
             else {
-                EIP = (UInt32)(EIP - (-offset & 0xFF));
+                targetIP = (UInt32)(targetIP - (-offset & 0xFF));
             }
+
+            return targetIP;
         }
 
-        void Jz16(UInt16 offset) {
+        UInt32 Jz16() {
+            UInt16 offset = ReadImm16();
+            UInt32 targetIP = EIP;
+
             if ((offset & 0x8000) == 0) {
-                EIP = EIP + (offset);
+                targetIP = targetIP + (offset);
             }
             else {
-                EIP = (UInt32)(EIP - (-offset & 0xffff) + 2);
+                targetIP = (UInt32)(targetIP - (-offset & 0xffff) + 2);
             }
+
+            return targetIP;
         }
 
-        void Jz32(UInt32 offset) {
+        UInt32 Jz32() {
+            UInt32 offset = ReadImm8();
+            UInt32 targetIP = EIP;
+
             if ((offset & 0x8000) == 0) {
-                EIP = EIP + (offset);
+                targetIP = targetIP + (offset);
             }
             else {
-                EIP = (UInt32)(EIP - (-offset & 0xFFFFFFFF) + 2);
+                targetIP = (UInt32)(targetIP - (-offset & 0xFFFFFFFF) + 2);
             }
+
+            return targetIP;
         }
 
         /**********************************************************************
@@ -2297,146 +2312,178 @@ namespace Tortilla {
 
         [OpCode(0x70)]
         void JO () {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (OF == 1) {
-                Jb(offset);
+                EIP = targetIP;                
             }
+
+            DbgIns(string.Format("JO 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x71)]
         void JNO() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (OF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JNO 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x72)]
         void JC() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (CF == 1) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JC 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x73)]
         void JAE() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (CF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JAE 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x74)]
         void JZ() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (ZF == 1) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JZ 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x75)]
         void JNZ() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (ZF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JNZ 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x76)]
         void JNA() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (CF == 1 || ZF == 1) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JNA 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x77)]
         void JA() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (CF == 0 && ZF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JA 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x78)]
         void JS() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (SF == 1) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JS 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x79)]
         void JNS() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (SF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JNS 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7A)]
         void JP() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (PF == 1) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JP 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7B)]
         void JNP() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (PF == 0) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JNP 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7C)]
         void JL() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (SF != OF) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JL 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7D)]
         void JGE() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (SF == OF) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JGE 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7E)]
         void JLE() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (ZF == 1 || SF != OF) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JLE 0x{0:X8}", (CS << 4) + targetIP));
         }
 
         [OpCode(0x7F)]
         void JG() {
-            var offset = ReadImm8();
+            var targetIP = Jb();
 
             if (ZF == 0 && SF == OF) {
-                Jb(offset);
+                EIP = targetIP;
             }
+
+            DbgIns(string.Format("JG 0x{0:X8}", (CS << 4) + targetIP));
         }
 
 
@@ -2645,10 +2692,10 @@ namespace Tortilla {
         [OpCode(0xE9)]
         void JmpJz() {
             if ((Flags & ADDR_SIZE_32) != 0) {
-                Jz32(ReadImm32());
+                EIP = Jz32();
             }
             else {
-                Jz16(ReadImm16());
+                EIP = Jz16();
             }
 
             DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
@@ -2673,7 +2720,7 @@ namespace Tortilla {
         // JMP b
         [OpCode(0xEB)]
         void Jmpb() {
-            Jb(ReadImm8());
+            EIP = Jb();
             DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
         }
 
