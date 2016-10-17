@@ -22,30 +22,6 @@ namespace Tortilla {
         void PowerOff();
     }
 
-    public interface ICpuMode {
-        void Decode(byte opCode);
-
-        byte ReadImm8();
-        UInt16 ReadImm16();
-        UInt32 ReadImm32();
-
-        byte Read8(UInt32 Address);
-        UInt16 Read16(UInt32 Address);
-        UInt32 Read32(UInt32 Address);
-
-        void Write8(UInt32 Address, byte Value);
-        void Write16(UInt32 Address, UInt16 value);
-        void Write32(UInt32 Address, UInt32 value);
-
-        void Push8(byte value);
-        void Push16(UInt16 value);
-        void Push32(UInt32 value);
-
-        byte Pop8();
-        UInt16 Pop16();
-        UInt32 Pop32();
-    }
-
     [AttributeUsage(AttributeTargets.Method)]
     sealed public class OpCodeAttribute : System.Attribute {
         public byte[] OpCodes { get; set; }
@@ -364,7 +340,7 @@ namespace Tortilla {
 
 
         protected delegate void OpCodeDelegate();
-        protected Dictionary<byte, OpCodeDelegate> OpCodeMap { get; } = new Dictionary<byte, OpCodeDelegate>();
+        protected OpCodeDelegate[] OpCodeMap { get; } = new OpCodeDelegate[256];
 
         protected virtual void ConnectOpCodesToMethods() {
             System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
@@ -383,7 +359,7 @@ namespace Tortilla {
 
                         if (methodAttr.OpCodes != null) {
                             foreach (byte opCode in methodAttr.OpCodes) {
-                                if (OpCodeMap.ContainsKey(opCode)) {
+                                if (OpCodeMap[opCode] != null) {
                                     throw new Exception(string.Format("Duplicate handler for opcode {0:X2}", opCode));
                                 }
 
@@ -452,9 +428,9 @@ namespace Tortilla {
         }
 
         protected void DecodeOpcode(byte opcode) {
-            OpCodeDelegate handler = null;
+            OpCodeDelegate handler = OpCodeMap[opcode];
 
-            if (OpCodeMap.TryGetValue(opcode, out handler) && handler != null) {
+            if (handler != null) {
                 handler();
             }
             else {
@@ -909,6 +885,9 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt16)(DI);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = ES_INDEX;
+                    }
                     _dbgLastOperand = "[DI]";
                     break;
 
@@ -1023,11 +1002,17 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt16)(DI + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = ES_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[DI{0}]", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt16)(BP + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = SP_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
                     break;
 
@@ -1081,6 +1066,9 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt32)(EBP + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = SP_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
                     break;
 
@@ -1091,6 +1079,9 @@ namespace Tortilla {
 
                 case 0x07:
                     value = (UInt32)(EDI + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = ES_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
                     break;
             }
@@ -1134,11 +1125,17 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt16)(DI + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = ES_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[DI]{0}", _dbgLastOperand);
                     break;
 
                 case 0x06:
                     value = (UInt16)(BP + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = SP_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
                     break;
 
@@ -1192,6 +1189,9 @@ namespace Tortilla {
 
                 case 0x05:
                     value = (UInt32)(EBP + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = SP_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
                     break;
 
@@ -1202,6 +1202,9 @@ namespace Tortilla {
 
                 case 0x07:
                     value = (UInt32)(EDI + displacement);
+                    if (segSelect != DEFAULT_SEGMENT_SELECT) {
+                        segSelect = ES_INDEX;
+                    }
                     _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
                     break;
             }
@@ -1936,25 +1939,21 @@ namespace Tortilla {
             DecodeOpcode(ReadImm8());
         }
 
-        // XOR
         [OpCode(0x30)]
         void XorEbGb() {
             EbGb(Instruction.XOR, Xor8);
         }
 
-        // XOR Ev, Gv
         [OpCode(0x31)]
         void XorEvGv() {
             EvGv(Instruction.XOR, Xor16, Xor32);
         }
 
-        // XOR Gb, Eb
         [OpCode(0x32)]
         void XorGbEb() {
             GbEb(Instruction.XOR, Xor8);
         }
 
-        // XOR Gv, Ev
         [OpCode(0x33)]
         void XorGvEv() {
             GvEv(Instruction.XOR, Xor16, Xor32);
@@ -2015,97 +2014,81 @@ namespace Tortilla {
             DecodeOpcode(ReadImm8());
         }
 
-        // INC
         [OpCode(0x40)]
         void IncAX() {
             Increg(EAX_INDEX);
         }
 
-        // INC
         [OpCode(0x41)]
         void IncCX() {
             Increg(ECX_INDEX);
         }
 
-        // INC
         [OpCode(0x42)]
         void IncDX() {
             Increg(EDX_INDEX);
         }
 
-        // INC
         [OpCode(0x43)]
         void IncBX() {
             Increg(EBX_INDEX);
         }
 
-        // INC
         [OpCode(0x44)]
         void IncSP() {
             Increg(ESP_INDEX);
         }
 
-        // INC
         [OpCode(0x45)]
         void IncBP() {
             Increg(EBX_INDEX);
         }
 
-        // INC
         [OpCode(0x46)]
         void IncSI() {
             Increg(ESI_INDEX);
         }
 
-        // INC
         [OpCode(0x47)]
         void IncDI() {
             Increg(EDI_INDEX);
         }
 
-        // DEC
         [OpCode(0x48)]
         void DecAX() {
             Decreg(EAX_INDEX);
         }
 
-        // DEC
         [OpCode(0x49)]
         void DecCX() {
             Decreg(ECX_INDEX);
         }
 
-        // DEC
         [OpCode(0x4A)]
         void DecDX() {
             Decreg(EDX_INDEX);
         }
 
-        // DEC
         [OpCode(0x4B)]
         void DecBX() {
             Decreg(EBX_INDEX);
         }
 
-        // DEC
         [OpCode(0x4C)]
         void DecSP() {
             Decreg(ESP_INDEX);
         }
 
-        // DEC
         [OpCode(0x4D)]
         void DecBP() {
             Decreg(EBP_INDEX);
         }
 
-        // DEC
         [OpCode(0x4E)]
         void DecSI() {
             Decreg(ESI_INDEX);
         }
 
-        // DEC
         [OpCode(0x4F)]
         void DecDI() {
             Decreg(EDI_INDEX);
@@ -2287,7 +2270,6 @@ namespace Tortilla {
             DecodeOpcode(ReadImm8());
         }
 
-        // PUSH imm16
         [OpCode(0x68)]
         void PushIv() {
             if ((Flags & OPERAND_SIZE_32) != 0) {
@@ -2302,7 +2284,6 @@ namespace Tortilla {
             }
         }
 
-        // PUSH imm8
         [OpCode(0x6A)]
         void PushIb() {
             var value = ReadImm8();
@@ -2487,25 +2468,21 @@ namespace Tortilla {
         }
 
 
-        // MOV Eb, Gb
         [OpCode(0x88)]
         void MovEbGb() {
             EbGb(Instruction.MOV, Move8);
         }
 
-        // MOV Ev, Gv
         [OpCode(0x89)]
         void MovEvGv() {
             EvGv(Instruction.MOV, Move16, Move32);
         }
 
-        // MOV Gb, Eb
         [OpCode(0x8A)]
         void MovGbEb() {
             GbEb(Instruction.MOV, Move8);
         }
 
-        // MOV Gv, Ev
         [OpCode(0x8B)]
         void MovGvEv() {
             GvEv(Instruction.MOV, Move16, Move32);
@@ -2534,7 +2511,6 @@ namespace Tortilla {
             }
         }
 
-        // LEA Gv, M
         [OpCode(0x8D)]
         void LeaGvM() {
             Cycles = 1;
@@ -2580,7 +2556,6 @@ namespace Tortilla {
             }
         }
 
-        // NOP
         [OpCode(0x90)]
         void Nop() {
             Cycles = 1;
@@ -2677,7 +2652,6 @@ namespace Tortilla {
             EvIv(Instruction.MOV, Move16, Move32);
         }
 
-        // INT imm8
         [OpCode(0xCD)]
         void IntImm8() {
             Cycles = 37;
@@ -2688,7 +2662,6 @@ namespace Tortilla {
             DbgIns(string.Format("INT 0x{0:X2}", id));
         }
 
-        // JMP w
         [OpCode(0xE9)]
         void JmpJz() {
             if ((Flags & ADDR_SIZE_32) != 0) {
@@ -2717,14 +2690,12 @@ namespace Tortilla {
             }
         }
 
-        // JMP b
         [OpCode(0xEB)]
         void Jmpb() {
             EIP = Jb();
             DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
         }
 
-        // HLT
         [OpCode(0xF4)]
         void Hlt() {
             DbgIns("HLT");
@@ -2744,7 +2715,6 @@ namespace Tortilla {
             DbgIns("STC");
         }
 
-        // [OpCode(0xFA)]
         void Cli() {
             Cycles = 3;
             IF = 0;
@@ -2752,7 +2722,6 @@ namespace Tortilla {
             DbgIns("CLI");
         }
 
-        // [OpCode(0xFB)]
         void Sti() {
             IF = 1;
             // TODO: More work needed here
