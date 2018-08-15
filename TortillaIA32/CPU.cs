@@ -414,6 +414,10 @@ namespace Tortilla {
                 Flags = REAL_MODE;
                 // TODO: Protected mode
 
+                if (interruptEvent.WaitOne(0)) {
+
+                }
+
                 if (powerEvent.WaitOne(0)) {
                     return;
                 }
@@ -914,12 +918,6 @@ namespace Tortilla {
                 return value;
             }
 
-            SIB sib = new SIB();
-
-            if (sel == 0x04) {
-                sib = ReadSIB();
-            }
-
             switch (sel) {
                 case EAX_INDEX:
                     value = (UInt32)(EAX);
@@ -942,6 +940,8 @@ namespace Tortilla {
                     break;
 
                 case 0x04: {
+                        SIB sib = ReadSIB();
+
                         byte displacement = ReadImm8();
 
                         if (displacement > 0) {
