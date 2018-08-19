@@ -2654,12 +2654,30 @@ namespace Tortilla {
 
         [OpCode(0xCD)]
         void IntImm8() {
-            Cycles = 37;
-            var id = ReadImm8();
+            byte id = ReadImm8();
+            Push16((UInt16)(EFLAGS & 0x0000FFFF));
+
             IF = 0;
             TF = 0;
+            AF = 0;
+
+            UInt32 address = (UInt32)(id * 4);
+            var newip = Read16(address);
+            var newcs = Read16(address + 2);
+            Push16(CS);
+            Push16((UInt16)(EIP & 0x0000FFFF));
+            CS = newcs;
+            EIP = newip;
             Hardware.RaiseInterrupt(id);
             DbgIns(string.Format("INT 0x{0:X2}", id));
+        }
+
+        [OpCode(0xCF)]
+        void IRet() {
+            EIP = Pop16();
+            CS = Pop16();
+            EFLAGS = Pop16();
+            DbgIns("IRET");
         }
 
         [OpCode(0xE9)]
@@ -2715,13 +2733,14 @@ namespace Tortilla {
             DbgIns("STC");
         }
 
+        [OpCode(0xFA)]
         void Cli() {
-            Cycles = 3;
             IF = 0;
             // TODO: More work needed here
             DbgIns("CLI");
         }
 
+        [OpCode(0xFB)]
         void Sti() {
             IF = 1;
             // TODO: More work needed here
@@ -2738,6 +2757,165 @@ namespace Tortilla {
         void Std() {
             DF = 1;
             DbgIns("STD");
+        }
+
+        [OpCode(0xF6)]
+        void OpcodeF6() {
+            var modrm = ReadModRm();
+            switch (modrm.reg) {
+                /* TEST */
+                case 0:
+                case 1:
+                    DbgIns("TEST not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 2:
+                    DbgIns("NOT not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 3:
+                    DbgIns("NEG not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                /* MUL */
+                case 4: 
+                    {
+                        byte op2;
+                        var op2Index = modrm.rm;
+
+                        if (modrm.mod == 0x03) {
+                            op2 = (byte)(generalRegisters[op2Index] & 0x000000FF);
+                            _dbgLastOperand = regArray8[op2Index];
+                        }
+                        else {
+                            UInt32 address = Read32ModRm(modrm);
+                            op2 = Read8(address);
+                        }
+
+                        byte op1 = AL;
+                        AX = (UInt16)(op1 * op2);
+
+                        DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                    }
+                    break;
+
+                case 5:
+                    DbgIns("IMUL not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 6:
+                    DbgIns("DIV not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 7:
+                    DbgIns("IDIV not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+            }
+        }
+
+        [OpCode(0xF7)]
+        void OpcodeF7() {
+            var modrm = ReadModRm();
+            switch (modrm.reg) {
+                /* TEST */
+                case 0:
+                case 1:
+                    DbgIns("TEST not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 2:
+                    DbgIns("NOT not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 3:
+                    DbgIns("NEG not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                /* MUL */
+                case 4: 
+                    {
+                        UInt32 op2 = 0;
+                        var op2Index = modrm.rm;
+
+                        if (modrm.mod == 3) {
+                            if ((Flags & ADDR_SIZE_32) != 0) {
+                                op2 = generalRegisters[op2Index];
+                                _dbgLastOperand = regArray32[op2Index];
+                            }
+                            else {
+                                op2 = (UInt16)(generalRegisters[op2Index] & 0x0000FFFF);
+                                _dbgLastOperand = regArray16[op2Index];
+                            }
+                        }
+                        else {
+                            UInt32 address = 0;
+
+                            if ((Flags & ADDR_SIZE_32) != 0) {
+                                address = Read32ModRm(modrm);
+                                op2 = Read32(address);
+                            }
+                            else {
+                                address = Read16ModRm(modrm);
+                                op2 = Read16(address);
+                            }
+                        }
+
+                        if ((Flags & ADDR_SIZE_32) != 0) {
+                            var op1 = AX;
+                            UInt64 result = op1 * op2;
+                            EAX = (UInt32)(result & 0x00000000FFFFFFFF);
+                            EDX = (UInt32)(result & 0xFFFFFFFF00000000);
+
+                            DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                        }
+                        else {
+                            UInt16 op1 = AX;
+                            UInt32 result = (UInt16)(op1 * op2);
+                            AX = (UInt16)(result & 0x0000FFFF);
+                            DX = (UInt16)(result & 0xFFFF0000);
+
+                            DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                        }
+                    }
+                    break;
+
+                case 5:
+                    DbgIns("IMUL not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 6:
+                    DbgIns("DIV not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+
+                case 7:
+                    DbgIns("IDIV not implemented");
+                    Hardware.RaiseException(0);
+                    Hlt();
+                    break;
+            }
         }
 
         [OpCode(0xFF)]

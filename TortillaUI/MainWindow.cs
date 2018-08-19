@@ -32,8 +32,22 @@ namespace TortillaUI {
             CallingConvention = CallingConvention.StdCall)]
         private static extern int AllocConsole();
 
-        private const int STD_OUTPUT_HANDLE = -11;
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr CreateFile(
+            string lpFileName,
+            uint dwDesiredAccess,
+            uint dwShareMode,
+            uint lpSecurityAttributes,
+            uint dwCreationDisposition,
+            uint dwFlagsAndAttributes,
+            uint hTemplateFile);
+
         private const int MY_CODE_PAGE = 437;
+        private const uint GENERIC_WRITE = 0x40000000;
+        private const uint FILE_SHARE_WRITE = 0x2;
+        private const uint OPEN_EXISTING = 0x3;
+
+        private const int STD_OUTPUT_HANDLE = -11;
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
@@ -93,18 +107,20 @@ namespace TortillaUI {
             Console.CursorVisible = false;
             Console.CursorLeft = 0;
             Console.CursorTop = 0;
+
             int left = 0;
             int top = 0;
 
             for (var address = 0xb8000; address < 0xb8f00; address += 2) {
                 var ch = (char)memory[address];
                 var co = (int)memory[address + 1];
-
-                Console.SetCursorPosition(left, top);
                 int fgColor = (co & 0x000f);
                 int bgColor = (co & 0x00f0) >> 4;
+
+                Console.SetCursorPosition(left, top);
                 Console.ForegroundColor = (ConsoleColor)fgColor;
                 Console.BackgroundColor = (ConsoleColor)bgColor;
+
                 Console.Write(ch);
                 ++left;
 
@@ -154,12 +170,17 @@ namespace TortillaUI {
         public void Run() {
             AllocConsole();
             IntPtr stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+            // IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
+
             SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
             FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
             Encoding encoding = System.Text.Encoding.GetEncoding(MY_CODE_PAGE);
             StreamWriter standardOutput = new StreamWriter(fileStream, encoding);
             standardOutput.AutoFlush = true;
+
+            Console.SetWindowPosition(0, 0);
             Console.SetOut(standardOutput);
+
             Console.WindowWidth = 80;
             Console.WindowHeight = 25;
             Console.BufferWidth = 80;

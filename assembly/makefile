@@ -39,6 +39,5 @@ $(TARGET).out: $(OBJECTS) $(TARGET).ld
  
 $(TARGET).rom: $(TARGET).out
 	@echo "[ROM] $@"
-	@# Note: -j only works for sections that have the 'ALLOC' flag set
 	@$(OBJCOPY) -O binary -j .begin -j .video -j .main -j .reset --gap-fill=0x0ff $< $@
 	@$(OBJDUMP) -S -mi8086 -Mintel --disassemble $(OBJECTS) > $(TARGET).lst

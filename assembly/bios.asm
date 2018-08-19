@@ -11,13 +11,24 @@
 .global init
 
 init:
+    XOR AX, AX
+    MOV ES, AX
+	mov ax, 0x22
+	mov bx, 4
+	MUL bx
+	mov bx, ax
+    CLI
+	MOV WORD PTR ES:[bx], OFFSET int22
+	MOV WORD PTR ES:[bx + 2], CS
+	STI
+	INT 0x22
+
 	mov ax, cs
 	mov ds, ax
 	mov ss, ax
 	mov sp, 0xF000
 	mov bx, 0xb800
 	mov es, bx
-
 	xor di, di
 	lea si, hello_string
 
@@ -49,6 +60,9 @@ done:
 	mov ah, 4
 	mov bl, 6
 
+int22:
+	/* Here goes the body of your handler */
+	IRET
 
 hello_string:
 	.string "salsaBIOS v1.00 Paul M. Parks\0" 
