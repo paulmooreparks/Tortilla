@@ -11,13 +11,13 @@
 .global init
 
 init:
-    XOR AX, AX
-    MOV ES, AX
+	XOR AX, AX
+	MOV ES, AX
 	mov ax, 0x22
 	mov bx, 4
 	MUL bx
 	mov bx, ax
-    CLI
+	CLI
 	MOV WORD PTR ES:[bx], OFFSET int22
 	MOV WORD PTR ES:[bx + 2], CS
 	STI
