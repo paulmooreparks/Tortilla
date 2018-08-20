@@ -2676,7 +2676,6 @@ namespace Tortilla {
             Push16((UInt16)(EIP & 0x0000FFFF));
             CS = newcs;
             EIP = newip;
-            Hardware.RaiseInterrupt(id);
             DbgIns(string.Format("INT 0x{0:X2}", id));
         }
 

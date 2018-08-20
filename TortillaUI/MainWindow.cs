@@ -14,36 +14,6 @@ using Microsoft.Win32.SafeHandles;
 
 namespace TortillaUI {
 
-    [AttributeUsage(AttributeTargets.Method)]
-    sealed public class PortOutHandlerAttribute : System.Attribute {
-        public byte[] PortOutHandlers { get; set; }
-
-        public PortOutHandlerAttribute(byte address) {
-            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
-            PortOutHandlers[0] = address;
-        }
-
-        public PortOutHandlerAttribute(params byte[] addresses) {
-            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
-            Array.Copy(addresses, PortOutHandlers, addresses.Length);
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    sealed public class PortInHandlerAttribute : System.Attribute {
-        public byte[] PortInHandlers { get; set; }
-
-        public PortInHandlerAttribute(byte address) {
-            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
-            PortInHandlers[0] = address;
-        }
-
-        public PortInHandlerAttribute(params byte[] addresses) {
-            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
-            Array.Copy(addresses, PortInHandlers, addresses.Length);
-        }
-    }
-
     public partial class MainWindow : Form, Tortilla.IHardware {
         public MainWindow() {
             InitializeComponent();
@@ -82,8 +52,6 @@ namespace TortillaUI {
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
-
-
 
             using (BinaryReader reader = new BinaryReader(File.Open("../../../assembly/bios.rom", FileMode.Open))) {
                 reader.Read(memory, 0, memory.Length);
@@ -157,7 +125,7 @@ namespace TortillaUI {
         AutoResetEvent autoEvent = new AutoResetEvent(false);
 
         public void RaiseInterrupt(byte id) {
-            Console.WriteLine("Interrupt 0x{0:X}", id);
+            // Console.WriteLine("Interrupt 0x{0:X}", id);
         }
 
         public void Debug(string disasm, object o) {
@@ -241,7 +209,7 @@ namespace TortillaUI {
         public void Write8(UInt32 address, byte value) {
             memory[address] = value;
 
-            if (address >= 0xb8000 && address <= 0xB8F00) { /* 0xB8FA0 */
+            if ((address & 0xb8000) == 0xb8000) {
                 QueueVideoUpdate(address, value);
             }
 
@@ -315,11 +283,6 @@ namespace TortillaUI {
 
             cpu = new Tortilla.IA32();
 
-            RunBackground(() => {
-                cpu.Run(this);
-                haltEvent.Set();
-            });
-
             UpdateConsole();
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
@@ -332,6 +295,46 @@ namespace TortillaUI {
             cpu.PowerOff();
         }
 
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
+            this.Close();
+        }
+
+        private void runToolStripMenuItem_Click(object sender, EventArgs e) {
+            RunBackground(() => {
+                cpu.Run(this);
+                haltEvent.Set();
+            });
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed public class PortOutHandlerAttribute : System.Attribute {
+        public byte[] PortOutHandlers { get; set; }
+
+        public PortOutHandlerAttribute(byte address) {
+            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
+            PortOutHandlers[0] = address;
+        }
+
+        public PortOutHandlerAttribute(params byte[] addresses) {
+            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
+            Array.Copy(addresses, PortOutHandlers, addresses.Length);
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed public class PortInHandlerAttribute : System.Attribute {
+        public byte[] PortInHandlers { get; set; }
+
+        public PortInHandlerAttribute(byte address) {
+            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
+            PortInHandlers[0] = address;
+        }
+
+        public PortInHandlerAttribute(params byte[] addresses) {
+            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
+            Array.Copy(addresses, PortInHandlers, addresses.Length);
+        }
     }
 
 }
