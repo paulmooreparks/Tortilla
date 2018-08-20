@@ -12,6 +12,10 @@ namespace Tortilla {
         void Debug(string disasm, object o);
         void RaiseException(byte id);
         void RaiseInterrupt(byte id);
+        byte ReadPort8(UInt16 address);
+        void WritePort8(UInt16 address, byte value);
+        UInt16 ReadPort16(UInt16 address);
+        void WritePort16(UInt16 address, UInt16 value);
         void PowerOff();
     }
 
@@ -408,6 +412,10 @@ namespace Tortilla {
                 var oldPE = PE;
                 segSelect = DEFAULT_SEGMENT_SELECT;
                 ExecuteInstruction();
+
+                if (TF == 1) {
+                    Hlt();
+                }
 
                 /* For now, restore flags to REAL_MODE after every instruction, until I get 
                 protected mode implemented. */
@@ -2736,14 +2744,12 @@ namespace Tortilla {
         [OpCode(0xFA)]
         void Cli() {
             IF = 0;
-            // TODO: More work needed here
             DbgIns("CLI");
         }
 
         [OpCode(0xFB)]
         void Sti() {
             IF = 1;
-            // TODO: More work needed here
             DbgIns("STI");
         }
 

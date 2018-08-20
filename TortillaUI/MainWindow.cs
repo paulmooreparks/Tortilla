@@ -13,6 +13,37 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace TortillaUI {
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed public class PortOutHandlerAttribute : System.Attribute {
+        public byte[] PortOutHandlers { get; set; }
+
+        public PortOutHandlerAttribute(byte address) {
+            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
+            PortOutHandlers[0] = address;
+        }
+
+        public PortOutHandlerAttribute(params byte[] addresses) {
+            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
+            Array.Copy(addresses, PortOutHandlers, addresses.Length);
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed public class PortInHandlerAttribute : System.Attribute {
+        public byte[] PortInHandlers { get; set; }
+
+        public PortInHandlerAttribute(byte address) {
+            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
+            PortInHandlers[0] = address;
+        }
+
+        public PortInHandlerAttribute(params byte[] addresses) {
+            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
+            Array.Copy(addresses, PortInHandlers, addresses.Length);
+        }
+    }
+
     public partial class MainWindow : Form, Tortilla.IHardware {
         public MainWindow() {
             InitializeComponent();
@@ -52,6 +83,8 @@ namespace TortillaUI {
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
 
+
+
             using (BinaryReader reader = new BinaryReader(File.Open("../../../assembly/bios.rom", FileMode.Open))) {
                 reader.Read(memory, 0, memory.Length);
             }
@@ -64,7 +97,62 @@ namespace TortillaUI {
             PowerOff();
         }
 
+        protected delegate void PortOutHandlerDelegate(UInt16 address, UInt16 value);
+        protected PortOutHandlerDelegate[] PortOutHandlerMap { get; } = new PortOutHandlerDelegate[256];
+
+        protected delegate UInt16 PortInHandlerDelegate(UInt16 address);
+        protected PortInHandlerDelegate[] PortInHandlerMap { get; } = new PortInHandlerDelegate[256];
+
+        protected virtual void ConnectPortAddressesToMethods() {
+            System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.IgnoreCase |
+                System.Reflection.BindingFlags.InvokeMethod |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+
+            foreach (System.Reflection.MethodInfo method in methods) {
+                object[] outattrs = method.GetCustomAttributes(typeof(PortOutHandlerAttribute), true);
+
+                if (outattrs != null) {
+                    foreach (System.Attribute attr in outattrs) {
+                        PortOutHandlerAttribute methodAttr = (PortOutHandlerAttribute)attr;
+
+                        if (methodAttr.PortOutHandlers != null) {
+                            foreach (byte address in methodAttr.PortOutHandlers) {
+                                if (PortOutHandlerMap[address] != null) {
+                                    throw new Exception(string.Format("Duplicate port out handler for address {0:X2}", address));
+                                }
+
+                                PortOutHandlerMap[address] = (PortOutHandlerDelegate)PortOutHandlerDelegate.CreateDelegate(typeof(PortOutHandlerDelegate), this, method);
+                            }
+                        }
+                    }
+                }
+
+                object[] inattrs = method.GetCustomAttributes(typeof(PortInHandlerAttribute), true);
+
+                if (inattrs != null) {
+                    foreach (System.Attribute attr in inattrs) {
+                        PortInHandlerAttribute methodAttr = (PortInHandlerAttribute)attr;
+
+                        if (methodAttr.PortInHandlers != null) {
+                            foreach (byte address in methodAttr.PortInHandlers) {
+                                if (PortInHandlerMap[address] != null) {
+                                    throw new Exception(string.Format("Duplicate port in handler for address {0:X2}", address));
+                                }
+
+                                PortInHandlerMap[address] = (PortInHandlerDelegate)PortInHandlerDelegate.CreateDelegate(typeof(PortInHandlerDelegate), this, method);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+
         public byte[] memory = new byte[0x1000000]; // 16MB should be enough for anybody
+        public UInt16[] ports = new UInt16[0x10000];
 
         AutoResetEvent autoEvent = new AutoResetEvent(false);
 
@@ -96,7 +184,7 @@ namespace TortillaUI {
 
         WaitHandle[] hardwareWaitHandles;
         AutoResetEvent videoMemoryChanged = new AutoResetEvent(false);
-        Queue<Tuple<UInt32, byte>> videoQueue = new Queue<Tuple<uint, byte>>();
+        // Queue<Tuple<UInt32, byte>> videoQueue = new Queue<Tuple<uint, byte>>();
 
         void QueueVideoUpdate(UInt32 address, byte value) {
             // videoQueue.Enqueue(new Tuple<UInt32, byte>(address, value));
@@ -159,6 +247,38 @@ namespace TortillaUI {
 
             // Console.WriteLine("{0:X8} = {1:X8}", address, value);
             // MemoryPage[Address >> 13][Address & 0x1FFF] = Value;
+        }
+
+        public byte ReadPort8(ushort address) {
+            return (byte)(ReadPort16(address) & 0x00FF);
+        }
+
+        public ushort ReadPort16(ushort address) {
+            PortInHandlerDelegate handler = PortInHandlerMap[address];
+            UInt16 value = 0;
+
+            if (handler != null) {
+                value = handler(address);
+            }
+            else {
+                // DbgIns(string.Format("No port-in handler for address {0:X}", address));
+            }
+            return value;
+        }
+
+        public void WritePort8(ushort address, byte value) {
+            WritePort16(address, (UInt16)(value & 0x00FF));
+        }
+
+        public void WritePort16(ushort address, UInt16 value) {
+            PortOutHandlerDelegate handler = PortOutHandlerMap[address];
+
+            if (handler != null) {
+                handler(address, value);
+            }
+            else {
+                // DbgIns(string.Format("No port-out handler for address {0:X}", address));
+            }
         }
 
         System.Threading.Timer hardwareTimer;
