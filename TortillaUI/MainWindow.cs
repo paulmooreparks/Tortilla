@@ -311,6 +311,7 @@ namespace TortillaUI {
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
             this.Close();
+            Application.Exit();
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -320,6 +321,45 @@ namespace TortillaUI {
                 cpu.Run(this);
                 haltEvent.Set();
             });
+        }
+
+        private void SaveWindowPosition() {
+            Rectangle rect = (WindowState == FormWindowState.Normal) ?
+                new Rectangle(DesktopBounds.Left, DesktopBounds.Top, DesktopBounds.Width, DesktopBounds.Height) :
+                new Rectangle(RestoreBounds.Left, RestoreBounds.Top, this.Width, this.Height);
+
+            var pos = $"{(int)this.WindowState},{rect.Left},{rect.Top},{rect.Width},{rect.Height}";
+            Properties.Settings.Default.WindowPosition = pos;
+            Properties.Settings.Default.Save();
+        }
+
+        private void RestoreWindowPosition() {
+            try {
+                string pos = Properties.Settings.Default.WindowPosition;
+
+                if (!string.IsNullOrEmpty(pos)) {
+                    List<int> settings = pos.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(v => int.Parse(v)).ToList();
+
+                    if (settings.Count == 5) {
+                        this.SetDesktopBounds(settings[1], settings[2], settings[3], settings[4]);
+                        this.WindowState = (FormWindowState)settings[0];
+                    }
+                }
+            }
+            catch { /* Just leave current position if error */ }
+        }
+
+        private void MainWindow_Move(object sender, EventArgs e) {
+            SaveWindowPosition();
+        }
+
+        private void MainWindow_SizeChanged(object sender, EventArgs e) {
+            SaveWindowPosition();
+        }
+
+        private void MainWindow_Load(object sender, EventArgs e) {
+            RestoreWindowPosition();
+            Move += new EventHandler(MainWindow_Move);
         }
     }
 

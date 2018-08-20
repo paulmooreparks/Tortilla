@@ -84,7 +84,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -103,32 +103,32 @@
             // runToolStripMenuItem
             // 
             this.runToolStripMenuItem.Name = "runToolStripMenuItem";
-            this.runToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.runToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.runToolStripMenuItem.Text = "&Run";
             this.runToolStripMenuItem.Click += new System.EventHandler(this.runToolStripMenuItem_Click);
             // 
             // stopToolStripMenuItem
             // 
             this.stopToolStripMenuItem.Name = "stopToolStripMenuItem";
-            this.stopToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.stopToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.stopToolStripMenuItem.Text = "&Stop";
             // 
             // breakToolStripMenuItem
             // 
             this.breakToolStripMenuItem.Name = "breakToolStripMenuItem";
-            this.breakToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.breakToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.breakToolStripMenuItem.Text = "&Break";
             // 
             // stepToolStripMenuItem
             // 
             this.stepToolStripMenuItem.Name = "stepToolStripMenuItem";
-            this.stepToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.stepToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.stepToolStripMenuItem.Text = "S&tep";
             // 
             // resetToolStripMenuItem
             // 
             this.resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            this.resetToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.resetToolStripMenuItem.Size = new System.Drawing.Size(103, 22);
             this.resetToolStripMenuItem.Text = "R&eset";
             // 
             // MainWindow
@@ -142,6 +142,8 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainWindow";
             this.Text = "Tortilla CPU Emulator";
+            this.Load += new System.EventHandler(this.MainWindow_Load);
+            this.SizeChanged += new System.EventHandler(this.MainWindow_SizeChanged);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
