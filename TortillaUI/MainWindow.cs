@@ -61,10 +61,10 @@ namespace TortillaUI {
         }
 
         protected delegate void PortOutHandlerDelegate(UInt16 address, UInt16 value);
-        protected PortOutHandlerDelegate[] PortOutHandlerMap { get; } = new PortOutHandlerDelegate[256];
+        protected Dictionary<UInt16, PortOutHandlerDelegate> PortOutHandlerMap { get; } = new Dictionary<ushort, PortOutHandlerDelegate>();
 
         protected delegate UInt16 PortInHandlerDelegate(UInt16 address);
-        protected PortInHandlerDelegate[] PortInHandlerMap { get; } = new PortInHandlerDelegate[256];
+        protected Dictionary<UInt16, PortInHandlerDelegate> PortInHandlerMap { get; } = new Dictionary<ushort, PortInHandlerDelegate>();
 
         protected virtual void ConnectPortAddressesToMethods() {
             System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
@@ -83,7 +83,7 @@ namespace TortillaUI {
 
                         if (methodAttr.PortOutHandlers != null) {
                             foreach (byte address in methodAttr.PortOutHandlers) {
-                                if (PortOutHandlerMap[address] != null) {
+                                if (PortOutHandlerMap.ContainsKey(address)) {
                                     throw new Exception(string.Format("Duplicate port out handler for address {0:X2}", address));
                                 }
 
@@ -101,7 +101,7 @@ namespace TortillaUI {
 
                         if (methodAttr.PortInHandlers != null) {
                             foreach (byte address in methodAttr.PortInHandlers) {
-                                if (PortInHandlerMap[address] != null) {
+                                if (PortInHandlerMap.ContainsKey(address)) {
                                     throw new Exception(string.Format("Duplicate port in handler for address {0:X2}", address));
                                 }
 
