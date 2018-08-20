@@ -52,12 +52,7 @@ namespace TortillaUI {
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
-
-            using (BinaryReader reader = new BinaryReader(File.Open("../../../assembly/bios.rom", FileMode.Open))) {
-                reader.Read(memory, 0, memory.Length);
-            }
-
-            Run();
+            InitEnvironment();
         }
 
         protected override void OnClosing(CancelEventArgs e) {
@@ -159,7 +154,7 @@ namespace TortillaUI {
             videoMemoryChanged.Set();
         }
 
-        void UpdateConsole() {
+        void InitConsole() {
             Console.CursorVisible = false;
             Console.CursorLeft = 0;
             Console.CursorTop = 0;
@@ -187,6 +182,22 @@ namespace TortillaUI {
             }
         }
 
+        void UpdateConsole(UInt32 address) {
+            address = (UInt32)(address & ~0x01);
+            int offset = (int)(address - 0xb8000) / 2;
+            int top = offset / 80;
+            int left = offset % 80;
+
+            var ch = (char)memory[address];
+            var co = (int)memory[address + 1];
+            int fgColor = (co & 0x000f);
+            int bgColor = (co & 0x00f0) >> 4;
+            Console.SetCursorPosition(left, top);
+            Console.ForegroundColor = (ConsoleColor)fgColor;
+            Console.BackgroundColor = (ConsoleColor)bgColor;
+            Console.Write(ch);
+        }
+
         void HardwareEvents(object o) {
             int index = WaitHandle.WaitTimeout;
 
@@ -195,7 +206,7 @@ namespace TortillaUI {
 
                 switch (index) {
                     case 0:
-                        UpdateConsole();
+                        // UpdateConsole();
                         break;
                 }
             } while (index != WaitHandle.WaitTimeout);
@@ -209,12 +220,10 @@ namespace TortillaUI {
         public void Write8(UInt32 address, byte value) {
             memory[address] = value;
 
-            if ((address & 0xb8000) == 0xb8000) {
-                QueueVideoUpdate(address, value);
+            if (address >= 0xb8000 && address <= 0xb8F00) {
+                // QueueVideoUpdate(address, value);
+                UpdateConsole(address);
             }
-
-            // Console.WriteLine("{0:X8} = {1:X8}", address, value);
-            // MemoryPage[Address >> 13][Address & 0x1FFF] = Value;
         }
 
         public byte ReadPort8(ushort address) {
@@ -255,7 +264,17 @@ namespace TortillaUI {
             new Thread(new ThreadStart(fn)).Start();
         }
 
-        public void Run() {
+        public void InitEnvironment() {
+            cpu = new Tortilla.IA32();
+
+            for (var i = 0; i < memory.Length; ++i) {
+                memory[i] = 0;
+            }
+
+            using (BinaryReader reader = new BinaryReader(File.Open("../../../assembly/bios.rom", FileMode.Open))) {
+                reader.Read(memory, 0, memory.Length);
+            }
+
             AllocConsole();
             IntPtr stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
             // IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
@@ -276,14 +295,9 @@ namespace TortillaUI {
             Console.SetCursorPosition(0, 0);
             Console.TreatControlCAsInput = true;
             Console.CursorVisible = true;
+            Console.Clear();
 
-            // Console.WriteLine("Grey text.");
-            // Console.ForegroundColor = ConsoleColor.Red;
-            // Console.WriteLine("Red text");
-
-            cpu = new Tortilla.IA32();
-
-            UpdateConsole();
+            // InitConsole();
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
         }
@@ -300,6 +314,8 @@ namespace TortillaUI {
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e) {
+            Console.Clear();
+
             RunBackground(() => {
                 cpu.Run(this);
                 haltEvent.Set();
