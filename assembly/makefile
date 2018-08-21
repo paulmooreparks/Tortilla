@@ -39,5 +39,5 @@ $(TARGET).out: $(OBJECTS) $(TARGET).ld
  
 $(TARGET).rom: $(TARGET).out
 	@echo "[ROM] $@"
-	@$(OBJCOPY) -O binary -j .begin -j .video -j .main -j .reset --gap-fill=0x0ff $< $@
+	@$(OBJCOPY) -O binary -j .begin -j .video -j .main -j .reset --gap-fill=0x0cc $< $@
 	@$(OBJDUMP) -S -mi8086 -Mintel --disassemble $(OBJECTS) > $(TARGET).lst

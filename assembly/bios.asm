@@ -1,27 +1,37 @@
+/* salsaBIOS v1.00 Paul M. Parks */
+
 .intel_syntax noprefix
 .code16
 
 .section begin, "a"
 
-/* ID string */
-.ascii "salsaBIOS v1.00 Paul M. Parks"
+/* Playing around with pre-populating the interrupt vector table. */
+.word dummyint
+.word 0xf000
+.word dummyint
+.word 0xf000
+.word dummyint
+.word 0xf000
 
 .section main, "ax"
 
 .global init
 
 init:
-	XOR AX, AX
-	MOV ES, AX
+	xor ax, ax
+	mov es, ax
 	mov ax, 0x22
 	mov bx, 4
-	MUL bx
+	mul bx
 	mov bx, ax
-	CLI
-	MOV WORD PTR ES:[bx], OFFSET int22
-	MOV WORD PTR ES:[bx + 2], CS
-	STI
-	INT 0x22
+	cli
+	mov word ptr es:[bx], offset dummyint
+	mov word ptr es:[bx + 2], cs
+	sti
+	/* Just playing around with interrupts. These should call the dummy handler. */
+ 	int 0x22
+	int 0
+	/* int 3 */
 
 	mov ax, cs
 	mov ds, ax
@@ -60,9 +70,9 @@ done:
 	mov ah, 4
 	mov bl, 6
 
-int22:
+dummyint:
 	/* Here goes the body of your handler */
-	IRET
+	iret
 
 hello_string:
 	.string "salsaBIOS v1.00 Paul M. Parks\0" 
@@ -73,4 +83,4 @@ hello_string:
 
 .section reset, "ax"
 	jmp init
-	.align 16, 0xff
+	.align 16, 0xcc

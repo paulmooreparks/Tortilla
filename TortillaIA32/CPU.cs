@@ -172,6 +172,16 @@ namespace Tortilla {
         public UInt32 CR3 { get; set; } = 0;
         public UInt32 CR4 { get; set; } = 0;
 
+        public UInt32 DR0 { get; set; } = 0;
+        public UInt32 DR1 { get; set; } = 0;
+        public UInt32 DR2 { get; set; } = 0;
+        public UInt32 DR3 { get; set; } = 0;
+        public UInt32 DR4 { get; set; } = 0;
+        public UInt32 DR5 { get; set; } = 0;
+        public UInt32 DR6 { get; set; } = 0;
+        public UInt32 DR7 { get; set; } = 0;
+
+
         public UInt16 AX {
             get { return (UInt16)(EAX & 0xFFFF); }
             set { EAX = (UInt32)(value & 0xFFFF); }
@@ -2515,7 +2525,7 @@ namespace Tortilla {
                     Write16(CalcOffset32(address), segmentRegisters[modrm.reg]);
                 }
 
-                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], _dbgSegSelect, _dbgLastOperand));
+                DbgIns(string.Format("MOV {0}{1}, {2}", _dbgSegSelect, _dbgLastOperand, segArray[modrm.reg]));
             }
         }
 
@@ -2648,6 +2658,13 @@ namespace Tortilla {
         [OpCode(0xBF)]
         void MoveDIIv() {
             GvIv(Instruction.MOV, EDI_INDEX, Move16, Move32);
+        }
+
+        [OpCode(0xCC)]
+        void Int3() {
+            --EIP;
+            DbgIns(string.Format("Debug break at address {0:X4}", EIP));
+            interruptEvent.WaitOne();
         }
 
         [OpCode(0xC6)]
