@@ -309,8 +309,10 @@ namespace TortillaUI {
             cpu.PowerOff();
         }
 
-        public void RunCPU() {
+        public void ResetCPU() {
             Console.Clear();
+            debug.Clear();
+            registers.Clear();
 
             RunBackground(() => {
                 cpu.Run(this);
@@ -324,7 +326,7 @@ namespace TortillaUI {
         }
 
         private void runToolStripMenuItem_Click(object sender, EventArgs e) {
-            RunCPU();
+            ResetCPU();
         }
 
         private void SaveWindowPosition() {
@@ -367,7 +369,7 @@ namespace TortillaUI {
         }
 
         private void runButton_Click(object sender, EventArgs e) {
-            RunCPU();
+
         }
 
         private void breakButton_Click(object sender, EventArgs e) {
@@ -380,6 +382,10 @@ namespace TortillaUI {
 
         private void stopButton_Click(object sender, EventArgs e) {
 
+        }
+
+        private void resetButton_Click(object sender, EventArgs e) {
+            ResetCPU();
         }
     }
 

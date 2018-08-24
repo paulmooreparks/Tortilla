@@ -38,6 +38,7 @@
             this.breakButton = new System.Windows.Forms.Button();
             this.stepButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
+            this.resetButton = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -49,6 +50,7 @@
             this.registers.Location = new System.Drawing.Point(13, 57);
             this.registers.Multiline = true;
             this.registers.Name = "registers";
+            this.registers.ReadOnly = true;
             this.registers.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.registers.Size = new System.Drawing.Size(719, 113);
             this.registers.TabIndex = 0;
@@ -62,6 +64,7 @@
             this.debug.Location = new System.Drawing.Point(13, 176);
             this.debug.Multiline = true;
             this.debug.Name = "debug";
+            this.debug.ReadOnly = true;
             this.debug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.debug.Size = new System.Drawing.Size(719, 515);
             this.debug.TabIndex = 1;
@@ -137,7 +140,7 @@
             // 
             // runButton
             // 
-            this.runButton.Location = new System.Drawing.Point(13, 28);
+            this.runButton.Location = new System.Drawing.Point(94, 28);
             this.runButton.Name = "runButton";
             this.runButton.Size = new System.Drawing.Size(75, 23);
             this.runButton.TabIndex = 3;
@@ -147,7 +150,7 @@
             // 
             // breakButton
             // 
-            this.breakButton.Location = new System.Drawing.Point(95, 28);
+            this.breakButton.Location = new System.Drawing.Point(175, 28);
             this.breakButton.Name = "breakButton";
             this.breakButton.Size = new System.Drawing.Size(75, 23);
             this.breakButton.TabIndex = 4;
@@ -157,7 +160,7 @@
             // 
             // stepButton
             // 
-            this.stepButton.Location = new System.Drawing.Point(177, 28);
+            this.stepButton.Location = new System.Drawing.Point(256, 28);
             this.stepButton.Name = "stepButton";
             this.stepButton.Size = new System.Drawing.Size(75, 23);
             this.stepButton.TabIndex = 5;
@@ -167,7 +170,7 @@
             // 
             // stopButton
             // 
-            this.stopButton.Location = new System.Drawing.Point(259, 28);
+            this.stopButton.Location = new System.Drawing.Point(337, 28);
             this.stopButton.Name = "stopButton";
             this.stopButton.Size = new System.Drawing.Size(75, 23);
             this.stopButton.TabIndex = 6;
@@ -175,11 +178,22 @@
             this.stopButton.UseVisualStyleBackColor = true;
             this.stopButton.Click += new System.EventHandler(this.stopButton_Click);
             // 
+            // resetButton
+            // 
+            this.resetButton.Location = new System.Drawing.Point(13, 28);
+            this.resetButton.Name = "resetButton";
+            this.resetButton.Size = new System.Drawing.Size(75, 23);
+            this.resetButton.TabIndex = 7;
+            this.resetButton.Text = "Start/R&eset";
+            this.resetButton.UseVisualStyleBackColor = true;
+            this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(744, 703);
+            this.Controls.Add(this.resetButton);
             this.Controls.Add(this.stopButton);
             this.Controls.Add(this.stepButton);
             this.Controls.Add(this.breakButton);
@@ -216,6 +230,7 @@
         private System.Windows.Forms.Button breakButton;
         private System.Windows.Forms.Button stepButton;
         private System.Windows.Forms.Button stopButton;
+        private System.Windows.Forms.Button resetButton;
     }
 }
 
