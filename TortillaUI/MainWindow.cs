@@ -295,7 +295,20 @@ namespace TortillaUI {
             Console.SetCursorPosition(0, 0);
             Console.TreatControlCAsInput = true;
             Console.CursorVisible = true;
+            Console.TreatControlCAsInput = true;
             Console.Clear();
+
+            RunBackground(() => {
+                while (true) {
+                    var key = Console.ReadKey(true);
+                    BeginInvoke((Action)(() => {
+                        debug.AppendText(key.Key.ToString() + " ");
+                        debug.AppendText(key.KeyChar + " ");
+                        debug.AppendText(key.Modifiers.ToString() + "\r\n");
+                        debug.ScrollToCaret();
+                    }));
+                }
+            });
 
             // InitConsole();
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
