@@ -154,6 +154,8 @@ namespace TortillaUI {
             videoMemoryChanged.Set();
         }
 
+        TortillaConsole tConsole = new TortillaConsole();
+
         void InitConsole() {
             Console.CursorVisible = false;
             Console.CursorLeft = 0;
@@ -196,6 +198,8 @@ namespace TortillaUI {
             Console.ForegroundColor = (ConsoleColor)fgColor;
             Console.BackgroundColor = (ConsoleColor)bgColor;
             Console.Write(ch);
+
+            tConsole.DrawCharacter(ch, left, top, fgColor, bgColor);
         }
 
         void HardwareEvents(object o) {
@@ -310,6 +314,9 @@ namespace TortillaUI {
                 }
             });
 
+            tConsole.Show();
+
+
             // InitConsole();
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
@@ -324,6 +331,7 @@ namespace TortillaUI {
 
         public void ResetCPU() {
             Console.Clear();
+            tConsole.Clear();
             debug.Clear();
             registers.Clear();
 
