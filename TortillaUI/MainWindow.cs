@@ -19,37 +19,6 @@ namespace TortillaUI {
             InitializeComponent();
         }
 
-        [DllImport("kernel32.dll",
-            EntryPoint = "GetStdHandle",
-            SetLastError = true,
-            CharSet = CharSet.Auto,
-            CallingConvention = CallingConvention.StdCall)]
-        private static extern IntPtr GetStdHandle(int nStdHandle);
-
-        [DllImport("kernel32.dll",
-            EntryPoint = "AllocConsole",
-            SetLastError = true,
-            CharSet = CharSet.Auto,
-            CallingConvention = CallingConvention.StdCall)]
-        private static extern int AllocConsole();
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        private static extern IntPtr CreateFile(
-            string lpFileName,
-            uint dwDesiredAccess,
-            uint dwShareMode,
-            uint lpSecurityAttributes,
-            uint dwCreationDisposition,
-            uint dwFlagsAndAttributes,
-            uint hTemplateFile);
-
-        private const int MY_CODE_PAGE = 437;
-        private const uint GENERIC_WRITE = 0x40000000;
-        private const uint FILE_SHARE_WRITE = 0x2;
-        private const uint OPEN_EXISTING = 0x3;
-
-        private const int STD_OUTPUT_HANDLE = -11;
-
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
             InitEnvironment();
@@ -140,7 +109,7 @@ namespace TortillaUI {
 
         public void RaiseException(byte id) {
             exceptionEvent.Set();
-            Console.WriteLine("EXCEPTION {0:x}", id);
+            // Console.WriteLine("EXCEPTION {0:x}", id);
         }
 
         public Tortilla.ICpu cpu;
@@ -157,10 +126,6 @@ namespace TortillaUI {
         TortillaConsole tConsole = new TortillaConsole();
 
         void InitConsole() {
-            Console.CursorVisible = false;
-            Console.CursorLeft = 0;
-            Console.CursorTop = 0;
-
             int left = 0;
             int top = 0;
 
@@ -170,11 +135,11 @@ namespace TortillaUI {
                 int fgColor = (co & 0x000f);
                 int bgColor = (co & 0x00f0) >> 4;
 
-                Console.SetCursorPosition(left, top);
-                Console.ForegroundColor = (ConsoleColor)fgColor;
-                Console.BackgroundColor = (ConsoleColor)bgColor;
+                // Console.SetCursorPosition(left, top);
+                // Console.ForegroundColor = (ConsoleColor)fgColor;
+                // Console.BackgroundColor = (ConsoleColor)bgColor;
 
-                Console.Write(ch);
+                // Console.Write(ch);
                 ++left;
 
                 if (left == 80) {
@@ -194,10 +159,6 @@ namespace TortillaUI {
             var co = (int)memory[address + 1];
             int fgColor = (co & 0x000f);
             int bgColor = (co & 0x00f0) >> 4;
-            Console.SetCursorPosition(left, top);
-            Console.ForegroundColor = (ConsoleColor)fgColor;
-            Console.BackgroundColor = (ConsoleColor)bgColor;
-            Console.Write(ch);
 
             tConsole.DrawCharacter(ch, left, top, fgColor, bgColor);
         }
@@ -279,45 +240,8 @@ namespace TortillaUI {
                 reader.Read(memory, 0, memory.Length);
             }
 
-            AllocConsole();
-            IntPtr stdHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-            // IntPtr stdHandle = CreateFile("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0);
-
-            SafeFileHandle safeFileHandle = new SafeFileHandle(stdHandle, true);
-            FileStream fileStream = new FileStream(safeFileHandle, FileAccess.Write);
-            Encoding encoding = System.Text.Encoding.GetEncoding(MY_CODE_PAGE);
-            StreamWriter standardOutput = new StreamWriter(fileStream, encoding);
-            standardOutput.AutoFlush = true;
-
-            Console.SetWindowPosition(0, 0);
-            Console.SetOut(standardOutput);
-
-            Console.WindowWidth = 80;
-            Console.WindowHeight = 25;
-            Console.BufferWidth = 80;
-            Console.BufferHeight = 25;
-            Console.SetCursorPosition(0, 0);
-            Console.TreatControlCAsInput = true;
-            Console.CursorVisible = true;
-            Console.TreatControlCAsInput = true;
-            Console.Clear();
-
-            RunBackground(() => {
-                while (true) {
-                    var key = Console.ReadKey(true);
-                    BeginInvoke((Action)(() => {
-                        debug.AppendText(key.Key.ToString() + " ");
-                        debug.AppendText(key.KeyChar + " ");
-                        debug.AppendText(key.Modifiers.ToString() + "\r\n");
-                        debug.ScrollToCaret();
-                    }));
-                }
-            });
-
             tConsole.Show();
 
-
-            // InitConsole();
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
         }
@@ -330,7 +254,6 @@ namespace TortillaUI {
         }
 
         public void ResetCPU() {
-            Console.Clear();
             tConsole.Clear();
             debug.Clear();
             registers.Clear();
