@@ -116,6 +116,7 @@ namespace TortillaUI {
 
         WaitHandle[] hardwareWaitHandles;
         AutoResetEvent videoMemoryChanged = new AutoResetEvent(false);
+        AutoResetEvent powerOffEvent = new AutoResetEvent(false);
         // Queue<Tuple<UInt32, byte>> videoQueue = new Queue<Tuple<uint, byte>>();
 
         void QueueVideoUpdate(UInt32 address, byte value) {
@@ -173,6 +174,10 @@ namespace TortillaUI {
                     case 0:
                         // UpdateConsole();
                         break;
+
+                        /* Power off */
+                    case 1:
+                        return;
                 }
             } while (index != WaitHandle.WaitTimeout);
         }
@@ -242,7 +247,7 @@ namespace TortillaUI {
 
             tConsole.Show();
 
-            hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged };
+            hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged, powerOffEvent };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
         }
 
@@ -251,6 +256,7 @@ namespace TortillaUI {
 
         public void PowerOff() {
             cpu.PowerOff();
+            powerOffEvent.Set();
         }
 
         public void ResetCPU() {

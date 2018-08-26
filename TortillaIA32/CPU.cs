@@ -432,12 +432,13 @@ namespace Tortilla {
                 Flags = REAL_MODE;
                 // TODO: Protected mode
 
-                if (interruptEvent.WaitOne(0)) {
-
+                if (powerEvent.WaitOne(0)) {
+                    interruptEvent.Set();
+                    return;
                 }
 
-                if (powerEvent.WaitOne(0)) {
-                    return;
+                if (interruptEvent.WaitOne(0)) {
+
                 }
             }
         }
@@ -1379,8 +1380,8 @@ namespace Tortilla {
         }
 
         public void PowerOff() {
-            interruptEvent.Set();
             powerEvent.Set();
+            interruptEvent.Set();
         }
 
         protected struct ModRm {

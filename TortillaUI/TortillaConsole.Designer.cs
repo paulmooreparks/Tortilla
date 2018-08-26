@@ -29,22 +29,26 @@
             // 
             // pictureBox
             // 
+            this.pictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox.Location = new System.Drawing.Point(0, 0);
-            this.pictureBox.MinimumSize = new System.Drawing.Size(640, 384);
+            this.pictureBox.MinimumSize = new System.Drawing.Size(640, 400);
             this.pictureBox.Name = "pictureBox";
-            this.pictureBox.Size = new System.Drawing.Size(640, 384);
+            this.pictureBox.Size = new System.Drawing.Size(640, 400);
             this.pictureBox.TabIndex = 0;
             this.pictureBox.TabStop = false;
             // 
             // TortillaConsole
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(640, 384);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.ClientSize = new System.Drawing.Size(640, 400);
             this.Controls.Add(this.pictureBox);
+            this.MaximizeBox = false;
             this.Name = "TortillaConsole";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
-            this.Text = "Console";
+            this.Text = "Tortilla Console";
             this.Shown += new System.EventHandler(this.TortillaConsole_Shown);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox)).EndInit();
             this.ResumeLayout(false);
