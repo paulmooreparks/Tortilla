@@ -24,6 +24,9 @@ namespace Tortilla {
         void RaiseInterrupt(byte id);
         int ClockRate { get; }
         void PowerOff();
+        void Break();
+        void Step();
+        void Continue();
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -54,6 +57,7 @@ namespace Tortilla {
 
         AutoResetEvent interruptEvent = new AutoResetEvent(false);
         ManualResetEvent powerEvent = new ManualResetEvent(false);
+        ManualResetEvent runEvent = new ManualResetEvent(false);
 
         public void RaiseInterrupt(byte id) {
             interruptEvent.Set();
@@ -262,75 +266,74 @@ namespace Tortilla {
             set { ESP = (UInt32)(value & 0xFFFF); }
         }
 
+        public UInt32 TF {
+            get { return (EFLAGS & 0x00000100) >> 8; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 8); }
+        }
 
         public UInt32 CF {
             get { return (EFLAGS & 0x00000001); }
-            set { EFLAGS = (value & 0x01); }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 0); }
         }
 
         public UInt32 PF {
             get { return (EFLAGS & 0x00000004) >> 2; }
-            set { EFLAGS |= (value & 0x01) << 2; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 2); }
         }
 
         public UInt32 AF {
             get { return (EFLAGS & 0x00000010) >> 4; }
-            set { EFLAGS |= (value & 0x01) << 4; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 4); }
         }
 
         public UInt32 ZF {
             get { return (EFLAGS & 0x00000040) >> 6; }
-            set { EFLAGS |= (value & 0x01) << 6; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 6); }
         }
 
         public UInt32 SF {
             get { return (EFLAGS & 0x00000080) >> 7; }
-            set { EFLAGS |= (value & 0x01) << 7; }
-        }
-
-        public UInt32 TF {
-            get { return (EFLAGS & 0x00000100) >> 8; }
-            set { EFLAGS |= (value & 0x01) << 8; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 7); }
         }
 
         public UInt32 IF {
             get { return (EFLAGS & 0x00000200) >> 9; }
-            set { EFLAGS |= (value & 0x01) << 9; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 9); }
         }
 
         public UInt32 DF {
             get { return (EFLAGS & 0x00000400) >> 10; }
-            set { EFLAGS |= (value & 0x01) << 10; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 10); }
         }
 
         public UInt32 OF {
             get { return (EFLAGS & 0x00000800) >> 11; }
-            set { EFLAGS |= (value & 0x01) << 11; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 11); }
         }
 
         public UInt32 IOPL {
             get { return (EFLAGS & 0x00003000) >> 12; }
-            set { EFLAGS |= (value & 0x11) << 12; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 12); }
         }
 
         public UInt32 NT {
             get { return (EFLAGS & 0x00004000) >> 14; }
-            set { EFLAGS |= (value & 0x01) << 14; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 14); }
         }
 
         public UInt32 RF {
             get { return (EFLAGS & 0x00010000) >> 16; }
-            set { EFLAGS |= (value & 0x01) << 16; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 16); }
         }
 
         public UInt32 VM {
             get { return (EFLAGS & 0x00020000) >> 17; }
-            set { EFLAGS |= (value & 0x01) << 17; }
+            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 17); }
         }
 
         public UInt32 PE {
             get { return (CR0 & 0x00000001); }
-            set { CR0 |= (value & 0x01); }
+            set { CR0 ^= (UInt32)(-value ^ CR0) & ((UInt32)1 << 0); }
         }
 
         enum Instruction {
@@ -411,6 +414,21 @@ namespace Tortilla {
         string _dbgImm = string.Empty;
         string _dbgSegSelect = string.Empty;
 
+        public void Break() {
+            TF = 1;
+            runEvent.Reset();
+        }
+
+        public void Step() {
+            TF = 1;
+            runEvent.Set();
+        }
+
+        public void Continue() {
+            TF = 0;
+            runEvent.Set();
+        }
+
         public void Run(IHardware hardware) {
             Hardware = hardware;
             Flags = REAL_MODE;
@@ -419,13 +437,13 @@ namespace Tortilla {
             SS = CS;
 
             for (;;) {
+                if (TF == 1) {
+                    runEvent.Reset();
+                }
+
                 var oldPE = PE;
                 segSelect = DEFAULT_SEGMENT_SELECT;
                 ExecuteInstruction();
-
-                if (TF == 1) {
-                    Hlt();
-                }
 
                 /* For now, restore flags to REAL_MODE after every instruction, until I get 
                 protected mode implemented. */
@@ -435,6 +453,10 @@ namespace Tortilla {
                 if (powerEvent.WaitOne(0)) {
                     interruptEvent.Set();
                     return;
+                }
+
+                if (TF == 1) {
+                    runEvent.WaitOne();
                 }
 
                 if (interruptEvent.WaitOne(0)) {
@@ -499,7 +521,14 @@ namespace Tortilla {
 
             CF = (UInt32)((result >> size) & 0x01);
             OF = (UInt32)((rsign != dsign && rsign != ssign) ? 1 : 0);
-            ZF = (UInt32)((result == 0) ? 1 : 0);
+
+            if (result.Equals(UInt64.MinValue)) {
+                ZF = 1;
+            }
+            else {
+                ZF = 0;
+            }
+
             SF = (UInt32)(((Int32)lastResult < 0) ? 1 : 0);
             PF = parityTable[lastResult & 0xFF];
         }
@@ -1434,6 +1463,8 @@ namespace Tortilla {
         }
 
         void DbgIns(string s) {
+            if (TF == 1) {
+            }
             Hardware.Debug(string.Format("{0} {1,-21} {2}", _dbgAddress, _dbgImm, s), this);
             _dbgImm = string.Empty;
         }
@@ -2684,7 +2715,7 @@ namespace Tortilla {
             Push16((UInt16)(EFLAGS & 0x0000FFFF));
 
             IF = 0;
-            TF = 0;
+            // TF = 0;
             AF = 0;
 
             UInt32 address = (UInt32)(id * 4);

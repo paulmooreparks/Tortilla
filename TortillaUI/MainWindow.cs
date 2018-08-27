@@ -319,15 +319,15 @@ namespace TortillaUI {
         }
 
         private void runButton_Click(object sender, EventArgs e) {
-
+            cpu.Continue();
         }
 
         private void breakButton_Click(object sender, EventArgs e) {
-
+            cpu.Break();
         }
 
         private void stepButton_Click(object sender, EventArgs e) {
-
+            cpu.Step();
         }
 
         private void stopButton_Click(object sender, EventArgs e) {
