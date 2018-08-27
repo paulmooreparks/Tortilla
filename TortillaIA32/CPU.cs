@@ -268,72 +268,72 @@ namespace Tortilla {
 
         public UInt32 TF {
             get { return (EFLAGS & 0x00000100) >> 8; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 8); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 8) | (value << 8)); }
         }
 
         public UInt32 CF {
             get { return (EFLAGS & 0x00000001); }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 0); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 0) | (value << 0)); }
         }
 
         public UInt32 PF {
             get { return (EFLAGS & 0x00000004) >> 2; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 2); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 2) | (value << 2)); }
         }
 
         public UInt32 AF {
             get { return (EFLAGS & 0x00000010) >> 4; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 4); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 4) | (value << 4)); }
         }
 
         public UInt32 ZF {
             get { return (EFLAGS & 0x00000040) >> 6; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 6); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 6) | (value << 6)); }
         }
 
         public UInt32 SF {
             get { return (EFLAGS & 0x00000080) >> 7; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 7); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 7) | (value << 7)); }
         }
 
         public UInt32 IF {
             get { return (EFLAGS & 0x00000200) >> 9; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 9); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 9) | (value << 9)); }
         }
 
         public UInt32 DF {
             get { return (EFLAGS & 0x00000400) >> 10; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 10); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 10) | (value << 10)); }
         }
 
         public UInt32 OF {
             get { return (EFLAGS & 0x00000800) >> 11; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 11); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 11) | (value << 11)); }
         }
 
         public UInt32 IOPL {
             get { return (EFLAGS & 0x00003000) >> 12; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 12); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 12) | (value << 12)); }
         }
 
         public UInt32 NT {
             get { return (EFLAGS & 0x00004000) >> 14; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 14); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 14) | (value << 14)); }
         }
 
         public UInt32 RF {
             get { return (EFLAGS & 0x00010000) >> 16; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 16); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 16) | (value << 16)); }
         }
 
         public UInt32 VM {
             get { return (EFLAGS & 0x00020000) >> 17; }
-            set { EFLAGS ^= (UInt32)(-value ^ EFLAGS) & ((UInt32)1 << 17); }
+            set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 17) | (value << 17)); }
         }
 
         public UInt32 PE {
             get { return (CR0 & 0x00000001); }
-            set { CR0 ^= (UInt32)(-value ^ CR0) & ((UInt32)1 << 0); }
+            set { CR0 = (UInt32)(CR0 & ~(1 << 0) | (value << 0)); }
         }
 
         enum Instruction {
