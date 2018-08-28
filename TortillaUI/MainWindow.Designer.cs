@@ -42,9 +42,9 @@
             this.traceCheckBox = new System.Windows.Forms.CheckBox();
             this.memoryOutput = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.startAddress = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
-            this.textBox3 = new System.Windows.Forms.TextBox();
+            this.endAddress = new System.Windows.Forms.TextBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -228,12 +228,13 @@
             this.label1.TabIndex = 10;
             this.label1.Text = "Start:";
             // 
-            // textBox2
+            // startAddress
             // 
-            this.textBox2.Location = new System.Drawing.Point(51, 174);
-            this.textBox2.Name = "textBox2";
-            this.textBox2.Size = new System.Drawing.Size(100, 20);
-            this.textBox2.TabIndex = 11;
+            this.startAddress.Location = new System.Drawing.Point(51, 174);
+            this.startAddress.Name = "startAddress";
+            this.startAddress.Size = new System.Drawing.Size(100, 20);
+            this.startAddress.TabIndex = 11;
+            this.startAddress.TextChanged += new System.EventHandler(this.startAddress_TextChanged);
             // 
             // label2
             // 
@@ -244,21 +245,22 @@
             this.label2.TabIndex = 12;
             this.label2.Text = "End:";
             // 
-            // textBox3
+            // endAddress
             // 
-            this.textBox3.Location = new System.Drawing.Point(192, 174);
-            this.textBox3.Name = "textBox3";
-            this.textBox3.Size = new System.Drawing.Size(100, 20);
-            this.textBox3.TabIndex = 13;
+            this.endAddress.Location = new System.Drawing.Point(192, 174);
+            this.endAddress.Name = "endAddress";
+            this.endAddress.Size = new System.Drawing.Size(100, 20);
+            this.endAddress.TabIndex = 13;
+            this.endAddress.TextChanged += new System.EventHandler(this.endAddress_TextChanged);
             // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(744, 703);
-            this.Controls.Add(this.textBox3);
+            this.Controls.Add(this.endAddress);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.startAddress);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.memoryOutput);
             this.Controls.Add(this.traceCheckBox);
@@ -303,9 +305,9 @@
         private System.Windows.Forms.CheckBox traceCheckBox;
         private System.Windows.Forms.TextBox memoryOutput;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.TextBox startAddress;
         private System.Windows.Forms.Label label2;
-        private System.Windows.Forms.TextBox textBox3;
+        private System.Windows.Forms.TextBox endAddress;
     }
 }
 

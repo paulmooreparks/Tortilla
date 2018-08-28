@@ -377,7 +377,7 @@ namespace Tortilla {
                         if (methodAttr.OpCodes != null) {
                             foreach (byte opCode in methodAttr.OpCodes) {
                                 if (OpCodeMap[opCode] != null) {
-                                    throw new Exception(string.Format("Duplicate handler for opcode {0:X2}", opCode));
+                                    throw new Exception($"Duplicate handler for opcode {opCode:X2}");
                                 }
 
                                 OpCodeMap[opCode] = (OpCodeDelegate)OpCodeDelegate.CreateDelegate(typeof(OpCodeDelegate), this, method);
@@ -466,7 +466,7 @@ namespace Tortilla {
         }
 
         protected void ExecuteInstruction() {
-            _dbgAddress = string.Format("{0:X8}", (CS << 4) + EIP);
+            _dbgAddress = $"{(CS << 4) + EIP:X8}";
             _dbgSegSelect = string.Empty;
             _dbgLastOperand = string.Empty;
             DecodeOpcode(ReadImm8());
@@ -479,7 +479,7 @@ namespace Tortilla {
                 handler();
             }
             else {
-                DbgIns(string.Format("#GP(0) Unknown instruction: {0:X}", opcode));
+                DbgIns($"#GP(0) Unknown instruction: {opcode:X}");
                 Hardware.RaiseException(0);
                 Hlt();
             }
@@ -889,18 +889,18 @@ namespace Tortilla {
             uint value;
             if (sib.index == 0x04) {
                 value = (UInt32)(generalRegisters[sib.index] + displacement);
-                _dbgLastOperand = string.Format("[{0}{1}]", regArray32[sib.index], _dbgLastOperand);
+                _dbgLastOperand = $"[{regArray32[sib.index]}{_dbgLastOperand}]";
             }
             else {
                 var scale = 1 << sib.scale;
                 var dbgScale = string.Empty;
 
                 if (scale > 1) {
-                    dbgScale = string.Format(" * {0}", scale);
+                    dbgScale = $" * {scale}";
                 }
 
                 value = (UInt32)(generalRegisters[sib.bse] + generalRegisters[sib.bse] * scale + displacement);
-                _dbgLastOperand = string.Format("[{0} + {1}{2}{3}]", regArray32[sib.bse], regArray32[sib.index], dbgScale, _dbgLastOperand);
+                _dbgLastOperand = $"[{regArray32[sib.bse]} + {regArray32[sib.index]}{dbgScale}{_dbgLastOperand}]";
             }
 
             return value;
@@ -945,7 +945,7 @@ namespace Tortilla {
 
                 case 0x06:
                     value = ReadImm16();
-                    _dbgLastOperand = string.Format("0x{0:X4}", value);
+                    _dbgLastOperand = $"0x{value:X4}";
                     break;
 
                 case 0x07:
@@ -962,29 +962,29 @@ namespace Tortilla {
 
             if (sel == 0x06) {
                 value = ReadImm16();
-                _dbgLastOperand = string.Format("0x{0:X4}", value);
+                _dbgLastOperand = $"0x{value:X4}";
                 return value;
             }
 
             switch (sel) {
                 case EAX_INDEX:
                     value = (UInt32)(EAX);
-                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EAX{_dbgLastOperand}]";
                     break;
 
                 case ECX_INDEX:
                     value = (UInt32)(ECX);
-                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[ECX{_dbgLastOperand}]";
                     break;
 
                 case EDX_INDEX:
                     value = (UInt32)(EDX);
-                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDX{_dbgLastOperand}]";
                     break;
 
                 case EBX_INDEX:
                     value = (UInt32)(EBX);
-                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBX{_dbgLastOperand}]";
                     break;
 
                 case 0x04: {
@@ -993,7 +993,7 @@ namespace Tortilla {
                         byte displacement = ReadImm8();
 
                         if (displacement > 0) {
-                            _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                            _dbgLastOperand = $" + 0x{displacement:X2}";
                         }
 
                         value = CalcSib(sib, displacement);
@@ -1002,12 +1002,12 @@ namespace Tortilla {
 
                 case EBP_INDEX:
                     value = (UInt32)(EBP);
-                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBP{_dbgLastOperand}]";
                     break;
 
                 case EDI_INDEX:
                     value = (UInt32)(EDI);
-                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDI{_dbgLastOperand}]";
                     break;
             }
 
@@ -1019,33 +1019,33 @@ namespace Tortilla {
             byte displacement = ReadImm8();
 
             if (displacement > 0) {
-                _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                _dbgLastOperand = $" + 0x{displacement:X2}";
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt16)(BX + SI + displacement);
-                    _dbgLastOperand = string.Format("[BX + SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX + SI{_dbgLastOperand}]";
                     break;
 
                 case 0x01:
                     value = (UInt16)(BX + DI + displacement);
-                    _dbgLastOperand = string.Format("[BX + DI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX + DI{_dbgLastOperand}]";
                     break;
 
                 case 0x02:
                     value = (UInt16)(BP + SI + displacement);
-                    _dbgLastOperand = string.Format("[BP + SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP + SI{_dbgLastOperand}]";
                     break;
 
                 case 0x03:
                     value = (UInt16)(BP + DI + displacement);
-                    _dbgLastOperand = string.Format("[BP + DI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP + DI{_dbgLastOperand}]";
                     break;
 
                 case 0x04:
                     value = (UInt16)(SI + displacement);
-                    _dbgLastOperand = string.Format("[SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[SI{_dbgLastOperand}]";
                     break;
 
                 case 0x05:
@@ -1053,7 +1053,7 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = ES_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[DI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[DI{_dbgLastOperand}]";
                     break;
 
                 case 0x06:
@@ -1061,12 +1061,12 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = SP_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP{_dbgLastOperand}]";
                     break;
 
                 case 0x07:
                     value = (UInt16)(BX + displacement);
-                    _dbgLastOperand = string.Format("[BX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX{_dbgLastOperand}]";
                     break;
             }
 
@@ -1084,28 +1084,28 @@ namespace Tortilla {
             byte displacement = ReadImm8();
 
             if (displacement > 0) {
-                _dbgLastOperand = string.Format(" + 0x{0:X2}", displacement);
+                _dbgLastOperand = $" + 0x{displacement:X2}";
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt32)(EAX + displacement);
-                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EAX{_dbgLastOperand}]";
                     break;
 
                 case 0x01:
                     value = (UInt32)(ECX + displacement);
-                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[ECX{_dbgLastOperand}]";
                     break;
 
                 case 0x02:
                     value = (UInt32)(EDX + displacement);
-                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDX{_dbgLastOperand}]";
                     break;
 
                 case 0x03:
                     value = (UInt32)(EBX + displacement);
-                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBX{_dbgLastOperand}]";
                     break;
 
                 case 0x04:
@@ -1117,12 +1117,12 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = SP_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBP{_dbgLastOperand}]";
                     break;
 
                 case 0x06:
                     value = (UInt32)(ESI + displacement);
-                    _dbgLastOperand = string.Format("[ESI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[ESI{_dbgLastOperand}]";
                     break;
 
                 case 0x07:
@@ -1130,7 +1130,7 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = ES_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDI{_dbgLastOperand}]";
                     break;
             }
 
@@ -1142,33 +1142,33 @@ namespace Tortilla {
             UInt16 displacement = ReadImm16();
 
             if (displacement > 0) {
-                _dbgLastOperand = string.Format(" + 0x{0:X4}", displacement);
+                _dbgLastOperand = $" + 0x{displacement:X4}";
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt16)(BX + SI + displacement);
-                    _dbgLastOperand = string.Format("[BX + SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX + SI{_dbgLastOperand}]";
                     break;
 
                 case 0x01:
                     value = (UInt16)(BX + DI + displacement);
-                    _dbgLastOperand = string.Format("[BX + DI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX + DI{_dbgLastOperand}]";
                     break;
 
                 case 0x02:
                     value = (UInt16)(BP + SI + displacement);
-                    _dbgLastOperand = string.Format("[BP + SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP + SI{_dbgLastOperand}]";
                     break;
 
                 case 0x03:
                     value = (UInt16)(BP + DI + displacement);
-                    _dbgLastOperand = string.Format("[BP + DI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP + DI{_dbgLastOperand}]";
                     break;
 
                 case 0x04:
                     value = (UInt16)(SI + displacement);
-                    _dbgLastOperand = string.Format("[SI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[SI{_dbgLastOperand}]";
                     break;
 
                 case 0x05:
@@ -1176,7 +1176,7 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = ES_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[DI]{0}", _dbgLastOperand);
+                    _dbgLastOperand = $"[DI]{_dbgLastOperand}";
                     break;
 
                 case 0x06:
@@ -1184,12 +1184,12 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = SP_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[BP{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BP{_dbgLastOperand}]";
                     break;
 
                 case 0x07:
                     value = (UInt16)(BX + displacement);
-                    _dbgLastOperand = string.Format("[BX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[BX{_dbgLastOperand}]";
                     break;
             }
 
@@ -1207,28 +1207,28 @@ namespace Tortilla {
             UInt32 displacement = ReadImm8();
 
             if (displacement > 0) {
-                _dbgLastOperand = string.Format(" + 0x{0:X8}", displacement);
+                _dbgLastOperand = $" + 0x{displacement:X8}";
             }
 
             switch (sel) {
                 case 0x00:
                     value = (UInt32)(EAX + displacement);
-                    _dbgLastOperand = string.Format("[EAX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EAX{_dbgLastOperand}]";
                     break;
 
                 case 0x01:
                     value = (UInt32)(ECX + displacement);
-                    _dbgLastOperand = string.Format("[ECX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[ECX{_dbgLastOperand}]";
                     break;
 
                 case 0x02:
                     value = (UInt32)(EDX + displacement);
-                    _dbgLastOperand = string.Format("[EDX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDX{_dbgLastOperand}]";
                     break;
 
                 case 0x03:
                     value = (UInt32)(EBX + displacement);
-                    _dbgLastOperand = string.Format("[EBX{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBX{_dbgLastOperand}]";
                     break;
 
                 case 0x04:
@@ -1240,12 +1240,12 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = SP_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[EBP{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EBP{_dbgLastOperand}]";
                     break;
 
                 case 0x06:
                     value = (UInt32)(ESI + displacement);
-                    _dbgLastOperand = string.Format("[ESI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[ESI{_dbgLastOperand}]";
                     break;
 
                 case 0x07:
@@ -1253,7 +1253,7 @@ namespace Tortilla {
                     if (segSelect != DEFAULT_SEGMENT_SELECT) {
                         segSelect = ES_INDEX;
                     }
-                    _dbgLastOperand = string.Format("[EDI{0}]", _dbgLastOperand);
+                    _dbgLastOperand = $"[EDI{_dbgLastOperand}]";
                     break;
             }
 
@@ -1451,21 +1451,21 @@ namespace Tortilla {
         **********************************************************************/
 
         void DbgImm(byte opcode) {
-            _dbgImm += string.Format("{0:X2} ", opcode);
+            _dbgImm += $"{opcode:X2} ";
         }
 
         void DbgImm(UInt16 opcode) {
-            _dbgImm += string.Format("{0:X2} {1:X2} ", opcode & 0x00FF, (opcode >> 8) & 0x00FF);
+            _dbgImm += $"{opcode & 0x00FF:X2} {(opcode >> 8) & 0x00FF:X2} ";
         }
 
         void DbgImm(UInt32 opcode) {
-            _dbgImm += string.Format("{0:X2} {1:X2} {2:X2} {3:X2} ", opcode & 0x000000FF, (opcode >> 8) & 0x000000FF, (opcode >> 16) & 0x000000FF, (opcode >> 24) & 0x000000FF);
+            _dbgImm += $"{opcode & 0x000000FF:X2} {(opcode >> 8) & 0x000000FF:X2} {(opcode >> 16) & 0x000000FF:X2} {(opcode >> 24) & 0x000000FF:X2} ";
         }
 
         void DbgIns(string s) {
             if (TF == 1) {
             }
-            Hardware.Debug(string.Format("{0} {1,-21} {2}", _dbgAddress, _dbgImm, s), this);
+            Hardware.Debug($"{_dbgAddress} {_dbgImm,-21} {s}", this);
             _dbgImm = string.Empty;
         }
 
@@ -1481,11 +1481,11 @@ namespace Tortilla {
 
             if ((Flags & ADDR_SIZE_32) != 0) {
                 generalRegisters[regIndex] = Add32(generalRegisters[regIndex], 1);
-                DbgIns(string.Format("{0} {1}", Instruction.INC, regArray32[regIndex]));
+                DbgIns($"{Instruction.INC} {regArray32[regIndex]}");
             }
             else {
                 generalRegisters[regIndex] = Add16((UInt16)(generalRegisters[regIndex] & 0x0000FFFF), 1);
-                DbgIns(string.Format("{0} {1}", Instruction.INC, regArray16[regIndex]));
+                DbgIns($"{Instruction.INC} {regArray16[regIndex]}");
             }
 
             CF = tempCF;
@@ -1496,11 +1496,11 @@ namespace Tortilla {
 
             if ((Flags & ADDR_SIZE_32) != 0) {
                 generalRegisters[regIndex] = Subtract32(generalRegisters[regIndex], 1);
-                DbgIns(string.Format("{0} {1}", Instruction.DEC, regArray32[regIndex]));
+                DbgIns($"{Instruction.DEC} {regArray32[regIndex]}");
             }
             else {
                 generalRegisters[regIndex] = Subtract16((UInt16)(generalRegisters[regIndex] & 0x0000FFFF), 1);
-                DbgIns(string.Format("{0} {1}", Instruction.DEC, regArray16[regIndex]));
+                DbgIns($"{Instruction.DEC} {regArray16[regIndex]}");
             }
 
             CF = tempCF;
@@ -1523,7 +1523,7 @@ namespace Tortilla {
 
                 generalRegisters[op1Index] = operation(ref op1, ref op2);
 
-                DbgIns(string.Format("{0} {1}, {2}", instruction, regArray8[op1Index], regArray8[op2Index]));
+                DbgIns($"{instruction} {regArray8[op1Index]}, {regArray8[op2Index]}");
             }
             else {
                 UInt32 address = Read16ModRm(modrm);
@@ -1536,7 +1536,7 @@ namespace Tortilla {
 
                 Write8(address, operation(ref op1, ref op2));
 
-                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, regArray8[op2Index]));
+                DbgIns($"{instruction} {_dbgSegSelect}{_dbgLastOperand}, {regArray8[op2Index]}");
             }
         }
 
@@ -1554,7 +1554,7 @@ namespace Tortilla {
 
                 generalRegisters[op1Index] = operation(ref op1, ref op2);
 
-                DbgIns(string.Format("{0} {1}, {2:X2}", instruction, regArray8[op1Index], op2));
+                DbgIns($"{instruction} {regArray8[op1Index]}, {op2:X2}");
             }
             else {
                 UInt32 address = Read16ModRm(modrm);
@@ -1564,7 +1564,7 @@ namespace Tortilla {
 
                 Write8(address, operation(ref op1, ref op2));
 
-                DbgIns(string.Format("{0} {1}{2}, {3:X2}", instruction, _dbgSegSelect, _dbgLastOperand, op2));
+                DbgIns($"{instruction} {_dbgSegSelect}{_dbgLastOperand}, {op2:X2}");
             }
         }
 
@@ -1581,7 +1581,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation32(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2:X8}", instruction, regArray32[op1Index], op2));
+                    DbgIns($"{instruction} {regArray32[op1Index]}, {op2:X8}");
                 }
                 else {
                     UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
@@ -1589,7 +1589,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation16(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2:X4}", instruction, regArray16[op1Index], op2));
+                    DbgIns($"{instruction} {regArray16[op1Index]}, {op2:X4}");
                 }
             }
             else {
@@ -1608,7 +1608,7 @@ namespace Tortilla {
                     address = CalcOffset32(address);
                     UInt32 op1 = Read32(address);
                     UInt32 op2 = ReadImm32();
-                    src = string.Format("{0:X8}", op2);
+                    src = $"{op2:X8}";
 
                     Write32(address, operation32(ref op1, ref op2));
                 }
@@ -1616,12 +1616,12 @@ namespace Tortilla {
                     address = CalcOffset32(address);
                     UInt16 op1 = Read16(address);
                     UInt16 op2 = ReadImm16();
-                    src = string.Format("{0:X4}", op2);
+                    src = $"{op2:X4}";
 
                     Write16(address, operation16(ref op1, ref op2));
                 }
 
-                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, src));
+                DbgIns($"{instruction} {_dbgSegSelect}{_dbgLastOperand}, {src}");
             }
         }
 
@@ -1639,7 +1639,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation32(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                    DbgIns($"{instruction} {regArray32[op1Index]}, {regArray32[op2Index]}");
                 }
                 else {
                     UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
@@ -1647,7 +1647,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation16(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray16[op1Index], regArray16[op2Index]));
+                    DbgIns($"{instruction} {regArray16[op1Index]}, {regArray16[op2Index]}");
                 }
             }
             else {
@@ -1679,7 +1679,7 @@ namespace Tortilla {
                     Write16(address, operation16(ref op1, ref op2));
                 }
 
-                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, _dbgLastOperand, src));
+                DbgIns($"{instruction} {_dbgSegSelect}{_dbgLastOperand}, {src}");
             }
         }
 
@@ -1700,7 +1700,7 @@ namespace Tortilla {
 
                 generalRegisters[op1Index] = operation(ref op1, ref op2);
 
-                DbgIns(string.Format("{0} {1}, {2}", instruction, regArray8[op1Index], regArray8[op2Index]));
+                DbgIns($"{instruction} {regArray8[op1Index]}, {regArray8[op2Index]}");
             }
             else {
                 UInt32 address = Read16ModRm(modrm);
@@ -1712,7 +1712,7 @@ namespace Tortilla {
 
                 generalRegisters[op1Index] = operation(ref op1, ref op2);
 
-                DbgIns(string.Format("{0} {1}, {2}{3}", instruction, regArray8[op1Index], _dbgSegSelect, _dbgLastOperand));
+                DbgIns($"{instruction} {regArray8[op1Index]}, {_dbgSegSelect}{_dbgLastOperand}");
             }
         }
 
@@ -1730,7 +1730,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation32(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                    DbgIns($"{instruction} {regArray32[op1Index]}, {regArray32[op2Index]}");
                 }
                 else {
                     UInt16 op1 = (UInt16)(generalRegisters[op1Index] & 0x0000FFFF);
@@ -1738,7 +1738,7 @@ namespace Tortilla {
 
                     generalRegisters[op1Index] = operation16(ref op1, ref op2);
 
-                    DbgIns(string.Format("{0} {1}, {2}", instruction, regArray32[op1Index], regArray32[op2Index]));
+                    DbgIns($"{instruction} {regArray32[op1Index]}, {regArray32[op2Index]}");
                 }
             }
             else {
@@ -1770,7 +1770,7 @@ namespace Tortilla {
                     generalRegisters[modrm.reg] = operation16(ref op1, ref op2);
                 }
 
-                DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, dest, _dbgLastOperand));
+                DbgIns($"{instruction} {_dbgSegSelect}{dest}, {_dbgLastOperand}");
             }
         }
 
@@ -1778,7 +1778,7 @@ namespace Tortilla {
             byte op2 = ReadImm8();
             byte temp = (byte)(generalRegisters[regIndex] & 0x000000FF);
             generalRegisters[regIndex] = operation(ref temp, ref op2);
-            DbgIns(string.Format("{0} {1}, {2:X2}", instruction, regArray8[regIndex], op2));
+            DbgIns($"{instruction} {regArray8[regIndex]}, {op2:X2}");
         }
 
         void GwHIb(Instruction instruction, int regIndex, InstructionOperation<byte, byte, byte> operation) {
@@ -1786,7 +1786,7 @@ namespace Tortilla {
             byte temp = (byte)(generalRegisters[regIndex] & 0x0000FF00);
             byte result = operation(ref temp, ref op2);
             generalRegisters[regIndex] |= (UInt32)(result << 8);
-            DbgIns(string.Format("{0} {1}, {2:X2}", instruction, regArray8[regIndex + 4], op2));
+            DbgIns($"{instruction} {regArray8[regIndex + 4]}, {op2:X2}");
         }
 
         void GvIv(Instruction instruction, int regIndex, InstructionOperation<UInt16, UInt16, UInt16> operation16, InstructionOperation<UInt32, UInt32, UInt32> operation32) {
@@ -1797,17 +1797,17 @@ namespace Tortilla {
                 UInt32 op2 = ReadImm32();
                 operation32(ref generalRegisters[regIndex], ref op2);
                 dest = regArray32[EAX_INDEX];
-                src = string.Format("0x{0:X8}", op2);
+                src = $"0x{op2:X8}";
             }
             else {
                 UInt16 op2 = ReadImm16();
                 UInt16 temp = (UInt16)(generalRegisters[regIndex] & 0x0000FFFF);
                 generalRegisters[regIndex] = operation16(ref temp, ref op2);
                 dest = regArray16[regIndex];
-                src = string.Format("0x{0:X4}", op2);
+                src = $"0x{op2:X4}";
             }
 
-            DbgIns(string.Format("{0} {1}{2}, {3}", instruction, _dbgSegSelect, dest, src));
+            DbgIns($"{instruction} {_dbgSegSelect}{dest}, {src}");
         }
 
         /*********************************************************************
@@ -2325,12 +2325,12 @@ namespace Tortilla {
             if ((Flags & OPERAND_SIZE_32) != 0) {
                 var value = ReadImm32();
                 Push32(value);
-                DbgIns(string.Format("PUSH 0x{0:X8}", value));
+                DbgIns($"PUSH 0x{value:X8}");
             }
             else {
                 var value = ReadImm16();
                 Push16(value);
-                DbgIns(string.Format("PUSH 0x{0:X4}", value));
+                DbgIns($"PUSH 0x{value:X4}");
             }
         }
 
@@ -2338,7 +2338,7 @@ namespace Tortilla {
         void PushIb() {
             var value = ReadImm8();
             Push8(value);
-            DbgIns(string.Format("PUSH 0x{0:X2}", value));
+            DbgIns($"PUSH 0x{value:X2}");
         }
 
         [OpCode(0x70)]
@@ -2349,7 +2349,7 @@ namespace Tortilla {
                 EIP = targetIP;                
             }
 
-            DbgIns(string.Format("JO 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JO 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x71)]
@@ -2360,7 +2360,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JNO 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JNO 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x72)]
@@ -2371,7 +2371,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JC 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JC 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x73)]
@@ -2382,7 +2382,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JAE 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JAE 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x74)]
@@ -2393,7 +2393,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JZ 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JZ 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x75)]
@@ -2404,7 +2404,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JNZ 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JNZ 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x76)]
@@ -2415,7 +2415,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JNA 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JNA 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x77)]
@@ -2426,7 +2426,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JA 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JA 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x78)]
@@ -2437,7 +2437,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JS 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JS 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x79)]
@@ -2448,7 +2448,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JNS 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JNS 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7A)]
@@ -2459,7 +2459,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JP 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JP 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7B)]
@@ -2470,7 +2470,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JNP 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JNP 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7C)]
@@ -2481,7 +2481,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JL 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JL 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7D)]
@@ -2492,7 +2492,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JGE 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JGE 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7E)]
@@ -2503,7 +2503,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JLE 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JLE 0x{(CS << 4) + targetIP:X8}");
         }
 
         [OpCode(0x7F)]
@@ -2514,7 +2514,7 @@ namespace Tortilla {
                 EIP = targetIP;
             }
 
-            DbgIns(string.Format("JG 0x{0:X8}", (CS << 4) + targetIP));
+            DbgIns($"JG 0x{(CS << 4) + targetIP:X8}");
         }
 
 
@@ -2545,7 +2545,7 @@ namespace Tortilla {
 
             if (modrm.mod == 0x03) {
                 generalRegisters[modrm.rm] = segmentRegisters[modrm.reg];
-                DbgIns(string.Format("MOV {0}, {1}", regArray16[modrm.rm], segArray[modrm.reg]));
+                DbgIns($"MOV {regArray16[modrm.rm]}, {segArray[modrm.reg]}");
             }
             else {
                 if ((Flags & ADDR_SIZE_32) != 0) {
@@ -2557,7 +2557,7 @@ namespace Tortilla {
                     Write16(CalcOffset32(address), segmentRegisters[modrm.reg]);
                 }
 
-                DbgIns(string.Format("MOV {0}{1}, {2}", _dbgSegSelect, _dbgLastOperand, segArray[modrm.reg]));
+                DbgIns($"MOV {_dbgSegSelect}{_dbgLastOperand}, {segArray[modrm.reg]}");
             }
         }
 
@@ -2575,7 +2575,7 @@ namespace Tortilla {
                 generalRegisters[modrm.reg] = (UInt32)(CalcOffset16(value) & 0x0000FFFF);
             }
 
-            DbgIns(string.Format("LEA {0}, {1}{2}", regArray16[modrm.reg], _dbgSegSelect, _dbgLastOperand));
+            DbgIns($"LEA {regArray16[modrm.reg]}, {_dbgSegSelect}{_dbgLastOperand}");
         }
 
         [OpCode(0x8e)]
@@ -2585,7 +2585,7 @@ namespace Tortilla {
 
             if (modrm.mod == 0x03) {
                 segmentRegisters[modrm.reg] = (UInt16)(generalRegisters[modrm.rm] & 0x0000FFFF);
-                DbgIns(string.Format("MOV {0}, {1}", segArray[modrm.reg], regArray16[modrm.rm]));
+                DbgIns($"MOV {segArray[modrm.reg]}, {regArray16[modrm.rm]}");
             }
             else {
                 if ((Flags & ADDR_SIZE_32) != 0) {
@@ -2597,7 +2597,7 @@ namespace Tortilla {
                     segmentRegisters[modrm.reg] = CalcOffset16(value);
                 }
 
-                DbgIns(string.Format("MOV {0}, {1}{2}", segArray[modrm.reg], _dbgSegSelect, _dbgLastOperand));
+                DbgIns($"MOV {segArray[modrm.reg]}, {_dbgSegSelect}{_dbgLastOperand}");
             }
 
             if (modrm.reg == SS_INDEX) {
@@ -2695,7 +2695,7 @@ namespace Tortilla {
         [OpCode(0xCC)]
         void Int3() {
             --EIP;
-            DbgIns(string.Format("Debug break at address {0:X4}", EIP));
+            DbgIns($"Debug break at address {EIP:X4}");
             interruptEvent.WaitOne();
         }
 
@@ -2725,7 +2725,7 @@ namespace Tortilla {
             Push16((UInt16)(EIP & 0x0000FFFF));
             CS = newcs;
             EIP = newip;
-            DbgIns(string.Format("INT 0x{0:X2}", id));
+            DbgIns($"INT 0x{id:X2}");
         }
 
         [OpCode(0xCF)]
@@ -2745,7 +2745,7 @@ namespace Tortilla {
                 EIP = Jz16();
             }
 
-            DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
+            DbgIns($"JMP 0x{(CS << 4) + EIP:X8}");
         }
 
         [OpCode(0xEA)]
@@ -2755,19 +2755,19 @@ namespace Tortilla {
                 UInt16 segment = ReadImm16();
                 UInt32 offset = ReadImm32();
                 EIP = offset;
-                DbgIns(string.Format("JMP 0x{0:X12}", offset));
+                DbgIns($"JMP 0x{offset:X12}");
             }
             else {
                 UInt32 offset = ReadImm32();
                 EIP = offset;
-                DbgIns(string.Format("JMP 0x{0:X8}", offset));
+                DbgIns($"JMP 0x{offset:X8}");
             }
         }
 
         [OpCode(0xEB)]
         void Jmpb() {
             EIP = Jb();
-            DbgIns(string.Format("JMP 0x{0:X8}", (CS << 4) + EIP));
+            DbgIns($"JMP 0x{(CS << 4) + EIP:X8}");
         }
 
         [OpCode(0xF4)]
@@ -2855,7 +2855,7 @@ namespace Tortilla {
                         byte op1 = AL;
                         AX = (UInt16)(op1 * op2);
 
-                        DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                        DbgIns($"MUL {_dbgLastOperand}");
                     }
                     break;
 
@@ -2939,7 +2939,7 @@ namespace Tortilla {
                             EAX = (UInt32)(result & 0x00000000FFFFFFFF);
                             EDX = (UInt32)(result & 0xFFFFFFFF00000000);
 
-                            DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                            DbgIns($"MUL {_dbgLastOperand}");
                         }
                         else {
                             UInt16 op1 = AX;
@@ -2947,7 +2947,7 @@ namespace Tortilla {
                             AX = (UInt16)(result & 0x0000FFFF);
                             DX = (UInt16)(result & 0xFFFF0000);
 
-                            DbgIns(string.Format("MUL {0}", _dbgLastOperand));
+                            DbgIns($"MUL {_dbgLastOperand}");
                         }
                     }
                     break;
@@ -2979,7 +2979,7 @@ namespace Tortilla {
                 case 6:
                     var value = ReadImm16();
                     Push16(value);
-                    DbgIns(string.Format("PUSH 0x{1:X4}", value));
+                    DbgIns($"PUSH 0x{value:X4}");
                     break;
             }
         }

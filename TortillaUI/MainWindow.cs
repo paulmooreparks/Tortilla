@@ -53,7 +53,7 @@ namespace TortillaUI {
                         if (methodAttr.PortOutHandlers != null) {
                             foreach (byte address in methodAttr.PortOutHandlers) {
                                 if (PortOutHandlerMap.ContainsKey(address)) {
-                                    throw new Exception(string.Format("Duplicate port out handler for address {0:X2}", address));
+                                    throw new Exception($"Duplicate port out handler for address {address:X2}");
                                 }
 
                                 PortOutHandlerMap[address] = (PortOutHandlerDelegate)PortOutHandlerDelegate.CreateDelegate(typeof(PortOutHandlerDelegate), this, method);
@@ -71,7 +71,7 @@ namespace TortillaUI {
                         if (methodAttr.PortInHandlers != null) {
                             foreach (byte address in methodAttr.PortInHandlers) {
                                 if (PortInHandlerMap.ContainsKey(address)) {
-                                    throw new Exception(string.Format("Duplicate port in handler for address {0:X2}", address));
+                                    throw new Exception($"Duplicate port in handler for address {address:X2}");
                                 }
 
                                 PortInHandlerMap[address] = (PortInHandlerDelegate)PortInHandlerDelegate.CreateDelegate(typeof(PortInHandlerDelegate), this, method);
@@ -92,17 +92,19 @@ namespace TortillaUI {
             // Console.WriteLine("Interrupt 0x{0:X}", id);
         }
 
+        UInt32 startAddressView = 0xb8000;
+        UInt32 endAddressView = 0xb8060;
+
         public void Debug(string disasm, object o) {
             if (traceCheckBox.Checked) {
                 Tortilla.IA32 cpu = (Tortilla.IA32)o;
-                var regText = string.Format("EAX = {0:X8} EBX = {1:X8} ECX = {2:X8} EDX = {3:X8} ESI = {4:X8} EDI = {5:X8} EIP = {6:X8} ESP = {7:X8} EBP = {8:X8} EFLAGS = {9:X4}\r\n\r\nCS = {10:X4} DS = {11:X4} ES = {12:X4} SS = {13:X4} FS = {14:X4} GS = {15:X4}\r\n\r\nCF = {16} PF = {17} AF = {18} ZF = {19} SF = {20} DF = {21} OF = {22}, TF = {23}",
-                           cpu.EAX, cpu.EBX, cpu.ECX, cpu.EDX, cpu.ESI, cpu.EDI, cpu.EIP, cpu.ESP, cpu.EBP, cpu.EFLAGS, cpu.CS, cpu.DS, cpu.ES, cpu.SS, cpu.FS, cpu.GS, cpu.CF, cpu.PF, cpu.AF, cpu.ZF, cpu.SF, cpu.DF, cpu.OF, cpu.TF);
+                var regText = $"EAX = {cpu.EAX:X8} EBX = {cpu.EBX:X8} ECX = {cpu.ECX:X8} EDX = {cpu.EDX:X8} ESI = {cpu.ESI:X8} EDI = {cpu.EDI:X8} EIP = {cpu.EIP:X8} ESP = {cpu.ESP:X8} EBP = {cpu.EBP:X8} EFLAGS = {cpu.EFLAGS:X4}\r\n\r\nCS = {cpu.CS:X4} DS = {cpu.DS:X4} ES = {cpu.ES:X4} SS = {cpu.SS:X4} FS = {cpu.FS:X4} GS = {cpu.GS:X4}\r\n\r\nCF = {cpu.CF} PF = {cpu.PF} AF = {cpu.AF} ZF = {cpu.ZF} SF = {cpu.SF} DF = {cpu.DF} OF = {cpu.OF}, TF = {cpu.TF}";
                 
-                UInt32 address = 0xb8000;
+                UInt32 address = startAddressView;
                 StringBuilder memText = new StringBuilder();
 
-                while (address < 0xb8060) {
-                    memText.AppendFormat($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
+                while (address < endAddressView) {
+                    memText.Append($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
                 }
                 
                 BeginInvoke((Action)(() => {
@@ -346,6 +348,14 @@ namespace TortillaUI {
 
         private void resetButton_Click(object sender, EventArgs e) {
             ResetCPU();
+        }
+
+        private void startAddress_TextChanged(object sender, EventArgs e) {
+            startAddressView = Convert.ToUInt32(startAddress.Text, 16);
+        }
+
+        private void endAddress_TextChanged(object sender, EventArgs e) {
+            endAddressView = Convert.ToUInt32(endAddress.Text, 16);
         }
     }
 
