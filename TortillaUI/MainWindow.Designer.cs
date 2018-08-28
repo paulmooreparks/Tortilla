@@ -39,6 +39,12 @@
             this.stepButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
             this.resetButton = new System.Windows.Forms.Button();
+            this.traceCheckBox = new System.Windows.Forms.CheckBox();
+            this.memoryOutput = new System.Windows.Forms.TextBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.textBox2 = new System.Windows.Forms.TextBox();
+            this.label2 = new System.Windows.Forms.Label();
+            this.textBox3 = new System.Windows.Forms.TextBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -61,12 +67,12 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.debug.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.debug.Location = new System.Drawing.Point(13, 176);
+            this.debug.Location = new System.Drawing.Point(13, 295);
             this.debug.Multiline = true;
             this.debug.Name = "debug";
             this.debug.ReadOnly = true;
             this.debug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.debug.Size = new System.Drawing.Size(719, 515);
+            this.debug.Size = new System.Drawing.Size(719, 396);
             this.debug.TabIndex = 1;
             // 
             // menuStrip1
@@ -188,11 +194,74 @@
             this.resetButton.UseVisualStyleBackColor = true;
             this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
             // 
+            // traceCheckBox
+            // 
+            this.traceCheckBox.AutoSize = true;
+            this.traceCheckBox.Checked = true;
+            this.traceCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.traceCheckBox.Location = new System.Drawing.Point(419, 33);
+            this.traceCheckBox.Name = "traceCheckBox";
+            this.traceCheckBox.Size = new System.Drawing.Size(103, 17);
+            this.traceCheckBox.TabIndex = 8;
+            this.traceCheckBox.Text = "Tr&ace execution";
+            this.traceCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // memoryOutput
+            // 
+            this.memoryOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.memoryOutput.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.memoryOutput.Location = new System.Drawing.Point(13, 200);
+            this.memoryOutput.Multiline = true;
+            this.memoryOutput.Name = "memoryOutput";
+            this.memoryOutput.ReadOnly = true;
+            this.memoryOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.memoryOutput.Size = new System.Drawing.Size(719, 89);
+            this.memoryOutput.TabIndex = 9;
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(13, 177);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(32, 13);
+            this.label1.TabIndex = 10;
+            this.label1.Text = "Start:";
+            // 
+            // textBox2
+            // 
+            this.textBox2.Location = new System.Drawing.Point(51, 174);
+            this.textBox2.Name = "textBox2";
+            this.textBox2.Size = new System.Drawing.Size(100, 20);
+            this.textBox2.TabIndex = 11;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(157, 177);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(29, 13);
+            this.label2.TabIndex = 12;
+            this.label2.Text = "End:";
+            // 
+            // textBox3
+            // 
+            this.textBox3.Location = new System.Drawing.Point(192, 174);
+            this.textBox3.Name = "textBox3";
+            this.textBox3.Size = new System.Drawing.Size(100, 20);
+            this.textBox3.TabIndex = 13;
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(744, 703);
+            this.Controls.Add(this.textBox3);
+            this.Controls.Add(this.label2);
+            this.Controls.Add(this.textBox2);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.memoryOutput);
+            this.Controls.Add(this.traceCheckBox);
             this.Controls.Add(this.resetButton);
             this.Controls.Add(this.stopButton);
             this.Controls.Add(this.stepButton);
@@ -231,6 +300,12 @@
         private System.Windows.Forms.Button stepButton;
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Button resetButton;
+        private System.Windows.Forms.CheckBox traceCheckBox;
+        private System.Windows.Forms.TextBox memoryOutput;
+        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.TextBox textBox2;
+        private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.TextBox textBox3;
     }
 }
 

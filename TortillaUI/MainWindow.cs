@@ -93,15 +93,25 @@ namespace TortillaUI {
         }
 
         public void Debug(string disasm, object o) {
-            Tortilla.IA32 cpu = (Tortilla.IA32)o;
-            var regText = string.Format("EAX = {0:X8} EBX = {1:X8} ECX = {2:X8} EDX = {3:X8} ESI = {4:X8} EDI = {5:X8} EIP = {6:X8} ESP = {7:X8} EBP = {8:X8} EFLAGS = {9:X4}\r\n\r\nCS = {10:X4} DS = {11:X4} ES = {12:X4} SS = {13:X4} FS = {14:X4} GS = {15:X4}\r\n\r\nCF = {16} PF = {17} AF = {18} ZF = {19} SF = {20} DF = {21} OF = {22}, TF = {23}",
-                       cpu.EAX, cpu.EBX, cpu.ECX, cpu.EDX, cpu.ESI, cpu.EDI, cpu.EIP, cpu.ESP, cpu.EBP, cpu.EFLAGS, cpu.CS, cpu.DS, cpu.ES, cpu.SS, cpu.FS, cpu.GS, cpu.CF, cpu.PF, cpu.AF, cpu.ZF, cpu.SF, cpu.DF, cpu.OF,cpu.TF);
+            if (traceCheckBox.Checked) {
+                Tortilla.IA32 cpu = (Tortilla.IA32)o;
+                var regText = string.Format("EAX = {0:X8} EBX = {1:X8} ECX = {2:X8} EDX = {3:X8} ESI = {4:X8} EDI = {5:X8} EIP = {6:X8} ESP = {7:X8} EBP = {8:X8} EFLAGS = {9:X4}\r\n\r\nCS = {10:X4} DS = {11:X4} ES = {12:X4} SS = {13:X4} FS = {14:X4} GS = {15:X4}\r\n\r\nCF = {16} PF = {17} AF = {18} ZF = {19} SF = {20} DF = {21} OF = {22}, TF = {23}",
+                           cpu.EAX, cpu.EBX, cpu.ECX, cpu.EDX, cpu.ESI, cpu.EDI, cpu.EIP, cpu.ESP, cpu.EBP, cpu.EFLAGS, cpu.CS, cpu.DS, cpu.ES, cpu.SS, cpu.FS, cpu.GS, cpu.CF, cpu.PF, cpu.AF, cpu.ZF, cpu.SF, cpu.DF, cpu.OF, cpu.TF);
+                
+                UInt32 address = 0xb8000;
+                StringBuilder memText = new StringBuilder();
 
-            BeginInvoke((Action)(() => {
-                debug.AppendText(disasm + "\r\n");
-                debug.ScrollToCaret();
-                registers.Text = regText;
-            }));
+                while (address < 0xb8060) {
+                    memText.AppendFormat($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
+                }
+                
+                BeginInvoke((Action)(() => {
+                    debug.AppendText(disasm + "\r\n");
+                    debug.ScrollToCaret();
+                    registers.Text = regText;
+                    memoryOutput.Text = memText.ToString();
+                }));
+            }
         }
 
         AutoResetEvent exceptionEvent = new AutoResetEvent(false);
