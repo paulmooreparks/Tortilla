@@ -22,6 +22,12 @@ namespace TortillaUI {
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
             InitEnvironment();
+            startAddress.Text = $"{startAddressView:X8}";
+            endAddress.Text = $"{endAddressView:X8}";
+
+            startAddress.TextChanged += new System.EventHandler(startAddress_TextChanged);
+            endAddress.TextChanged += new System.EventHandler(endAddress_TextChanged);
+            UpdateMemoryWindow();
         }
 
         protected override void OnClosing(CancelEventArgs e) {
@@ -95,25 +101,68 @@ namespace TortillaUI {
         UInt32 startAddressView = 0xb8000;
         UInt32 endAddressView = 0xb8060;
 
+        private void startAddress_TextChanged(object sender, EventArgs e) {
+            var temp = startAddressView;
+
+            try {
+                startAddressView = Convert.ToUInt32(startAddress.Text, 16);
+            }
+            catch (Exception) {
+                startAddressView = temp;
+            }
+
+            UpdateMemoryWindow();
+        }
+
+        private void endAddress_TextChanged(object sender, EventArgs e) {
+            var temp = endAddressView;
+
+            try {
+                endAddressView = Convert.ToUInt32(endAddress.Text, 16);
+            }
+            catch (Exception) {
+                endAddressView = temp;
+            }
+
+            UpdateMemoryWindow();
+        }
+
         public void Debug(string disasm, object o) {
             if (traceCheckBox.Checked) {
                 Tortilla.IA32 cpu = (Tortilla.IA32)o;
                 var regText = $"EAX = {cpu.EAX:X8} EBX = {cpu.EBX:X8} ECX = {cpu.ECX:X8} EDX = {cpu.EDX:X8} ESI = {cpu.ESI:X8} EDI = {cpu.EDI:X8} EIP = {cpu.EIP:X8} ESP = {cpu.ESP:X8} EBP = {cpu.EBP:X8} EFLAGS = {cpu.EFLAGS:X4}\r\n\r\nCS = {cpu.CS:X4} DS = {cpu.DS:X4} ES = {cpu.ES:X4} SS = {cpu.SS:X4} FS = {cpu.FS:X4} GS = {cpu.GS:X4}\r\n\r\nCF = {cpu.CF} PF = {cpu.PF} AF = {cpu.AF} ZF = {cpu.ZF} SF = {cpu.SF} DF = {cpu.DF} OF = {cpu.OF}, TF = {cpu.TF}";
-                
-                UInt32 address = startAddressView;
-                StringBuilder memText = new StringBuilder();
 
-                while (address < endAddressView) {
-                    memText.Append($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
-                }
-                
                 BeginInvoke((Action)(() => {
                     debug.AppendText(disasm + "\r\n");
                     debug.ScrollToCaret();
                     registers.Text = regText;
-                    memoryOutput.Text = memText.ToString();
                 }));
             }
+        }
+
+        private void UpdateMemoryWindow() {
+            if (endAddressView < startAddressView || (endAddressView - startAddressView) > 0x108) {
+                BeginInvoke((Action)(() => {
+                    addressRangeError.Visible = true;
+                    addressRangeError.Text = "Address range error";
+                    memoryOutput.Clear();
+                }));
+
+                return;
+            }
+
+            UInt32 address = startAddressView;
+            StringBuilder memText = new StringBuilder();
+
+            while (address < endAddressView) {
+                addressRangeError.Visible = false;
+                addressRangeError.Text = string.Empty;
+                memText.Append($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
+            }
+
+            BeginInvoke((Action)(() => {
+                memoryOutput.Text = memText.ToString();
+            }));
         }
 
         AutoResetEvent exceptionEvent = new AutoResetEvent(false);
@@ -205,6 +254,10 @@ namespace TortillaUI {
             if (address >= 0xb8000 && address <= 0xb8F00) {
                 // QueueVideoUpdate(address, value);
                 UpdateConsole(address);
+            }
+
+            if (address >= startAddressView && address <= endAddressView) {
+                UpdateMemoryWindow();
             }
         }
 
@@ -350,13 +403,6 @@ namespace TortillaUI {
             ResetCPU();
         }
 
-        private void startAddress_TextChanged(object sender, EventArgs e) {
-            startAddressView = Convert.ToUInt32(startAddress.Text, 16);
-        }
-
-        private void endAddress_TextChanged(object sender, EventArgs e) {
-            endAddressView = Convert.ToUInt32(endAddress.Text, 16);
-        }
     }
 
     [AttributeUsage(AttributeTargets.Method)]

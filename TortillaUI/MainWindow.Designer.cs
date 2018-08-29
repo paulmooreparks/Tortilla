@@ -45,6 +45,7 @@
             this.startAddress = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
             this.endAddress = new System.Windows.Forms.TextBox();
+            this.addressRangeError = new System.Windows.Forms.Label();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -234,7 +235,6 @@
             this.startAddress.Name = "startAddress";
             this.startAddress.Size = new System.Drawing.Size(100, 20);
             this.startAddress.TabIndex = 11;
-            this.startAddress.TextChanged += new System.EventHandler(this.startAddress_TextChanged);
             // 
             // label2
             // 
@@ -251,13 +251,23 @@
             this.endAddress.Name = "endAddress";
             this.endAddress.Size = new System.Drawing.Size(100, 20);
             this.endAddress.TabIndex = 13;
-            this.endAddress.TextChanged += new System.EventHandler(this.endAddress_TextChanged);
+            // 
+            // addressRangeError
+            // 
+            this.addressRangeError.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.addressRangeError.Location = new System.Drawing.Point(298, 177);
+            this.addressRangeError.Name = "addressRangeError";
+            this.addressRangeError.Size = new System.Drawing.Size(434, 17);
+            this.addressRangeError.TabIndex = 14;
+            this.addressRangeError.Visible = false;
             // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(744, 703);
+            this.Controls.Add(this.addressRangeError);
             this.Controls.Add(this.endAddress);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.startAddress);
@@ -308,6 +318,7 @@
         private System.Windows.Forms.TextBox startAddress;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox endAddress;
+        private System.Windows.Forms.Label addressRangeError;
     }
 }
 
