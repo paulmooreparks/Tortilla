@@ -141,7 +141,7 @@ namespace TortillaUI {
         }
 
         private void UpdateMemoryWindow() {
-            if (endAddressView < startAddressView || (endAddressView - startAddressView) > 0x108) {
+            if (endAddressView <= startAddressView || (endAddressView - startAddressView) > 0x1008) {
                 BeginInvoke((Action)(() => {
                     addressRangeError.Visible = true;
                     addressRangeError.Text = "Address range error";
@@ -154,10 +154,10 @@ namespace TortillaUI {
             UInt32 address = startAddressView;
             StringBuilder memText = new StringBuilder();
 
-            while (address < endAddressView) {
+            while (address <= endAddressView) {
                 addressRangeError.Visible = false;
                 addressRangeError.Text = string.Empty;
-                memText.Append($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} \r\n");
+                memText.Append($"{address:X8}: {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2} {Read8(address++):X2}\r\n");
             }
 
             BeginInvoke((Action)(() => {
@@ -256,7 +256,7 @@ namespace TortillaUI {
                 UpdateConsole(address);
             }
 
-            if (address >= startAddressView && address <= endAddressView) {
+            if (traceCheckBox.Checked && address >= startAddressView && address <= endAddressView) {
                 UpdateMemoryWindow();
             }
         }
