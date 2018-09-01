@@ -130,7 +130,7 @@ namespace TortillaUI {
         public void Debug(string disasm, object o) {
             if (traceCheckBox.Checked) {
                 Tortilla.IA32 cpu = (Tortilla.IA32)o;
-                var regText = cpu.RegisterDump();
+                var regText = cpu.RegisterDump;
 
                 BeginInvoke((Action)(() => {
                     debug.AppendText(disasm + "\r\n");

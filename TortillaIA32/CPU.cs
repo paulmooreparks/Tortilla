@@ -27,7 +27,7 @@ namespace Tortilla {
         void Break();
         void Step();
         void Continue();
-        string RegisterDump();
+        string RegisterDump { get; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -2985,9 +2985,11 @@ namespace Tortilla {
             }
         }
 
-        public string RegisterDump() {
-            var regText = $"EAX = {EAX:X8} EBX = {EBX:X8} ECX = {ECX:X8} EDX = {EDX:X8} ESI = {ESI:X8} EDI = {EDI:X8} EIP = {EIP:X8} ESP = {ESP:X8} EBP = {EBP:X8} EFLAGS = {EFLAGS:X4}\r\n\r\nCS = {CS:X4} DS = {DS:X4} ES = {ES:X4} SS = {SS:X4} FS = {FS:X4} GS = {GS:X4}\r\n\r\nCF = {CF} PF = {PF} AF = {AF} ZF = {ZF} SF = {SF} DF = {DF} OF = {OF}, TF = {TF}";
-            return regText;
+        public string RegisterDump {
+            get {
+                var regText = $"EAX = {EAX:X8} EBX = {EBX:X8} ECX = {ECX:X8} EDX = {EDX:X8} ESI = {ESI:X8} EDI = {EDI:X8} EIP = {EIP:X8} ESP = {ESP:X8} EBP = {EBP:X8} EFLAGS = {EFLAGS:X4}\r\n\r\nCS = {CS:X4} DS = {DS:X4} ES = {ES:X4} SS = {SS:X4} FS = {FS:X4} GS = {GS:X4}\r\n\r\nCF = {CF} PF = {PF} AF = {AF} ZF = {ZF} SF = {SF} DF = {DF} OF = {OF}, TF = {TF}";
+                return regText;
+            }
         }
     }
 }
