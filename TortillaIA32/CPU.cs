@@ -27,6 +27,7 @@ namespace Tortilla {
         void Break();
         void Step();
         void Continue();
+        string RegisterDump();
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -81,42 +82,42 @@ namespace Tortilla {
         const int SI_INDEX = 6;
         const int DI_INDEX = 7;
 
-        public UInt32 EAX {
+        protected UInt32 EAX {
             get { return generalRegisters[EAX_INDEX]; }
             set { generalRegisters[EAX_INDEX] = value; }
         }
 
-        public UInt32 ECX {
+        protected UInt32 ECX {
             get { return generalRegisters[ECX_INDEX]; }
             set { generalRegisters[ECX_INDEX] = value; }
         }
 
-        public UInt32 EDX {
+        protected UInt32 EDX {
             get { return generalRegisters[EDX_INDEX]; }
             set { generalRegisters[EDX_INDEX] = value; }
         }
 
-        public UInt32 EBX {
+        protected UInt32 EBX {
             get { return generalRegisters[EBX_INDEX]; }
             set { generalRegisters[EBX_INDEX] = value; }
         }
 
-        public UInt32 ESP {
+        protected UInt32 ESP {
             get { return generalRegisters[ESP_INDEX]; }
             set { generalRegisters[ESP_INDEX] = value; }
         }
 
-        public UInt32 EBP {
+        protected UInt32 EBP {
             get { return generalRegisters[EBP_INDEX]; }
             set { generalRegisters[EBP_INDEX] = value; }
         }
 
-        public UInt32 ESI {
+        protected UInt32 ESI {
             get { return generalRegisters[ESI_INDEX]; }
             set { generalRegisters[ESI_INDEX] = value; }
         }
 
-        public UInt32 EDI {
+        protected UInt32 EDI {
             get { return generalRegisters[EDI_INDEX]; }
             set { generalRegisters[EDI_INDEX] = value; }
         }
@@ -129,209 +130,209 @@ namespace Tortilla {
         const int FS_INDEX = 4;
         const int GS_INDEX = 5;
 
-        public UInt16 ES {
+        protected UInt16 ES {
             get { return segmentRegisters[ES_INDEX]; }
             set { segmentRegisters[ES_INDEX] = value; }
         }
 
-        public UInt16 CS {
+        protected UInt16 CS {
             get { return segmentRegisters[CS_INDEX]; }
             set { segmentRegisters[CS_INDEX] = value; }
         }
 
-        public UInt16 SS {
+        protected UInt16 SS {
             get { return segmentRegisters[SS_INDEX]; }
             set { segmentRegisters[SS_INDEX] = value; }
         }
 
-        public UInt16 DS {
+        protected UInt16 DS {
             get { return segmentRegisters[DS_INDEX]; }
             set { segmentRegisters[DS_INDEX] = value; }
         }
 
-        public UInt16 FS {
+        protected UInt16 FS {
             get { return segmentRegisters[FS_INDEX]; }
             set { segmentRegisters[FS_INDEX] = value; }
         }
 
-        public UInt16 GS {
+        protected UInt16 GS {
             get { return segmentRegisters[GS_INDEX]; }
             set { segmentRegisters[GS_INDEX] = value; }
         }
 
 
-        public UInt32 EFLAGS {
+        protected UInt32 EFLAGS {
             get { return statusRegisters[0]; }
             set { statusRegisters[0] = value; }
         }
 
-        public UInt32 EIP {
+        protected UInt32 EIP {
             get { return statusRegisters[1]; }
             set { statusRegisters[1] = value; }
         }
 
-        public UInt32 CR0 { get; set; } = 0;
-        public UInt32 CR1 { get; set; } = 0;
-        public UInt32 CR2 { get; set; } = 0;
-        public UInt32 CR3 { get; set; } = 0;
-        public UInt32 CR4 { get; set; } = 0;
+        protected UInt32 CR0 { get; set; } = 0;
+        protected UInt32 CR1 { get; set; } = 0;
+        protected UInt32 CR2 { get; set; } = 0;
+        protected UInt32 CR3 { get; set; } = 0;
+        protected UInt32 CR4 { get; set; } = 0;
 
-        public UInt32 DR0 { get; set; } = 0;
-        public UInt32 DR1 { get; set; } = 0;
-        public UInt32 DR2 { get; set; } = 0;
-        public UInt32 DR3 { get; set; } = 0;
-        public UInt32 DR4 { get; set; } = 0;
-        public UInt32 DR5 { get; set; } = 0;
-        public UInt32 DR6 { get; set; } = 0;
-        public UInt32 DR7 { get; set; } = 0;
+        protected UInt32 DR0 { get; set; } = 0;
+        protected UInt32 DR1 { get; set; } = 0;
+        protected UInt32 DR2 { get; set; } = 0;
+        protected UInt32 DR3 { get; set; } = 0;
+        protected UInt32 DR4 { get; set; } = 0;
+        protected UInt32 DR5 { get; set; } = 0;
+        protected UInt32 DR6 { get; set; } = 0;
+        protected UInt32 DR7 { get; set; } = 0;
 
 
-        public UInt16 AX {
+        protected UInt16 AX {
             get { return (UInt16)(EAX & 0xFFFF); }
             set { EAX = (UInt32)(value & 0xFFFF); }
         }
 
-        public byte AL {
+        protected byte AL {
             get { return (byte)(EAX & 0x00FF); }
             set { EAX = (UInt32)(value & 0x00FF); }
         }
 
-        public byte AH {
+        protected byte AH {
             get { return (byte)(EAX & 0xFF00); }
             set { EAX = (UInt32)(value & 0xFF00); }
         }
 
-        public UInt16 BX {
+        protected UInt16 BX {
             get { return (UInt16)(EBX & 0xFFFF); }
             set { EBX = (UInt32)(value & 0xFFFF); }
         }
 
-        public byte BL {
+        protected byte BL {
             get { return (byte)(EBX & 0x00FF); }
             set { EBX = (UInt32)(value & 0x00FF); }
         }
 
-        public byte BH {
+        protected byte BH {
             get { return (byte)(EBX & 0xFF00); }
             set { EBX = (UInt32)(value & 0xFF00); }
         }
 
-        public UInt16 CX {
+        protected UInt16 CX {
             get { return (UInt16)(ECX & 0xFFFF); }
             set { ECX = (UInt32)(value & 0xFFFF); }
         }
 
-        public byte CL {
+        protected byte CL {
             get { return (byte)(ECX & 0x00FF); }
             set { ECX = (UInt32)(value & 0x00FF); }
         }
 
-        public byte CH {
+        protected byte CH {
             get { return (byte)(ECX & 0xFF00); }
             set { ECX = (UInt32)(value & 0xFF00); }
         }
 
-        public UInt16 DX {
+        protected UInt16 DX {
             get { return (UInt16)(EDX & 0xFFFF); }
             set { EDX = (UInt32)(value & 0xFFFF); }
         }
 
-        public byte DL {
+        protected byte DL {
             get { return (byte)(EDX & 0x00FF); }
             set { EDX = (UInt32)(value & 0x00FF); }
         }
 
-        public byte DH {
+        protected byte DH {
             get { return (byte)(EDX & 0xFF00); }
             set { EDX = (UInt32)(value & 0xFF00); }
         }
 
-        public UInt16 BP {
+        protected UInt16 BP {
             get { return (UInt16)(EBP & 0xFFFF); }
             set { EBP = (UInt32)(value & 0xFFFF); }
         }
 
-        public UInt16 SI {
+        protected UInt16 SI {
             get { return (UInt16)(ESI & 0xFFFF); }
             set { ESI = (UInt32)(value & 0xFFFF); }
         }
 
-        public UInt16 DI {
+        protected UInt16 DI {
             get { return (UInt16)(EDI & 0xFFFF); }
             set { EDI = (UInt32)(value & 0xFFFF); }
         }
 
-        public UInt16 SP {
+        protected UInt16 SP {
             get { return (UInt16)(ESP & 0xFFFF); }
             set { ESP = (UInt32)(value & 0xFFFF); }
         }
 
-        public UInt32 TF {
+        protected UInt32 TF {
             get { return (EFLAGS & 0x00000100) >> 8; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 8) | (value << 8)); }
         }
 
-        public UInt32 CF {
+        protected UInt32 CF {
             get { return (EFLAGS & 0x00000001); }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 0) | (value << 0)); }
         }
 
-        public UInt32 PF {
+        protected UInt32 PF {
             get { return (EFLAGS & 0x00000004) >> 2; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 2) | (value << 2)); }
         }
 
-        public UInt32 AF {
+        protected UInt32 AF {
             get { return (EFLAGS & 0x00000010) >> 4; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 4) | (value << 4)); }
         }
 
-        public UInt32 ZF {
+        protected UInt32 ZF {
             get { return (EFLAGS & 0x00000040) >> 6; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 6) | (value << 6)); }
         }
 
-        public UInt32 SF {
+        protected UInt32 SF {
             get { return (EFLAGS & 0x00000080) >> 7; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 7) | (value << 7)); }
         }
 
-        public UInt32 IF {
+        protected UInt32 IF {
             get { return (EFLAGS & 0x00000200) >> 9; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 9) | (value << 9)); }
         }
 
-        public UInt32 DF {
+        protected UInt32 DF {
             get { return (EFLAGS & 0x00000400) >> 10; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 10) | (value << 10)); }
         }
 
-        public UInt32 OF {
+        protected UInt32 OF {
             get { return (EFLAGS & 0x00000800) >> 11; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 11) | (value << 11)); }
         }
 
-        public UInt32 IOPL {
+        protected UInt32 IOPL {
             get { return (EFLAGS & 0x00003000) >> 12; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 12) | (value << 12)); }
         }
 
-        public UInt32 NT {
+        protected UInt32 NT {
             get { return (EFLAGS & 0x00004000) >> 14; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 14) | (value << 14)); }
         }
 
-        public UInt32 RF {
+        protected UInt32 RF {
             get { return (EFLAGS & 0x00010000) >> 16; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 16) | (value << 16)); }
         }
 
-        public UInt32 VM {
+        protected UInt32 VM {
             get { return (EFLAGS & 0x00020000) >> 17; }
             set { EFLAGS = (UInt32)(EFLAGS & ~(1 << 17) | (value << 17)); }
         }
 
-        public UInt32 PE {
+        protected UInt32 PE {
             get { return (CR0 & 0x00000001); }
             set { CR0 = (UInt32)(CR0 & ~(1 << 0) | (value << 0)); }
         }
@@ -2982,6 +2983,11 @@ namespace Tortilla {
                     DbgIns($"PUSH 0x{value:X4}");
                     break;
             }
+        }
+
+        public string RegisterDump() {
+            var regText = $"EAX = {EAX:X8} EBX = {EBX:X8} ECX = {ECX:X8} EDX = {EDX:X8} ESI = {ESI:X8} EDI = {EDI:X8} EIP = {EIP:X8} ESP = {ESP:X8} EBP = {EBP:X8} EFLAGS = {EFLAGS:X4}\r\n\r\nCS = {CS:X4} DS = {DS:X4} ES = {ES:X4} SS = {SS:X4} FS = {FS:X4} GS = {GS:X4}\r\n\r\nCF = {CF} PF = {PF} AF = {AF} ZF = {ZF} SF = {SF} DF = {DF} OF = {OF}, TF = {TF}";
+            return regText;
         }
     }
 }
