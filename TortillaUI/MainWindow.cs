@@ -144,6 +144,17 @@ namespace TortillaUI {
         UInt32 startAddressView = 0xb8000;
         UInt32 endAddressView = 0xb8060;
 
+        bool StartEndRangeValid() {
+            if (endAddressView <= startAddressView || (endAddressView - startAddressView) > 0x1008) {
+                addressRangeError.Visible = true;
+                addressRangeError.Text = "Address range error";
+                memoryOutput.Clear();
+                return false;
+            }
+
+            return true;
+        }
+
         private void startAddress_TextChanged(object sender, EventArgs e) {
             RangeDelegates.RemoveInterval(startAddressView, endAddressView);
             var temp = startAddressView;
@@ -151,10 +162,7 @@ namespace TortillaUI {
             try {
                 startAddressView = Convert.ToUInt32(startAddress.Text, 16);
 
-                if (endAddressView <= startAddressView || (endAddressView - startAddressView) > 0x1008) {
-                    addressRangeError.Visible = true;
-                    addressRangeError.Text = "Address range error";
-                    memoryOutput.Clear();
+                if (!StartEndRangeValid()) {
                     return;
                 }
 
@@ -176,10 +184,7 @@ namespace TortillaUI {
             try {
                 endAddressView = Convert.ToUInt32(endAddress.Text, 16);
 
-                if (endAddressView <= startAddressView || (endAddressView - startAddressView) > 0x1008) {
-                    addressRangeError.Visible = true;
-                    addressRangeError.Text = "Address range error";
-                    memoryOutput.Clear();
+                if (!StartEndRangeValid()) {
                     return;
                 }
 
@@ -208,10 +213,10 @@ namespace TortillaUI {
         }
 
         private void UpdateMemoryWindow(UInt32 modifiedAddress) {
-            UInt32 address = startAddressView;
-            StringBuilder memText = new StringBuilder();
-
             BeginInvoke((Action)(() => {
+                UInt32 address = startAddressView;
+                StringBuilder memText = new StringBuilder();
+
                 while (address <= endAddressView) {
                     addressRangeError.Visible = false;
                     addressRangeError.Text = string.Empty;
