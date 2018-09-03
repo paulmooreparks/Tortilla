@@ -565,8 +565,8 @@ read_string:
 	jmp read_string
 
 done:
-	/* Write 'A-OK' on second line */
-	mov bx, 0xA0
+	/* Write 'A-OK' on third line */
+	mov bx, 0x140
 	mov word ptr es:[bx], 0x0E41
 	lea bx, [bx + 2]
 	mov es:[bx], word ptr 0x0E2D
@@ -583,6 +583,7 @@ dummyint:
 
 hello_string:
 	.string "salsaBIOS v1.00 Paul M. Parks\0" 
+	/* AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890!@#$%^&*()-=_+[]{};':\",.<>/?`~\\| */
 
 /* This winds up directly in video memory */
 .section video, "a"

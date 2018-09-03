@@ -206,6 +206,7 @@
             this.traceCheckBox.TabIndex = 8;
             this.traceCheckBox.Text = "Tr&ace execution";
             this.traceCheckBox.UseVisualStyleBackColor = true;
+            this.traceCheckBox.CheckedChanged += new System.EventHandler(this.traceCheckBox_CheckedChanged);
             // 
             // memoryOutput
             // 
