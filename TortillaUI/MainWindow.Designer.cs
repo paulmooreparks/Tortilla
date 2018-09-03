@@ -256,10 +256,12 @@
             // 
             this.addressRangeError.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
+            this.addressRangeError.ForeColor = System.Drawing.Color.Red;
             this.addressRangeError.Location = new System.Drawing.Point(298, 177);
             this.addressRangeError.Name = "addressRangeError";
             this.addressRangeError.Size = new System.Drawing.Size(434, 17);
             this.addressRangeError.TabIndex = 14;
+            this.addressRangeError.Text = "Error text here";
             this.addressRangeError.Visible = false;
             // 
             // MainWindow

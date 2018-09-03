@@ -187,30 +187,6 @@ namespace TortillaUI {
 
         TortillaConsole tConsole = new TortillaConsole();
 
-        void InitConsole() {
-            int left = 0;
-            int top = 0;
-
-            for (var address = 0xb8000; address < 0xb8f00; address += 2) {
-                var ch = (char)memory[address];
-                var co = (int)memory[address + 1];
-                int fgColor = (co & 0x000f);
-                int bgColor = (co & 0x00f0) >> 4;
-
-                // Console.SetCursorPosition(left, top);
-                // Console.ForegroundColor = (ConsoleColor)fgColor;
-                // Console.BackgroundColor = (ConsoleColor)bgColor;
-
-                // Console.Write(ch);
-                ++left;
-
-                if (left == 80) {
-                    left = 0;
-                    ++top;
-                }
-            }
-        }
-
         void UpdateConsole(UInt32 address) {
             address = (UInt32)(address & ~0x01);
             int offset = (int)(address - 0xb8000) / 2;
