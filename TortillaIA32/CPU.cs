@@ -418,16 +418,27 @@ namespace Tortilla {
         string _dbgSegSelect = string.Empty;
 
         public void Break() {
+            if (!IsPowerOn || IsHalted) {
+                return;
+            }
+
             TF = 1;
             runEvent.Reset();
         }
 
         public void Step() {
-            TF = 1;
+            if (!IsPowerOn || IsHalted) {
+                return;
+            }
+
             runEvent.Set();
         }
 
         public void Continue() {
+            if (!IsPowerOn) {
+                return;
+            }
+
             runEvent.Set();
         }
 
@@ -450,6 +461,12 @@ namespace Tortilla {
         }
 
         public bool IsPowerOn { get; protected set; }
+
+        protected bool IsHalted {
+            get {
+                return !interruptEvent.WaitOne(0);
+            }
+        }
 
         public void PowerOn(IHardware hardware) {
             if (IsPowerOn) {

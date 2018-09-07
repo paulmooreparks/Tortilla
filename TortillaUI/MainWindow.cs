@@ -339,6 +339,52 @@ namespace TortillaUI {
             new Thread(new ThreadStart(fn)).Start();
         }
 
+        private string BiosPath { get; set; }
+
+        private void openBIOSROMToolStripMenuItem_Click(object sender, EventArgs e) {
+            OpenBIOS();
+        }
+
+        public bool IsBIOSLoaded { get; set; }
+
+        private bool OpenBIOS() {
+            var openDlg = new OpenFileDialog();
+            openDlg.Filter = "BIOS binary files (*.BIN;*.ROM)|*.BIN;*.ROM";
+            openDlg.Title = "Select a BIOS binary";
+
+            if (string.IsNullOrEmpty(BiosPath)) {
+                openDlg.InitialDirectory = Environment.CurrentDirectory;
+            }
+            else {
+                openDlg.InitialDirectory = Path.GetDirectoryName(BiosPath);
+            }
+
+            if (openDlg.ShowDialog() == DialogResult.OK) {
+                BiosPath = openDlg.FileName;
+                Properties.Settings.Default.DefaultBIOS = BiosPath;
+                Properties.Settings.Default.Save();
+
+                LoadBIOS();
+            }
+
+            return IsBIOSLoaded;
+        }
+
+        private bool LoadBIOS() {
+            if (string.IsNullOrEmpty(BiosPath)) {
+                IsBIOSLoaded = false;
+            }
+            else {
+                using (BinaryReader reader = new BinaryReader(File.Open(BiosPath, FileMode.Open))) {
+                    reader.Read(memory, 0, memory.Length);
+                }
+
+                IsBIOSLoaded = true;
+            }
+
+            return IsBIOSLoaded;
+        }
+
         public void InitEnvironment() {
             cpu = new Tortilla.IA32();
 
@@ -346,14 +392,16 @@ namespace TortillaUI {
                 memory[i] = 0;
             }
 
-            using (BinaryReader reader = new BinaryReader(File.Open("../../../assembly/bios.rom", FileMode.Open))) {
-                reader.Read(memory, 0, memory.Length);
-            }
-
             tConsole.Show();
 
             hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged, powerOffEvent };
             hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
+
+            BiosPath = Properties.Settings.Default.DefaultBIOS;
+
+            if (!LoadBIOS()) {
+                OpenBIOS();
+            }
         }
 
         public void Wait() {
@@ -440,7 +488,13 @@ namespace TortillaUI {
         }
 
         private void resetButton_Click(object sender, EventArgs e) {
-            ResetCPU();
+            if (!LoadBIOS()) {
+                OpenBIOS();
+            }
+
+            if (IsBIOSLoaded) {
+                ResetCPU();
+            }
         }
 
         private void traceCheckBox_CheckedChanged(object sender, EventArgs e) {
@@ -454,6 +508,10 @@ namespace TortillaUI {
 
         private void stepCheckBox_CheckedChanged(object sender, EventArgs e) {
             cpu.SingleStep = stepCheckBox.Checked;
+
+            if (stepCheckBox.Checked && !traceCheckBox.Checked) {
+                traceCheckBox.Checked = true;
+            }
         }
     }
 

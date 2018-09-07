@@ -46,6 +46,7 @@
             this.endAddress = new System.Windows.Forms.TextBox();
             this.addressRangeError = new System.Windows.Forms.Label();
             this.stepCheckBox = new System.Windows.Forms.CheckBox();
+            this.openBIOSROMToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -90,6 +91,7 @@
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.openBIOSROMToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
@@ -98,7 +100,7 @@
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(92, 22);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(170, 22);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -151,7 +153,7 @@
             this.runButton.Name = "runButton";
             this.runButton.Size = new System.Drawing.Size(75, 23);
             this.runButton.TabIndex = 3;
-            this.runButton.Text = "&Run";
+            this.runButton.Text = "&Run/Step";
             this.runButton.UseVisualStyleBackColor = true;
             this.runButton.Click += new System.EventHandler(this.runButton_Click);
             // 
@@ -171,7 +173,7 @@
             this.stopButton.Name = "stopButton";
             this.stopButton.Size = new System.Drawing.Size(75, 23);
             this.stopButton.TabIndex = 6;
-            this.stopButton.Text = "&Stop";
+            this.stopButton.Text = "S&top";
             this.stopButton.UseVisualStyleBackColor = true;
             this.stopButton.Click += new System.EventHandler(this.stopButton_Click);
             // 
@@ -181,7 +183,7 @@
             this.resetButton.Name = "resetButton";
             this.resetButton.Size = new System.Drawing.Size(75, 23);
             this.resetButton.TabIndex = 7;
-            this.resetButton.Text = "Start/R&eset";
+            this.resetButton.Text = "&Start/Reset";
             this.resetButton.UseVisualStyleBackColor = true;
             this.resetButton.Click += new System.EventHandler(this.resetButton_Click);
             // 
@@ -266,6 +268,13 @@
             this.stepCheckBox.UseVisualStyleBackColor = true;
             this.stepCheckBox.CheckedChanged += new System.EventHandler(this.stepCheckBox_CheckedChanged);
             // 
+            // openBIOSROMToolStripMenuItem
+            // 
+            this.openBIOSROMToolStripMenuItem.Name = "openBIOSROMToolStripMenuItem";
+            this.openBIOSROMToolStripMenuItem.Size = new System.Drawing.Size(170, 22);
+            this.openBIOSROMToolStripMenuItem.Text = "&Open BIOS ROM...";
+            this.openBIOSROMToolStripMenuItem.Click += new System.EventHandler(this.openBIOSROMToolStripMenuItem_Click);
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -323,6 +332,7 @@
         private System.Windows.Forms.TextBox endAddress;
         private System.Windows.Forms.Label addressRangeError;
         private System.Windows.Forms.CheckBox stepCheckBox;
+        private System.Windows.Forms.ToolStripMenuItem openBIOSROMToolStripMenuItem;
     }
 }
 
