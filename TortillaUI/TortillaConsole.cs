@@ -12,6 +12,48 @@ namespace TortillaUI {
     public partial class TortillaConsole : Form {
         public TortillaConsole() {
             InitializeComponent();
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            Load += TortillaConsole_Load;
+            SizeChanged += TortillaConsole_SizeChanged;
+        }
+
+        private void TortillaConsole_SizeChanged(object sender, EventArgs e) {
+            SaveWindowPosition();
+        }
+
+        private void TortillaConsole_Load(object sender, EventArgs e) {
+            RestoreWindowPosition();
+            Move += TortillaConsole_Move;
+        }
+
+        private void TortillaConsole_Move(object sender, EventArgs e) {
+            SaveWindowPosition();
+        }
+
+        private void SaveWindowPosition() {
+            Rectangle rect = (WindowState == FormWindowState.Normal) ?
+                new Rectangle(DesktopBounds.Left, DesktopBounds.Top, DesktopBounds.Width, DesktopBounds.Height) :
+                new Rectangle(RestoreBounds.Left, RestoreBounds.Top, this.Width, this.Height);
+
+            var pos = $"{(int)this.WindowState},{rect.Left},{rect.Top},{rect.Width},{rect.Height}";
+            Properties.Settings.Default.ConsoleWindowPosition = pos;
+            Properties.Settings.Default.Save();
+        }
+
+        private void RestoreWindowPosition() {
+            try {
+                string pos = Properties.Settings.Default.ConsoleWindowPosition;
+
+                if (!string.IsNullOrEmpty(pos)) {
+                    List<int> settings = pos.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(v => int.Parse(v)).ToList();
+
+                    if (settings.Count == 5) {
+                        this.SetDesktopBounds(settings[1], settings[2], settings[3], settings[4]);
+                        this.WindowState = (FormWindowState)settings[0];
+                    }
+                }
+            }
+            catch { /* Just leave current position if error */ }
         }
 
         protected override CreateParams CreateParams {

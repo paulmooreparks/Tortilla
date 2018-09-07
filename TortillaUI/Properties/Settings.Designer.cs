@@ -34,5 +34,17 @@ namespace TortillaUI.Properties {
                 this["WindowPosition"] = value;
             }
         }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string ConsoleWindowPosition {
+            get {
+                return ((string)(this["ConsoleWindowPosition"]));
+            }
+            set {
+                this["ConsoleWindowPosition"] = value;
+            }
+        }
     }
 }

@@ -43,6 +43,7 @@ namespace TortillaUI {
             endAddress.TextChanged += new System.EventHandler(endAddress_TextChanged);
 
             UpdateMemoryWindow(startAddressView);
+            cpu.SingleStep = stepCheckBox.Checked;
         }
 
         protected override void OnClosing(CancelEventArgs e) {
@@ -143,9 +144,10 @@ namespace TortillaUI {
 
         UInt32 startAddressView = 0xb8000;
         UInt32 endAddressView = 0xb8060;
+        UInt32 maxAddressRange = 0x1008;
 
         bool StartEndRangeValid() {
-            if (endAddressView <= startAddressView || (endAddressView - startAddressView) > 0x1008) {
+            if (endAddressView <= startAddressView || (endAddressView - startAddressView) > maxAddressRange) {
                 addressRangeError.Visible = true;
                 addressRangeError.Text = "Address range error";
                 memoryOutput.Clear();
@@ -257,9 +259,9 @@ namespace TortillaUI {
             int left = offset % 80;
 
             var ch = (char)memory[address];
-            var co = (int)memory[address + 1];
-            int fgColor = (co & 0x000f);
-            int bgColor = (co & 0x00f0) >> 4;
+            var co = memory[address + 1];
+            int fgColor = (co & 0x0f);
+            int bgColor = (co & 0xf0) >> 4;
 
             tConsole.DrawCharacter(ch, left, top, fgColor, bgColor);
         }
@@ -367,10 +369,14 @@ namespace TortillaUI {
             debug.Clear();
             registers.Clear();
 
-            RunBackground(() => {
-                cpu.Run(this);
-                haltEvent.Set();
-            });
+            if (cpu.IsPowerOn) {
+                cpu.Reset();
+            }
+            else {
+                cpu.PowerOn(this);
+            }
+
+            haltEvent.Set();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -429,10 +435,6 @@ namespace TortillaUI {
             cpu.Break();
         }
 
-        private void stepButton_Click(object sender, EventArgs e) {
-            cpu.Step();
-        }
-
         private void stopButton_Click(object sender, EventArgs e) {
 
         }
@@ -448,6 +450,10 @@ namespace TortillaUI {
             else {
                 RangeDelegates.RemoveInterval(startAddressView, endAddressView);
             }
+        }
+
+        private void stepCheckBox_CheckedChanged(object sender, EventArgs e) {
+            cpu.SingleStep = stepCheckBox.Checked;
         }
     }
 

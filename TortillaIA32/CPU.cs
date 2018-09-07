@@ -20,14 +20,16 @@ namespace Tortilla {
     }
 
     public interface ICpu {
-        void Run(IHardware hardware);
+        void PowerOn(IHardware hardware);
+        void PowerOff();
+        void Reset();
         void RaiseInterrupt(byte id);
         int ClockRate { get; }
-        void PowerOff();
         void Break();
-        void Step();
+        bool SingleStep { get; set; }
         void Continue();
         string RegisterDump { get; }
+        bool IsPowerOn { get; }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -57,7 +59,7 @@ namespace Tortilla {
         protected UInt32[] statusRegisters = new UInt32[2];
 
         AutoResetEvent interruptEvent = new AutoResetEvent(false);
-        ManualResetEvent powerEvent = new ManualResetEvent(false);
+        ManualResetEvent shutdownEvent = new ManualResetEvent(true);
         ManualResetEvent runEvent = new ManualResetEvent(false);
 
         public void RaiseInterrupt(byte id) {
@@ -426,43 +428,102 @@ namespace Tortilla {
         }
 
         public void Continue() {
-            TF = 0;
             runEvent.Set();
         }
 
-        public void Run(IHardware hardware) {
-            Hardware = hardware;
-            Flags = REAL_MODE;
-            CS = 0xF000;
-            EIP = 0xFFF0;
-            SS = CS;
+        void ClearStatusRegisters() {
+            for (var i = 0; i < statusRegisters.Length; ++i) {
+                statusRegisters[i] = 0;
+            }
+        }
 
-            for (;;) {
-                if (TF == 1) {
-                    runEvent.Reset();
+        void ClearGeneralRegisters() {
+            for (var i = 0; i < generalRegisters.Length; ++i) {
+                generalRegisters[i] = 0;
+            }
+        }
+
+        void ClearSegmentRegisters() {
+            for (var i = 0; i < segmentRegisters.Length; ++i) {
+                segmentRegisters[i] = 0;
+            }
+        }
+
+        public bool IsPowerOn { get; protected set; }
+
+        public void PowerOn(IHardware hardware) {
+            if (IsPowerOn) {
+                return;
+            }
+
+            shutdownEvent.WaitOne();
+            new Thread(new ParameterizedThreadStart(Run)).Start(hardware);
+        }
+
+        public void PowerOff() {
+            IsPowerOn = false;
+            interruptEvent.Set();
+        }
+
+        public void Reset() {
+            PowerOff();
+
+            shutdownEvent.WaitOne();
+            PowerOn(Hardware);
+        }
+
+        protected void Run(object o) {
+            try {
+                if (o == null) {
+                    throw new Exception("Null hardware object reference");
                 }
 
-                var oldPE = PE;
-                segSelect = DEFAULT_SEGMENT_SELECT;
-                ExecuteInstruction();
+                IsPowerOn = true;
+                shutdownEvent.Reset();
+                Hardware = (IHardware)o;
 
-                /* For now, restore flags to REAL_MODE after every instruction, until I get 
-                protected mode implemented. */
+                var temp = TF;
+                ClearGeneralRegisters();
+                ClearSegmentRegisters();
+                ClearStatusRegisters();
+                EFLAGS = 0;
                 Flags = REAL_MODE;
-                // TODO: Protected mode
+                CS = 0xF000;
+                EIP = 0xFFF0;
+                SS = CS;
+                TF = temp;
 
-                if (powerEvent.WaitOne(0)) {
-                    interruptEvent.Set();
-                    return;
+                while (IsPowerOn) {
+                    if (TF == 1) {
+                        runEvent.Reset();
+                    }
+
+                    var oldPE = PE;
+                    segSelect = DEFAULT_SEGMENT_SELECT;
+                    ExecuteInstruction();
+
+                    /* For now, restore flags to REAL_MODE after every instruction, until I get 
+                    protected mode implemented. */
+                    Flags = REAL_MODE;
+                    // TODO: Protected mode
+
+                    if (!IsPowerOn) {
+                        interruptEvent.Set();
+                        return;
+                    }
+
+                    if (TF == 1) {
+                        runEvent.WaitOne();
+                    }
+
+                    if (interruptEvent.WaitOne(0)) {
+                        DbgIns("Interrupt event");
+                    }
                 }
-
-                if (TF == 1) {
-                    runEvent.WaitOne();
-                }
-
-                if (interruptEvent.WaitOne(0)) {
-
-                }
+            }
+            finally {
+                shutdownEvent.Set();
+                interruptEvent.Reset();
             }
         }
 
@@ -1409,11 +1470,6 @@ namespace Tortilla {
             return value;
         }
 
-        public void PowerOff() {
-            powerEvent.Set();
-            interruptEvent.Set();
-        }
-
         protected struct ModRm {
             public ModRm(byte modrm) {
                 mod = modrm >> 6 & 3;
@@ -1464,8 +1520,6 @@ namespace Tortilla {
         }
 
         void DbgIns(string s) {
-            if (TF == 1) {
-            }
             Hardware.Debug($"{_dbgAddress} {_dbgImm,-21} {s}", this);
             _dbgImm = string.Empty;
         }
@@ -2698,6 +2752,7 @@ namespace Tortilla {
             --EIP;
             DbgIns($"Debug break at address {EIP:X4}");
             interruptEvent.WaitOne();
+            DbgIns("INT3 continuing");
         }
 
         [OpCode(0xC6)]
@@ -2989,6 +3044,20 @@ namespace Tortilla {
             get {
                 var regText = $"EAX = {EAX:X8} EBX = {EBX:X8} ECX = {ECX:X8} EDX = {EDX:X8} ESI = {ESI:X8} EDI = {EDI:X8} EIP = {EIP:X8} ESP = {ESP:X8} EBP = {EBP:X8} EFLAGS = {EFLAGS:X4}\r\n\r\nCS = {CS:X4} DS = {DS:X4} ES = {ES:X4} SS = {SS:X4} FS = {FS:X4} GS = {GS:X4}\r\n\r\nCF = {CF} PF = {PF} AF = {AF} ZF = {ZF} SF = {SF} DF = {DF} OF = {OF}, TF = {TF}";
                 return regText;
+            }
+        }
+
+        public bool SingleStep {
+            get => TF == 1;
+            set {
+                if (value) {
+                    TF = 1;
+                    runEvent.Set();
+                }
+                else {
+                    TF = 0;
+                    runEvent.Reset();
+                }
             }
         }
     }

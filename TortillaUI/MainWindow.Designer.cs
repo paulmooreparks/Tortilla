@@ -36,7 +36,6 @@
             this.resetToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.runButton = new System.Windows.Forms.Button();
             this.breakButton = new System.Windows.Forms.Button();
-            this.stepButton = new System.Windows.Forms.Button();
             this.stopButton = new System.Windows.Forms.Button();
             this.resetButton = new System.Windows.Forms.Button();
             this.traceCheckBox = new System.Windows.Forms.CheckBox();
@@ -46,6 +45,7 @@
             this.label2 = new System.Windows.Forms.Label();
             this.endAddress = new System.Windows.Forms.TextBox();
             this.addressRangeError = new System.Windows.Forms.Label();
+            this.stepCheckBox = new System.Windows.Forms.CheckBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -112,7 +112,7 @@
             this.resetToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(67, 20);
-            this.toolsToolStripMenuItem.Text = "&Emulator";
+            this.toolsToolStripMenuItem.Text = "E&mulator";
             // 
             // runToolStripMenuItem
             // 
@@ -165,19 +165,9 @@
             this.breakButton.UseVisualStyleBackColor = true;
             this.breakButton.Click += new System.EventHandler(this.breakButton_Click);
             // 
-            // stepButton
-            // 
-            this.stepButton.Location = new System.Drawing.Point(256, 28);
-            this.stepButton.Name = "stepButton";
-            this.stepButton.Size = new System.Drawing.Size(75, 23);
-            this.stepButton.TabIndex = 5;
-            this.stepButton.Text = "S&tep";
-            this.stepButton.UseVisualStyleBackColor = true;
-            this.stepButton.Click += new System.EventHandler(this.stepButton_Click);
-            // 
             // stopButton
             // 
-            this.stopButton.Location = new System.Drawing.Point(337, 28);
+            this.stopButton.Location = new System.Drawing.Point(256, 28);
             this.stopButton.Name = "stopButton";
             this.stopButton.Size = new System.Drawing.Size(75, 23);
             this.stopButton.TabIndex = 6;
@@ -200,7 +190,7 @@
             this.traceCheckBox.AutoSize = true;
             this.traceCheckBox.Checked = true;
             this.traceCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.traceCheckBox.Location = new System.Drawing.Point(419, 33);
+            this.traceCheckBox.Location = new System.Drawing.Point(421, 32);
             this.traceCheckBox.Name = "traceCheckBox";
             this.traceCheckBox.Size = new System.Drawing.Size(103, 17);
             this.traceCheckBox.TabIndex = 8;
@@ -265,11 +255,23 @@
             this.addressRangeError.Text = "Error text here";
             this.addressRangeError.Visible = false;
             // 
+            // stepCheckBox
+            // 
+            this.stepCheckBox.AutoSize = true;
+            this.stepCheckBox.Location = new System.Drawing.Point(337, 32);
+            this.stepCheckBox.Name = "stepCheckBox";
+            this.stepCheckBox.Size = new System.Drawing.Size(78, 17);
+            this.stepCheckBox.TabIndex = 15;
+            this.stepCheckBox.Text = "S&ingle step";
+            this.stepCheckBox.UseVisualStyleBackColor = true;
+            this.stepCheckBox.CheckedChanged += new System.EventHandler(this.stepCheckBox_CheckedChanged);
+            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(744, 703);
+            this.Controls.Add(this.stepCheckBox);
             this.Controls.Add(this.addressRangeError);
             this.Controls.Add(this.endAddress);
             this.Controls.Add(this.label2);
@@ -279,7 +281,6 @@
             this.Controls.Add(this.traceCheckBox);
             this.Controls.Add(this.resetButton);
             this.Controls.Add(this.stopButton);
-            this.Controls.Add(this.stepButton);
             this.Controls.Add(this.breakButton);
             this.Controls.Add(this.runButton);
             this.Controls.Add(this.debug);
@@ -312,7 +313,6 @@
         private System.Windows.Forms.ToolStripMenuItem resetToolStripMenuItem;
         private System.Windows.Forms.Button runButton;
         private System.Windows.Forms.Button breakButton;
-        private System.Windows.Forms.Button stepButton;
         private System.Windows.Forms.Button stopButton;
         private System.Windows.Forms.Button resetButton;
         private System.Windows.Forms.CheckBox traceCheckBox;
@@ -322,6 +322,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.TextBox endAddress;
         private System.Windows.Forms.Label addressRangeError;
+        private System.Windows.Forms.CheckBox stepCheckBox;
     }
 }
 
