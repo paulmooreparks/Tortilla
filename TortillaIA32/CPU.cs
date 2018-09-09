@@ -533,7 +533,7 @@ namespace Tortilla {
                         runEvent.WaitOne();
                     }
 
-                    if (interruptEvent.WaitOne(0)) {
+                    if (IF == 1 && interruptEvent.WaitOne(0)) {
                         DbgIns("Interrupt event");
                     }
                 }
