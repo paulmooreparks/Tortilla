@@ -7,15 +7,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Tortilla;
 
 namespace TortillaUI {
-    public partial class TortillaConsole : Form {
+    public partial class TortillaConsole : Form, Tortilla.IBusComponent {
         public TortillaConsole() {
             InitializeComponent();
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Load += TortillaConsole_Load;
             SizeChanged += TortillaConsole_SizeChanged;
         }
+
+        System.Timers.Timer clockTimer = new System.Timers.Timer(1000 / 60); // 60fps
+        // bool isDirty = false;
+        // bool isDrawing = false;
 
         private void TortillaConsole_SizeChanged(object sender, EventArgs e) {
             SaveWindowPosition();
@@ -24,6 +29,12 @@ namespace TortillaUI {
         private void TortillaConsole_Load(object sender, EventArgs e) {
             RestoreWindowPosition();
             Move += TortillaConsole_Move;
+
+            // Memory[0] = (byte)'A';
+            // Memory[1] = (byte)0x07;
+            // isDirty = true;
+
+            // clockTimer.Elapsed += ClockTimer_Elapsed;
         }
 
         private void TortillaConsole_Move(object sender, EventArgs e) {
@@ -212,32 +223,35 @@ namespace TortillaUI {
         /* This is really, really slow, and it doesn't appear to match VGA character size and resolution, 
         but it works well enough for now. I'll revisit all of this later. */
         public void DrawCharacter(char ch, int left, int top, int fgColor, int bgColor) {
-            int pxLeft = left * 8;
-            int pxTop = top * 16;
-            int bmTop = 0;
-            byte[] chPattern = chPatterns[ch];
-            Color cbgColor = vgaColors[bgColor];
-            Color cfgColor = vgaColors[fgColor];
+            BeginInvoke((Action)(() => { 
+                int pxLeft = left * 8;
+                int pxTop = top * 16;
+                byte[] chPattern = chPatterns[ch];
+                Color cbgColor = vgaColors[bgColor];
+                Color cfgColor = vgaColors[fgColor];
 
-            for (int b = 0; b < 16; ++b) {
-                byte bits = chPattern[b];
-                byte mask = 128;
+                int y = 0;
 
-                for (int i = 0; i < 8; ++i) {
-                    if ((bits & mask) == mask) {
-                        chBitmap.SetPixel(i, bmTop, cfgColor);
+                for (int i = 0; i < 16; ++i) {
+                    byte bits = chPattern[i];
+                    byte mask = 128;
+
+                    for (int x = 0; x < 8; ++x) {
+                        if ((bits & mask) == mask) {
+                            chBitmap.SetPixel(x, y, cfgColor);
+                        }
+                        else {
+                            chBitmap.SetPixel(x, y, cbgColor);
+                        }
+
+                        mask >>= 1;
                     }
-                    else {
-                        chBitmap.SetPixel(i, bmTop, cbgColor);
-                    }
 
-                    mask >>= 1;
+                    ++y;
                 }
 
-                ++bmTop;
-            }
-
-            consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
+                consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
+            }));
         }
 
         public void Clear() {
@@ -248,6 +262,129 @@ namespace TortillaUI {
             consoleGraphics = pictureBox.CreateGraphics();
             pictureBox.BackColor = Color.Black;
             Clear();
+            DataBusSet = true;
         }
+
+        byte[] Memory = new byte[0xf02];
+
+        UInt32 AddressValue { get; set; }
+        UInt64 DataValue { get; set; }
+
+        public bool DataBusEnabled { get; protected set; }
+        public bool DataBusSet { get; protected set; } = true;
+
+        public bool AddressBusEnabled { get; protected set; }
+        public bool AddressBusSet { get; protected set; }
+        public bool IOBusEnabled { get; protected set; }
+        public bool IOBusSet { get; protected set; }
+
+        public bool IsEnabled { get { return DataBusEnabled || AddressBusEnabled || IOBusEnabled; } }
+        public bool IsSet { get { return DataBusSet || AddressBusSet || IOBusSet; } }
+
+        public void Enable(BusTypes type) {
+            switch (type) {
+            case BusTypes.AddressBus:
+                AddressBusEnabled = true;
+                break;
+
+            case BusTypes.DataBus:
+                DataBusEnabled = true;
+                break;
+
+            case BusTypes.IOBus:
+                IOBusEnabled = true;
+                break;
+            }
+        }
+
+        public void Set(BusTypes type) {
+            switch (type) {
+            case BusTypes.AddressBus:
+                AddressBusSet = true;
+                break;
+
+            case BusTypes.DataBus:
+                DataBusSet = true;
+                break;
+
+            case BusTypes.IOBus:
+                IOBusSet = true;
+                break;
+            }
+        }
+
+        public void Connect(IMotherboard<UInt64> motherboard) {
+            AddressBus = motherboard.AddressBus;
+            DataBus = motherboard.DataBus;
+            IOBus = motherboard.IOBus;
+            motherboard.ConnectDevice(this, 1);
+        }
+
+        public IDataBus<UInt64> DataBus { get; set; }
+        public IDataBus<UInt64> AddressBus { get; set; }
+        public IDataBus<UInt64> IOBus { get; set; }
+
+        public void OnTick(ClockState state) {
+            switch (state) {
+            case ClockState.TickOff:
+                if (AddressBus.Value >= 0x80 && AddressBus.Value <= 0xF0) {
+                    var address = (UInt32)(AddressBus.Value - 0x80);
+                    var value = DataBus.Value;
+
+                    WriteDoubleByte(address, (UInt16)(value & 0xFFFF));
+
+                    address = (UInt32)(address & ~0x01);
+                    int offset = (int)(address / 2);
+                    int top = offset / 80;
+                    int left = offset % 80;
+
+                    var ch = (char)Memory[address];
+                    var co = (char)Memory[address + 1];
+
+                    int fgColor = (co & 0x0f);
+                    int bgColor = (co & 0xf0) >> 4;
+
+                    DrawCharacter(ch, left, top, fgColor, bgColor);
+                }
+
+                break;
+            }
+        }
+
+        public byte ReadByte(UInt32 address) {
+            return Memory[address];
+        }
+
+        public void WriteByte(UInt32 address, byte value) {
+            Memory[address] = value;
+        }
+
+        public void WriteDoubleByte(UInt32 address, UInt16 value) {
+            Maize.RegValue tmp = value;
+            WriteByte(address, tmp.B0);
+            WriteByte(address + 1, tmp.B1);
+        }
+
+        private void ClockTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
+            clockTimer.Stop();
+
+            var offset = 0;
+
+            for (int i = 0; i < Memory.Length / 2; ++i) {
+                var ch = (char)Memory[offset++];
+                var co = (char)Memory[offset++];
+
+                int top = i / 80;
+                int left = i % 80;
+
+                int fgColor = (co & 0x0f);
+                int bgColor = (co & 0xf0) >> 4;
+
+                DrawCharacter(ch, left, top, fgColor, bgColor);
+            }
+
+            clockTimer.Start();
+        }
+
     }
 }

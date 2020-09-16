@@ -6,30 +6,22 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Tortilla {
-    public interface IHardware {
-        byte Read8(UInt32 address);
-        void Write8(UInt32 address, byte value);
-        void Debug(string disasm, object o);
-        void RaiseException(byte id);
-        void RaiseInterrupt(byte id);
-        byte ReadPort8(UInt16 address);
-        void WritePort8(UInt16 address, byte value);
-        UInt16 ReadPort16(UInt16 address);
-        void WritePort16(UInt16 address, UInt16 value);
-        void PowerOff();
-    }
+    public class Pic<DataType> : IPic<DataType> {
+        public bool Enable { get; set; }
+        public bool Set { get; set; }
+        public bool Enabled { get; set; }
+        public DataType Value { get; set; }
+        public UInt32 CommandPort { get; set; }
+        public UInt32 DataPort { get; set; }
+        public IDataBus<DataType> Bus { get; set; }
+        public IDataBus<DataType> DataBus { get; set; }
 
-    public interface ICpu {
-        void PowerOn(IHardware hardware);
-        void PowerOff();
-        void Reset();
-        void RaiseInterrupt(byte id);
-        int ClockRate { get; }
-        void Break();
-        bool SingleStep { get; set; }
-        void Continue();
-        string RegisterDump { get; }
-        bool IsPowerOn { get; }
+        public void ConnectClock(IClock clock) {
+            clock.ConnectComponent(this);
+        }
+
+        public void OnTick(ClockState state) { 
+        }
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -47,11 +39,63 @@ namespace Tortilla {
         }
     }
 
+    public class DecoderIA32 : Register<UInt32> {
+        public DecoderIA32() {
+        }
 
-    public class IA32 : ICpu {
-        public IA32() {
+        public override void OnTick(ClockState state) {
+            // The decoder does its work on the falling side of the tick
+            if (state == ClockState.TickOff) {
+
+            }
+        }
+    }
+
+    public class ProgramCounter32 : Register<UInt32> {
+        public ProgramCounter32() { }
+
+        IDataBus<UInt32> AddressBus { get; set; }
+        bool Increment { get; set; } = false;
+
+        public override void OnTick(ClockState state) {
+            switch (state) {
+            case ClockState.TickEnable:
+                AddressBus.Value = Value;
+                break;
+
+            case ClockState.TickSet:
+                Value = DataBus.Value;
+                break;
+
+            case ClockState.TickOff:
+                if (Increment) {
+                    ++Value;
+                }
+                break;
+            }
+        }
+    }
+
+    public class IA32 : ICpu<UInt32, UInt32> {
+        public IA32(IClock clock, IDataBus<UInt32> dataBus, IDataBus<UInt32> addressBus) {
             ConnectOpCodesToMethods();
             EFLAGS = 0x00000010;
+
+            Hardware.Clock.ConnectComponent(AddressRegister);
+            Hardware.Clock.ConnectComponent(StepCounter);
+            Hardware.Clock.ConnectComponent(InstructionRegister);
+            Hardware.Clock.ConnectComponent(EAXRegister);
+            Hardware.Clock.ConnectComponent(EBXRegister);
+            Hardware.Clock.ConnectComponent(ECXRegister);
+            Hardware.Clock.ConnectComponent(EDXRegister);
+
+            AddressRegister.DataBus = addressBus;
+            StepCounter.DataBus = dataBus;
+            InstructionRegister.DataBus = dataBus;
+            EAXRegister.DataBus = dataBus;
+            EBXRegister.DataBus = dataBus;
+            ECXRegister.DataBus = dataBus;
+            EDXRegister.DataBus = dataBus;
         }
 
         protected UInt32[] generalRegisters = new UInt32[8];
@@ -65,6 +109,16 @@ namespace Tortilla {
         public void RaiseInterrupt(byte id) {
             interruptEvent.Set();
         }
+
+        public DecoderIA32 InstructionRegister { get; set; } = new DecoderIA32();
+
+        public IRegister<uint> StepCounter { get; set; } = new Tortilla.StepCounter32();
+        public IRegister<uint> AddressRegister { get; set; } = new Tortilla.Register<UInt32>();
+
+        public IRegister<uint> EAXRegister { get; set; } = new Tortilla.Register<UInt32>();
+        public IRegister<uint> EBXRegister { get; set; } = new Tortilla.Register<UInt32>();
+        public IRegister<uint> ECXRegister { get; set; } = new Tortilla.Register<UInt32>();
+        public IRegister<uint> EDXRegister { get; set; } = new Tortilla.Register<UInt32>();
 
         const int EAX_INDEX = 0;
         const int ECX_INDEX = 1;
@@ -350,9 +404,7 @@ namespace Tortilla {
             CMC, CLC, STC, CLI, STI, CLD, STD
         }
 
-        public IHardware Hardware { get; set; }
-
-        public int ClockRate { get; set; } = 10000000; // 10MHz
+        public IMotherboard<UInt32, UInt32> Hardware { get; set; }
 
         public int Cycles { get; set; } = 0;
 
@@ -468,13 +520,13 @@ namespace Tortilla {
             }
         }
 
-        public void PowerOn(IHardware hardware) {
+        public void PowerOn() {
             if (IsPowerOn) {
                 return;
             }
 
             shutdownEvent.WaitOne();
-            new Thread(new ParameterizedThreadStart(Run)).Start(hardware);
+            new Thread(new ParameterizedThreadStart(Run)).Start(Hardware);
         }
 
         public void PowerOff() {
@@ -486,7 +538,7 @@ namespace Tortilla {
             PowerOff();
 
             shutdownEvent.WaitOne();
-            PowerOn(Hardware);
+            PowerOn();
         }
 
         protected void Run(object o) {
@@ -497,7 +549,7 @@ namespace Tortilla {
 
                 IsPowerOn = true;
                 shutdownEvent.Reset();
-                Hardware = (IHardware)o;
+                Hardware = (IMotherboard<UInt32, UInt32>)o;
 
                 var temp = TF;
                 ClearGeneralRegisters();
@@ -509,6 +561,8 @@ namespace Tortilla {
                 EIP = 0xFFF0;
                 SS = CS;
                 TF = temp;
+                // Hardware.Clock.Tick += Clock_Tick;
+                Hardware.Clock.Start();
 
                 while (IsPowerOn) {
                     if (TF == 1) {
@@ -541,6 +595,7 @@ namespace Tortilla {
             finally {
                 shutdownEvent.Set();
                 interruptEvent.Reset();
+                Hardware.Clock.Stop();
             }
         }
 
@@ -559,7 +614,7 @@ namespace Tortilla {
             }
             else {
                 DbgIns($"#GP(0) Unknown instruction: {opcode:X}");
-                Hardware.RaiseException(0);
+                Hardware.OnRaiseException(0);
                 Hlt();
             }
         }
@@ -1425,7 +1480,7 @@ namespace Tortilla {
         }
 
         protected byte Read8(UInt32 address) {
-            return Hardware.Read8(address);
+            return Hardware.ReadByte(address);
         }
 
         protected UInt16 Read16(UInt32 address) {
@@ -1441,7 +1496,7 @@ namespace Tortilla {
         }
 
         protected void Write8(UInt32 address, byte value) {
-            Hardware.Write8(address, value);
+            Hardware.WriteByte(address, value);
         }
 
         protected void Write16(UInt32 address, UInt16 value) {
@@ -1537,7 +1592,7 @@ namespace Tortilla {
         }
 
         void DbgIns(string s) {
-            Hardware.Debug($"{_dbgAddress} {_dbgImm,-21} {s}", this);
+            Hardware.OnDebug($"{_dbgAddress} {_dbgImm,-21} {s}");
             _dbgImm = string.Empty;
         }
 
@@ -2847,7 +2902,7 @@ namespace Tortilla {
         void Hlt() {
             DbgIns("HLT");
             interruptEvent.WaitOne();
-            Hardware.Debug("CPU awake", this);
+            Hardware.OnDebug("CPU awake");
         }
 
         [OpCode(0xF8)]
@@ -2894,19 +2949,19 @@ namespace Tortilla {
                 case 0:
                 case 1:
                     DbgIns("TEST not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 2:
                     DbgIns("NOT not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 3:
                     DbgIns("NEG not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
@@ -2934,19 +2989,19 @@ namespace Tortilla {
 
                 case 5:
                     DbgIns("IMUL not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 6:
                     DbgIns("DIV not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 7:
                     DbgIns("IDIV not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
@@ -2961,19 +3016,19 @@ namespace Tortilla {
                 case 0:
                 case 1:
                     DbgIns("TEST not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 2:
                     DbgIns("NOT not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 3:
                     DbgIns("NEG not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
@@ -3027,19 +3082,19 @@ namespace Tortilla {
 
                 case 5:
                     DbgIns("IMUL not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 6:
                     DbgIns("DIV not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
 
                 case 7:
                     DbgIns("IDIV not implemented");
-                    Hardware.RaiseException(0);
+                    Hardware.OnRaiseException(0);
                     Hlt();
                     break;
             }
@@ -3055,6 +3110,14 @@ namespace Tortilla {
                     DbgIns($"PUSH 0x{value:X4}");
                     break;
             }
+        }
+
+        public void ConnectClock(IClock clock) {
+            throw new NotImplementedException();
+        }
+
+        public void OnTick(ClockState state) {
+            throw new NotImplementedException();
         }
 
         public string RegisterDump {
@@ -3077,5 +3140,9 @@ namespace Tortilla {
                 }
             }
         }
+
+        public bool Enable { get; set; }
+        public bool Set { get; set; }
     }
+
 }

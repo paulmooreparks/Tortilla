@@ -19,10 +19,11 @@ http://dotdotnet.blogspot.com/2011/06/interval-tree-c-implementation.html
 BSD License
 */
 using IntervalTreeLib;
+using Tortilla;
 
 namespace TortillaUI {
 
-    public partial class MainWindow : Form, Tortilla.IHardware {
+    public partial class MainWindow : Form {
         public MainWindow() {
             InitializeComponent();
         }
@@ -42,8 +43,7 @@ namespace TortillaUI {
             startAddress.TextChanged += new System.EventHandler(startAddress_TextChanged);
             endAddress.TextChanged += new System.EventHandler(endAddress_TextChanged);
 
-            UpdateMemoryWindow(startAddressView);
-            cpu.SingleStep = stepCheckBox.Checked;
+            // UpdateMemoryWindow(startAddressView);
         }
 
         protected override void OnClosing(CancelEventArgs e) {
@@ -51,8 +51,8 @@ namespace TortillaUI {
             PowerOff();
         }
 
-        protected delegate void AddressRangeDelegate(UInt32 address);
-        protected IntervalTree<AddressRangeDelegate, uint> RangeDelegates { get; } = new IntervalTree<AddressRangeDelegate, uint>();
+        protected delegate void AddressRangeDelegate(UInt64 address);
+        protected IntervalTree<AddressRangeDelegate, UInt64> RangeDelegates { get; } = new IntervalTree<AddressRangeDelegate, UInt64>();
 
         protected virtual void ConnectAddressRangesToMethods() {
             System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
@@ -70,7 +70,7 @@ namespace TortillaUI {
                         AddressRangeHandlerAttribute methodAttr = (AddressRangeHandlerAttribute)attr;
 
                         if (methodAttr.AddressRangeHandlers != null) {
-                            foreach (Tuple<UInt32,UInt32> addressRange in methodAttr.AddressRangeHandlers) {
+                            foreach (Tuple<UInt32, UInt32> addressRange in methodAttr.AddressRangeHandlers) {
                                 RangeDelegates.AddInterval(addressRange.Item1, addressRange.Item2, (AddressRangeDelegate)AddressRangeDelegate.CreateDelegate(typeof(AddressRangeDelegate), this, method));
                             }
                         }
@@ -133,17 +133,10 @@ namespace TortillaUI {
         }
 
 
-        public byte[] memory = new byte[0x1000000]; // 16MB should be enough for anybody
         public UInt16[] ports = new UInt16[0x10000];
 
-        AutoResetEvent autoEvent = new AutoResetEvent(false);
-
-        public void RaiseInterrupt(byte id) {
-            // Console.WriteLine("Interrupt 0x{0:X}", id);
-        }
-
-        UInt32 startAddressView = 0xb8000;
-        UInt32 endAddressView = 0xb8060;
+        UInt32 startAddressView = 0x80; // 0xb8000;
+        UInt32 endAddressView = 0xFF; // 0xb8060;
         UInt32 maxAddressRange = 0x1008;
 
         bool StartEndRangeValid() {
@@ -201,20 +194,7 @@ namespace TortillaUI {
             UpdateMemoryWindow(endAddressView);
         }
 
-        public void Debug(string disasm, object o) {
-            if (traceCheckBox.Checked) {
-                Tortilla.IA32 cpu = (Tortilla.IA32)o;
-                var regText = cpu.RegisterDump;
-
-                BeginInvoke((Action)(() => {
-                    debug.AppendText(disasm + "\r\n");
-                    debug.ScrollToCaret();
-                    registers.Text = regText;
-                }));
-            }
-        }
-
-        private void UpdateMemoryWindow(UInt32 modifiedAddress) {
+        private void UpdateMemoryWindow(UInt64 modifiedAddress) {
             BeginInvoke((Action)(() => {
                 UInt32 address = startAddressView;
                 StringBuilder memText = new StringBuilder();
@@ -232,108 +212,9 @@ namespace TortillaUI {
         AutoResetEvent exceptionEvent = new AutoResetEvent(false);
         AutoResetEvent haltEvent = new AutoResetEvent(false);
 
-        public void RaiseException(byte id) {
-            exceptionEvent.Set();
-            // Console.WriteLine("EXCEPTION {0:x}", id);
-        }
-
-        public Tortilla.ICpu cpu;
-
-        WaitHandle[] hardwareWaitHandles;
-        AutoResetEvent videoMemoryChanged = new AutoResetEvent(false);
         AutoResetEvent powerOffEvent = new AutoResetEvent(false);
-        // Queue<Tuple<UInt32, byte>> videoQueue = new Queue<Tuple<uint, byte>>();
-
-        void QueueVideoUpdate(UInt32 address, byte value) {
-            // videoQueue.Enqueue(new Tuple<UInt32, byte>(address, value));
-            videoMemoryChanged.Set();
-        }
-
+        
         TortillaConsole tConsole = new TortillaConsole();
-
-        [AddressRangeHandler(0xb8000, 0xb8f00)]
-        void UpdateConsole(UInt32 address) {
-            address = (UInt32)(address & ~0x01);
-            int offset = (int)(address - 0xb8000) / 2;
-            int top = offset / 80;
-            int left = offset % 80;
-
-            var ch = (char)memory[address];
-            var co = memory[address + 1];
-            int fgColor = (co & 0x0f);
-            int bgColor = (co & 0xf0) >> 4;
-
-            tConsole.DrawCharacter(ch, left, top, fgColor, bgColor);
-        }
-
-        void HardwareEvents(object o) {
-            int index = WaitHandle.WaitTimeout;
-
-            do {
-                index = WaitHandle.WaitAny(hardwareWaitHandles, 0);
-
-                switch (index) {
-                    case 0:
-                        // UpdateConsole();
-                        break;
-
-                        /* Power off */
-                    case 1:
-                        return;
-                }
-            } while (index != WaitHandle.WaitTimeout);
-        }
-
-        public byte Read8(uint address) {
-            return memory[address];
-            // return (MemoryPage[Address >> 13][Address & 0x1FFF]);
-        }
-
-        public void Write8(UInt32 address, byte value) {
-            memory[address] = value;
-
-            var delegateList = RangeDelegates.Get(address, StubMode.ContainsStartThenEnd);
-
-            if (delegateList != null) {
-                foreach(var handler in delegateList) {
-                    handler(address);
-                }
-            }
-        }
-
-        public byte ReadPort8(ushort address) {
-            return (byte)(ReadPort16(address) & 0x00FF);
-        }
-
-        public ushort ReadPort16(ushort address) {
-            PortInHandlerDelegate handler = PortInHandlerMap[address];
-            UInt16 value = 0;
-
-            if (handler != null) {
-                value = handler(address);
-            }
-            else {
-                // DbgIns(string.Format("No port-in handler for address {0:X}", address));
-            }
-            return value;
-        }
-
-        public void WritePort8(ushort address, byte value) {
-            WritePort16(address, (UInt16)(value & 0x00FF));
-        }
-
-        public void WritePort16(ushort address, UInt16 value) {
-            PortOutHandlerDelegate handler = PortOutHandlerMap[address];
-
-            if (handler != null) {
-                handler(address, value);
-            }
-            else {
-                // DbgIns(string.Format("No port-out handler for address {0:X}", address));
-            }
-        }
-
-        System.Threading.Timer hardwareTimer;
 
         private void RunBackground(Action fn) {
             new Thread(new ThreadStart(fn)).Start();
@@ -375,8 +256,14 @@ namespace TortillaUI {
                 IsBIOSLoaded = false;
             }
             else {
+                byte[] tempMemory = new byte[Motherboard.MemorySize];
+
                 using (BinaryReader reader = new BinaryReader(File.Open(BiosPath, FileMode.Open))) {
-                    reader.Read(memory, 0, memory.Length);
+                    int bytesRead = reader.Read(tempMemory, 0, tempMemory.Length);
+
+                    for (uint i = 0; i < bytesRead; ++i) {
+                        Motherboard.WriteByte(i, tempMemory[i]);
+                    }
                 }
 
                 IsBIOSLoaded = true;
@@ -385,31 +272,31 @@ namespace TortillaUI {
             return IsBIOSLoaded;
         }
 
+        IMotherboard<UInt64> Motherboard { get; set; }
+
         public void InitEnvironment() {
-            cpu = new Tortilla.IA32();
+            Motherboard = new Maize.MaizeMotherboard();
+            Motherboard.Debug += Hardware_Debug;
 
-            for (var i = 0; i < memory.Length; ++i) {
-                memory[i] = 0;
-            }
-
+            // tConsole.Connect(Motherboard);
             tConsole.Show();
 
-            hardwareWaitHandles = new WaitHandle[] { videoMemoryChanged, powerOffEvent };
-            hardwareTimer = new System.Threading.Timer(HardwareEvents, this, 4, 4);
-
             BiosPath = Properties.Settings.Default.DefaultBIOS;
+        }
 
-            if (!LoadBIOS()) {
-                OpenBIOS();
+        private void Cpu_DecodeInstruction(object sender, Tuple<UInt64, UInt64> e) {
+            if (traceCheckBox.Checked) {
+                Decode(e.Item1, e.Item2);
+            }
+        }
+
+        private void Hardware_Debug(object sender, string e) {
+            if (traceCheckBox.Checked) {
+                Debug(e, sender);
             }
         }
 
         public void Wait() {
-        }
-
-        public void PowerOff() {
-            cpu.PowerOff();
-            powerOffEvent.Set();
         }
 
         public void ResetCPU() {
@@ -417,12 +304,16 @@ namespace TortillaUI {
             debug.Clear();
             registers.Clear();
 
-            if (cpu.IsPowerOn) {
-                cpu.Reset();
+            Motherboard.Reset();
+            tConsole.Connect(Motherboard);
+
+            if (!LoadBIOS()) {
+                OpenBIOS();
             }
-            else {
-                cpu.PowerOn(this);
-            }
+
+            Motherboard.Cpu.SingleStep = stepCheckBox.Checked;
+            Motherboard.Cpu.DecodeInstruction += Cpu_DecodeInstruction;
+            Motherboard.PowerOn();
 
             haltEvent.Set();
         }
@@ -476,11 +367,11 @@ namespace TortillaUI {
         }
 
         private void runButton_Click(object sender, EventArgs e) {
-            cpu.Continue();
+            Motherboard.Cpu.Continue();
         }
 
         private void breakButton_Click(object sender, EventArgs e) {
-            cpu.Break();
+            Motherboard.Cpu.Break();
         }
 
         private void stopButton_Click(object sender, EventArgs e) {
@@ -488,13 +379,7 @@ namespace TortillaUI {
         }
 
         private void resetButton_Click(object sender, EventArgs e) {
-            if (!LoadBIOS()) {
-                OpenBIOS();
-            }
-
-            if (IsBIOSLoaded) {
-                ResetCPU();
-            }
+            ResetCPU();
         }
 
         private void traceCheckBox_CheckedChanged(object sender, EventArgs e) {
@@ -507,12 +392,106 @@ namespace TortillaUI {
         }
 
         private void stepCheckBox_CheckedChanged(object sender, EventArgs e) {
-            cpu.SingleStep = stepCheckBox.Checked;
+            if (Motherboard != null && Motherboard.Cpu != null) {
+                Motherboard.Cpu.SingleStep = stepCheckBox.Checked;
+            }
 
             if (stepCheckBox.Checked && !traceCheckBox.Checked) {
                 traceCheckBox.Checked = true;
             }
         }
+
+        // IHardware
+
+        public void PowerOff() {
+            Motherboard.PowerOff();
+            powerOffEvent.Set();
+        }
+
+        Maize.Disassembler Disassembler = new Maize.Disassembler();
+
+        public void Decode(ulong value1, ulong value2) {
+            BeginInvoke((Action)(() => {
+                string text;
+                int bytesToRead = Disassembler.Decode(value1, value2, out text);
+
+                if (!string.IsNullOrEmpty(text)) {
+                    debug.AppendText(text + "\r\n");
+                    debug.ScrollToCaret();
+                }
+            }));
+        }
+
+        public void Debug(string disasm, object o) {
+            var regText = this.Motherboard.Cpu.RegisterDump;
+
+            BeginInvoke((Action)(() => {
+                if (!string.IsNullOrEmpty(disasm)) {
+                    debug.AppendText(disasm + "\r\n");
+                    debug.ScrollToCaret();
+                }
+                registers.Text = regText;
+                UpdateMemoryWindow(0);
+            }));
+        }
+
+        public void RaiseException(byte id) {
+            exceptionEvent.Set();
+            // Console.WriteLine("EXCEPTION {0:x}", id);
+        }
+
+        public void RaiseInterrupt(byte id) {
+            // Console.WriteLine("Interrupt 0x{0:X}", id);
+        }
+
+        public byte Read8(UInt64 address) {
+            return Motherboard.ReadByte(address);
+        }
+
+        public void Write8(UInt64 address, byte value) {
+            Motherboard.WriteByte(address, value);
+
+            var delegateList = RangeDelegates.Get(address, StubMode.ContainsStartThenEnd);
+
+            if (delegateList != null) {
+                foreach (var handler in delegateList) {
+                    handler(address);
+                }
+            }
+        }
+
+        public byte ReadPort8(ushort address) {
+            return (byte)(ReadPort16(address) & 0x00FF);
+        }
+
+        public ushort ReadPort16(ushort address) {
+            PortInHandlerDelegate handler = PortInHandlerMap[address];
+            UInt16 value = 0;
+
+            if (handler != null) {
+                value = handler(address);
+            }
+            else {
+                // DbgIns(string.Format("No port-in handler for address {0:X}", address));
+            }
+            return value;
+        }
+
+        public void WritePort8(ushort address, byte value) {
+            WritePort16(address, (UInt16)(value & 0x00FF));
+        }
+
+        public void WritePort16(ushort address, UInt16 value) {
+            PortOutHandlerDelegate handler = PortOutHandlerMap[address];
+
+            if (handler != null) {
+                handler(address, value);
+            }
+            else {
+                // DbgIns(string.Format("No port-out handler for address {0:X}", address));
+            }
+        }
+
     }
 
     [AttributeUsage(AttributeTargets.Method)]
