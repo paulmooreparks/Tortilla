@@ -128,16 +128,6 @@
       <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\PicoCPU\MaizeCPU.csproj">
-      <Project>{4666d884-ed71-41ca-8a1c-9bf2d9dfde48}</Project>
-      <Name>MaizeCPU</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Tortilla\Tortilla.csproj">
-      <Project>{3ee87d10-3648-42e9-9ec6-651cddd72610}</Project>
-      <Name>Tortilla</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

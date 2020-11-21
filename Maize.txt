@@ -1,0 +1,443 @@
+Opcode Byte
+%BBxx`xxxx  flags
+%xxBB`BBBB  Opcode
+
+%0xxx`xxxx  source is value
+%1xxx`xxxx  source is memory address
+%x0xx`xxxx  register source
+%x1xx`xxxx  immediate source
+
+Opcodes
+%0000`0000  $00   HALT  
+%0000`0001  $01   LD    reg reg
+%0100`0001  $41   LD    imm reg
+%1000`0001  $81   LD    regAddr reg
+%1100`0001  $C1   LD    immAddr reg
+%0000`0010  $02   ST    reg immAddr
+%0100`0010  $42   ST    imm immAddr
+%1000`0010  $82   res
+%1100`0010  $C2   res
+%0000`0011  $03   ADD   reg reg
+%0100`0011  $43   ADD   imm reg
+%1000`0011  $83   ADD   regAddr reg
+%1100`0011  $C3   ADD   immAddr reg
+%0000`0100  $04   SUB   reg reg
+%0100`0100  $44   SUB   imm reg
+%1010`0100  $84   SUB   regAddr reg
+%1110`0100  $C4   SUB   immAddr reg
+%0000`0101  $05   MUL   reg reg
+%0100`0101  $45   MUL   imm reg
+%1000`0101  $85   MUL   regAddr reg
+%1100`0101  $C5   MUL   immAddr reg
+%0000`0110  $06   DIV   reg reg
+%0100`0110  $46   DIV   imm reg
+%1000`0110  $86   DIV   regAddr reg
+%1100`0110  $C6   DIV   immAddr reg
+%0000`0111  $07   MOD   reg reg
+%0100`0111  $47   MOD   imm reg
+%1000`0111  $87   MOD   regAddr reg
+%1100`0111  $C7   MOD   immAddr reg
+%0000`1000  $08   AND   reg reg
+%0100`1000  $48   AND   imm reg
+%1000`1000  $88   AND   regAddr reg
+%1100`1000  $C8   AND   immAddr reg
+%0000`1001  $09   OR    reg reg
+%0100`1001  $49   OR    imm reg
+%1000`1001  $89   OR    regAddr reg
+%1100`1001  $C9   OR    immAddr reg
+%0000`1010  $0A   NOR   reg reg
+%0100`1010  $4A   NOR   imm reg
+%1000`1010  $8A   NOR   regAddr reg
+%1100`1010  $CA   NOR   immAddr reg
+%0000`1011  $0B   NAND  reg reg
+%0100`1011  $4B   NAND  imm reg
+%1000`1011  $8B   NAND  regAddr reg
+%1100`1011  $CB   NAND  immAddr reg
+%0000`1100  $0C   XOR   reg reg
+%0100`1100  $4C   XOR   imm reg
+%1000`1100  $8C   XOR   regAddr reg
+%1100`1100  $CC   XOR   immAddr reg
+%0000`1101  $0D   SHL   reg reg
+%0100`1101  $4D   SHL   imm reg
+%1000`1101  $8D   SHL   regAddr reg
+%1100`1101  $CD   SHL   immAddr reg
+%0000`1110  $0E   SHR   reg reg
+%0100`1110  $4E   SHR   imm reg
+%1000`1110  $8E   SHR   regAddr reg
+%1100`1110  $CE   SHR   immAddr reg
+%0000`1111  $0F   CMP   reg reg
+%0100`1111  $4F   CMP   imm reg
+%1000`1111  $8F   CMP   regAddr reg
+%1100`1111  $CF   CMP   immAddr reg
+%0001`0000  $10   TEST  reg reg
+%0101`0000  $50   TEST  imm reg
+%1001`0000  $90   TEST  regAddr reg
+%1101`0000  $D0   TEST  immAddr reg
+%0001`0001  $11   res
+%0101`0001  $51   res
+%1001`0001  $91   res   
+%1101`0001  $D1   res   
+%0001`0010  $12   INT   reg
+%0101`0010  $52   INT   imm
+%1001`0010  $92   res   
+%1101`0010  $D2   res   
+%0001`0011  $13   STIN  reg regAddr
+%0101`0011  $53   STIN  imm regAddr
+%1001`0011  $93   res   
+%1101`0011  $D3   res   
+%0001`0100  $14   OUT   reg imm
+%0101`0100  $54   OUT   imm imm
+%1001`0100  $94   OUT   regAddr imm
+%1101`0100  $D4   OUT   immAddr imm
+%0001`0101  $15   res
+%0101`0101  $55   res
+%1001`0101  $95   res
+%1101`0101  $D5   res
+%0001`0110  $16   JMP   reg
+%0101`0110  $56   JMP   imm
+%1001`0110  $96   JMP   regAddr
+%1101`0110  $D6   JMP   immAddr
+%0001`0111  $17   JZ    reg
+%0101`0111  $57   JZ    imm
+%1001`0111  $97   JZ    regAddr
+%1101`0111  $D7   JZ    immAddr
+%0001`1000  $18   JNZ   reg
+%0101`1000  $58   JNZ   imm
+%1001`1000  $98   JNZ   regAddr
+%1101`1000  $D8   JNZ   immAddr
+%0001`1001  $19   JLT   reg
+%0101`1001  $59   JLT   imm
+%1001`1001  $99   JLT   regAddr
+%1101`1001  $D9   JLT   immAddr
+%0001`1010  $1A   JLE   reg
+%0101`1010  $5A   JLE   imm
+%1001`1010  $9A   JLE   regAddr
+%1101`1010  $DA   JLE   immAddr
+%0001`1011  $1B   JGT   reg
+%0101`1011  $5B   JGT   imm
+%1001`1011  $9B   JGT   regAddr
+%1101`1011  $DB   JGT   immAddr
+%0001`1100  $1C   JGE   reg
+%0101`1100  $5C   JGE   imm
+%1001`1100  $9C   JGE   regAddr
+%1101`1100  $DC   JGE   immAddr
+%0001`1101  $1D   CALL  reg
+%0101`1101  $5D   CALL  imm
+%1001`1101  $9D   CALL  regAddr
+%1101`1101  $DD   CALL  immAddr
+%0001`1110  $1E   OUTR  reg reg
+%0101`1110  $5E   OUTR  imm reg
+%1001`1110  $9E   OUTR  regAddr reg
+%1101`1110  $DE   OUTR  immAddr reg
+%0001`1111  $1F   IN    reg reg
+%0101`1111  $5F   IN    imm reg
+%1001`1111  $9F   IN    regAddr reg
+%1101`1111  $DF   IN    immAddr reg
+%0010`0000  $20   PUSH  reg
+%0010`0001  $21   PUSH  imm
+%0010`0010  $22   CLR   reg
+%0010`0011  $23   INC   reg
+%0010`0100  $24   DEC   reg
+%0011`0101  $25   NOT   reg
+%0011`0110  $26   POP   reg
+%0011`0111  $27   RET    
+%1010`1010  $AA   NOP    
+%1111`1111  $FF   BRK   (INT 0)
+            
+Registers
+
+A  General purpose
+B  General purpose
+C  General purpose
+D  General purpose
+E  General purpose
+G  General purpose
+H  General purpose
+J  General purpose
+K  General purpose
+L  General purpose
+M  General purpose
+Z  General purpose
+
+F  Flag register
+I  Instruction register
+P  Program execution register
+   P.H0  Program counter
+   P.H1  Program segment
+S  Stack register
+   S.H0  Stack pointer
+   S.H1  Base pointer
+
+
+Register bit field
+%0000xxxx   $0    A register
+%0001xxxx   $1    B register
+%0010xxxx   $2    C register
+%0011xxxx   $3    D register
+%0100xxxx   $4    E register
+%0101xxxx   $5    G register
+%0110xxxx   $6    H register
+%0111xxxx   $7    J register
+%1000xxxx   $8    K register
+%1001xxxx   $9    L register
+%1010xxxx   $A    M register
+%1011xxxx   $B    Z register
+%1100xxxx   $C    F register
+%1101xxxx   $D    I register
+%1110xxxx   $E    P register
+%1111xxxx   $F    S register
+
+Sub-register bit field
+%xxxx0000   $0   X.B0 (1-byte data)
+%xxxx0001   $1   X.B1 (1-byte data)
+%xxxx0010   $2   X.B2 (1-byte data)
+%xxxx0011   $3   X.B3 (1-byte data)
+%xxxx0100   $4   X.B4 (1-byte data)
+%xxxx0101   $5   X.B5 (1-byte data)
+%xxxx0110   $6   X.B6 (1-byte data)
+%xxxx0111   $7   X.B7 (1-byte data)
+%xxxx1000   $8   X.Q0 (2-byte data)
+%xxxx1001   $9   X.Q1 (2-byte data)
+%xxxx1010   $A   X.Q2 (2-byte data)
+%xxxx1011   $B   X.Q3 (2-byte data)
+%xxxx1100   $C   X.H0 (4-byte data)
+%xxxx1101   $D   X.H1 (4-byte data)
+%xxxx1110   $E   X    (8-byte data)
+
+OLD Register param
+
+%xBBB`xxxx        register ID
+%x000`xxxx  $0x   A register
+%x001`xxxx  $1x   B register
+%x010`xxxx  $2x   C register
+%x011`xxxx  $3x   D register
+%x100`xxxx  $4x   E register
+%x101`xxxx  $5x   I register
+%x110`xxxx  $6x   S register
+%x111`xxxx  $7x   F register
+                  
+%xxxx`0000  $x0   X.B0 (1-byte data)
+%xxxx`0001  $x1   X.B1 (1-byte data)
+%xxxx`0010  $x2   X.B2 (1-byte data)
+%xxxx`0011  $x3   X.B3 (1-byte data)
+%xxxx`0100  $x4   X.B4 (1-byte data)
+%xxxx`0101  $x5   X.B5 (1-byte data)
+%xxxx`0110  $x6   X.B6 (1-byte data)
+%xxxx`0111  $x7   X.B7 (1-byte data)
+%xxxx`1000  $x8   X.Q0 (2-byte data)
+%xxxx`1001  $x9   X.Q1 (2-byte data)
+%xxxx`1010  $xA   X.Q2 (2-byte data)
+%xxxx`1011  $xB   X.Q3 (2-byte data)
+%xxxx`1100  $xC   X.H0 (4-byte data)
+%xxxx`1101  $xD   X.H1 (4-byte data)
+%xxxx`1110  $xC   X    (8-byte data)
+
+
+Immediate param
+%xxxx`0xxx        immediate is operand
+%xxxx`1xxx        immediate is math operation on next operand
+
+%xxxx`x000  $00   instruction reads 1 byte immediate (8 bits)
+%xxxx`x001  $01   instruction reads 2-byte immediate (16 bits) 
+%xxxx`x010  $02   instruction reads 4-byte immediate (32 bits) 
+%xxxx`x011  $03   instruction reads 8-byte immediate (64 bits)
+
+
+
+
+Immediate operation bit
+%xxxx`0xxx  Read immediate value as operand
+%xxxx`1xxx  Perform math operation with value
+
+Immediate value bit field
+%xxxx`x000  instruction reads 1 byte immediate (8 bits)
+%xxxx`x001  instruction reads 2-byte immediate (16 bits) 
+%xxxx`x010  instruction reads 4-byte immediate (32 bits) 
+%xxxx`x011  instruction reads 8-byte immediate (64 bits)
+
+Immediate math bit field
+%0000`xxxx  ADD immediate to previous operand
+%0001`xxxx  SUB immediate from previous operand
+%0010`xxxx  MUL previous operand by immediate
+%0011`xxxx  DIV previous operand by immediate
+%0100`xxxx  AND previous operand with immediate
+%0101`xxxx  OR previous operand with immediate
+%0110`xxxx  XOR previous operand with immediate
+%0111`xxxx  NOR previous operand with immediate
+%1000`xxxx  NAND previous operand with immediate
+%1001`xxxx  SHL previous operand by immediate
+%1010`xxxx  SHR previous operand by immediate
+%1011`xxxx  res
+%1100`xxxx  res
+%1101`xxxx  res
+%1110`xxxx  res
+%1111`xxxx  res
+
+
+
+Assembler Syntax
+
+Tokens with leading double-underscore (e.g., __foo) are reserved.
+
+LABEL labelName labelData
+DATA dataValue [dataValue] [dataValue] [...]
+
+%00000001   binary
+#123        decimal
+$FFFE1000   hexadecimal
+
+
+
+LD
+Load register from register, value, or memory location
+
+<LD>     ::= <opcode> <src> <dest> <imm>
+<opcode  ::= 00000001 
+<src>    ::= 
+
+LD sreg/[reg]/imm/[imm], dreg
+01 src08b dest08b [imm08b|imm16b|imm32b|imm64b]
+00000001 xxxx`xxxx xxxx`xxxx
+
+81 01 LD $01, A.B0
+10000001 xxxx`xxxx
+
+A1 01 02 LD $0201, A.Q0
+10100001 xxxx`xxxx xxxx`xxxx
+
+C1 01 02 03 04 LD $04030201, A.H0
+11000001 xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx
+
+E1 01 02 03 04 05 06 07 08 LD $0807060504030201, A
+11100001 xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx
+
+
+ST
+Store register or value to memory
+
+ST sreg, [reg]|[imm08b]|[imm16b]|[imm32b]|[imm64b]
+01 src08b dest08b (imm08b|imm16b|imm32b|imm64b)
+00000010 xxxx`xxxx xxxx`xxxx
+
+ST A.B0, [imm08b]
+82 xx 
+10000010 xxxx`xxxx
+
+ST A.Q0, [imm16b]
+A2 xx xx 
+10100010 xxxx`xxxx`xxxx`xxxx
+
+ST A.H0, [imm32b]
+C2 xx xx xx xx 
+11000010 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+
+ST A, [imm64b]
+E2 xx xx xx xx xx xx xx xx
+11100010 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+
+
+ADD
+Add reg2 or imm to reg1, store in reg1
+
+ADD sreg/val + dreg -> dreg
+03 xx xx ADD src, dest
+00000011 xxxx`xxxx`xxxx`xxxx
+
+ADD A.B0 (embedded 8-bit operand as memory location)
+83 ADD 08b val + A.B0 -> A.B0
+83 xx 
+10000011 xxxx`xxxx
+
+ADD A.Q0 (embedded 16-bit operand)
+A3 ADD 16b val + A.Q0 -> A.Q0
+A3 xx xx 
+10100011 xxxx`xxxx`xxxx`xxxx
+
+ADD A.H0 (embedded 32-bit operand)
+C3 ADD 32b val + A.H0 -> A.H0
+C3 xx xx xx xx 
+11000011 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+
+ADD A (embedded 64-bit operand)
+E3 ADD 64b + A -> A
+E3 xx xx xx xx xx xx xx xx
+11100011 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+
+
+
+
+
+
+
+
+
+
+;-------------------------------------------
+; OLD
+
+0000001E  E1 50 07 61 07 64 07 6D 07   LD $076D076407610750, A ; "Padm"
+0000002A  A2 80 00                     ST A.Q0, [$0080]
+00000027  02 50 05 82 00               ST A.Q1, [$0082]
+00000024  02 60 05 84 00               ST A.Q2, [$0084]
+00000021  02 70 05 86 00               ST A.Q3, [$0086]
+0000001E  E1 61 07 20 07 4A 07 61 07   LD $0761074A07200761, A ; "a Ja"
+0000002A  A2 88 00                     ST A.Q0, [$0088]
+00000027  02 50 05 8A 00               ST A.Q1, [$008A]
+00000024  02 60 05 8C 00               ST A.Q2, [$008C]
+00000021  02 70 05 8E 00               ST A.Q3, [$008E]
+0000001E  E1 69 07 72 07 61 07 6D 07   LD $076D076107720769, A ; "iram"
+0000002A  A2 90 00                     ST A.Q0, [$0090]
+00000027  02 50 05 92 00               ST A.Q1, [$0092]
+00000024  02 60 05 94 00               ST A.Q2, [$0094]
+00000021  02 70 05 96 00               ST A.Q3, [$0096]
+
+
+;-------------------------------------------
+
+EVEN OLDER
+
+; Test, not in use, etc.
+
+00000000 0C CC    LD $CC, A.B0
+00000002 14 51    ST A.B0, [$51]
+
+
+00000000  81 50     LD $50, A.B0
+00000002  82 80     ST A.B0, [$80]
+00000004  81 07     LD $07, A.B0
+00000006  82 81     ST A.B0, [$81]
+00000008  81 61     LD $61, A.B0
+0000000A  82 82     ST A.B0, [$82]
+0000000C  81 07     LD $07, A.B0
+0000000E  82 83     ST A.B0, [$83]
+00000010  81 64     LD $64, A.B0
+00000012  82 84     ST A.B0, [$84]
+00000014  81 07     LD $07, A.B0
+00000016  82 85     ST A.B0, [$85]
+00000018  81 6D     LD $6D, A.B0
+0000001A  82 86     ST A.B0, [$86]
+0000001C  81 07     LD $07, A.B0
+0000001E  82 87     ST A.B0, [$87]
+00000020  81 61     LD $61, A.B0
+00000022  82 88     ST A.B0, [$88]
+00000024  81 07     LD $07, A.B0
+00000026  82 89     ST A.B0, [$89]
+
+00000000  A1 50 07    LD $0750, A.Q0
+00000003  A2 80 00    ST A.Q0, [$0080]
+00000006  A1 61 07    LD $0761, A.Q0
+00000009  A2 82 00    ST A.Q0, [$0082]
+0000000C  A1 64 07    LD $0764, A.Q0
+0000000F  A2 84 00    ST A.Q0, [$0084]
+00000013  A1 6D 07    LD $076D, A.Q0
+00000016  A2 86 00    ST A.Q0, [$0086]
+00000019  A1 61 07    LD $0761, A.Q0
+0000001C  A2 88 00    ST A.Q0, [$0088]
+
+00000000  E1 50 07 61 07 64 07 6D 07   LD $076D076407610750, A ; "Padm"
+00000009  A2 80 00                     ST A.Q0, [$0080]
+0000000C  02 50 05 82 00               ST A.Q1, [$0082]
+00000011  02 60 05 84 00               ST A.Q2, [$0084]
+00000016  02 70 05 86 00               ST A.Q3, [$0086]
+0000001B  A1 61 07                     LD $0761, A.Q0
+0000001E  A2 88 00                     ST A.Q0, [$0088]

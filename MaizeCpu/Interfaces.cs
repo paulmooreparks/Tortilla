@@ -19,7 +19,8 @@ namespace Tortilla {
         void Start();
         void Stop();
         void ConnectComponent(IBusComponent component);
-        void Tick();
+        void Tick(IBusComponent flags);
+        void Initialize();
     }
 
     public interface IBus {
@@ -37,7 +38,7 @@ namespace Tortilla {
     }
 
     public interface IBusComponent {
-        void OnTick(ClockState state);
+        void OnTick(ClockState state, IBusComponent _flags);
         void Enable(BusTypes type);
         void Set(BusTypes type);
         bool AddressBusEnabled { get; }
@@ -56,12 +57,13 @@ namespace Tortilla {
         IDataBus<DataType> AddressBus { get; set; }
         IDataBus<DataType> IOBus { get; set; }
         DataType Value { get; set; }
+        DataType PrivilegeFlags { get; set; }
+        DataType PrivilegeMask { get; set; }
     }
 
     public interface IMotherboard<DataType> {
         IClock Clock { get; }
-        
-        void OnDebug(string disasm);
+       
         void OnDebug();
         void OnPowerOff();
         void OnRaiseException(byte id);

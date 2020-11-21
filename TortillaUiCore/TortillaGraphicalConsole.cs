@@ -9,23 +9,58 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Tortilla;
+using System.Configuration;
+using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
 
 namespace TortillaUI {
-    public partial class TortillaConsole : Form, Tortilla.IBusComponent {
-        public TortillaConsole() {
+    public partial class TortillaGraphicalConsole : Form, Tortilla.IBusComponent, TortillaUI.ITortillaConsole {
+        UserSettings us = new UserSettings();
+
+        private const UInt32 StdOutputHandle = 0xFFFFFFF5;
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetStdHandle(UInt32 nStdHandle);
+        [DllImport("kernel32.dll")]
+        private static extern void SetStdHandle(UInt32 nStdHandle, IntPtr handle);
+        [DllImport("kernel32")]
+        static extern bool AllocConsole();
+        [DllImport("kernel32")]
+        static extern bool FreeConsole();
+
+        public TortillaGraphicalConsole() {
             InitializeComponent();
             FormBorderStyle = FormBorderStyle.FixedSingle;
             Load += TortillaConsole_Load;
             SizeChanged += TortillaConsole_SizeChanged;
-            InitBitmaps();
-            clockTimer.Elapsed += ClockTimer_Elapsed;
-            clockTimer.Start();
+            this.HandleCreated += TortillaConsole_HandleCreated;
             this.KeyDown += TortillaConsole_KeyDown;
+            this.FormClosing += TortillaConsole_FormClosing;
+        }
+
+        private void TortillaConsole_FormClosing(object sender, FormClosingEventArgs e) {
+            FreeConsole();
+        }
+
+        private void TortillaConsole_HandleCreated(object sender, EventArgs e) {
+            cursorTimer.Elapsed += CursorTimer_Elapsed;
+        }
+
+        private void TortillaConsole_KeyDown(object sender, KeyEventArgs e) {
+            KeyCode = (int)e.KeyCode;
+            BusData.Value = (ulong)KeyCode;
+            MB?.RaiseInterrupt(InterruptID);
+        }
+
+        protected int KeyCode { get; set; }
+
+        private void GetKeyCode(RegValue busValue) {
+            BusData.Value = (ulong)KeyCode;
+            BusData.Enable(BusTypes.IOBus);
         }
 
         private bool CursorOn { get; set; }
 
-        System.Timers.Timer clockTimer = new System.Timers.Timer(500);
+        System.Timers.Timer cursorTimer = new System.Timers.Timer(500);
 
         private void TortillaConsole_SizeChanged(object sender, EventArgs e) {
             SaveWindowPosition();
@@ -34,6 +69,7 @@ namespace TortillaUI {
         private void TortillaConsole_Load(object sender, EventArgs e) {
             RestoreWindowPosition();
             Move += TortillaConsole_Move;
+            AllocConsole();
         }
 
         private void TortillaConsole_Move(object sender, EventArgs e) {
@@ -46,13 +82,13 @@ namespace TortillaUI {
                 new Rectangle(RestoreBounds.Left, RestoreBounds.Top, this.Width, this.Height);
 
             var pos = $"{(int)this.WindowState},{rect.Left},{rect.Top},{rect.Width},{rect.Height}";
-            Properties.Settings.Default.ConsoleWindowPosition = pos;
-            Properties.Settings.Default.Save();
+            us.ConsoleWindowPosition = pos;
+            us.Save();
         }
 
         private void RestoreWindowPosition() {
             try {
-                string pos = Properties.Settings.Default.ConsoleWindowPosition;
+                string pos = us.ConsoleWindowPosition;
 
                 if (!string.IsNullOrEmpty(pos)) {
                     List<int> settings = pos.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(v => int.Parse(v)).ToList();
@@ -64,6 +100,7 @@ namespace TortillaUI {
                 }
             }
             catch { /* Just leave current position if error */ }
+            
         }
 
         protected override CreateParams CreateParams {
@@ -98,6 +135,25 @@ namespace TortillaUI {
             0b00000000,
             0b00000000,
             0b00000000
+        };
+
+        static byte[,] ch_21_test = new byte[,] {
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,1,1,1,1,0,0},
+            {0,0,1,1,1,1,0,0},
+            {0,0,1,1,1,1,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,0,1,1,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0}
         };
 
         static byte[] ch_22 = { 0b00000000, 0b00000000, 0b00000000, 0b01100110, 0b01100110, 0b01100110, 0b00100100, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000, 0b00000000 };
@@ -235,59 +291,261 @@ namespace TortillaUI {
         };
 
 
+        static byte[,] test = new byte[,] {
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {0,0,0,0,0,0,0,0},
+            {1,1,1,1,1,1,1,1},
+            {1,1,1,1,1,1,1,1},
+            {1,1,1,1,1,1,1,1}
+        };
+
 
         Bitmap chBitmap = new Bitmap(8, 16);
+        Rectangle rect = new Rectangle(0, 0, 8, 16);
 
         Bitmap[] bitmaps = new Bitmap[256];
 
         Color[] vgaColors = {
-            Color.Black, Color.DarkBlue, Color.DarkGreen, Color.DarkCyan, Color.DarkRed, Color.DarkMagenta, Color.Brown, Color.LightGray,
-            Color.DarkGray, Color.Blue, Color.Green, Color.Cyan, Color.Red, Color.Magenta, Color.Yellow, Color.White };
+            Color.Black,    Color.DarkBlue, Color.DarkGreen, Color.DarkCyan, Color.DarkRed, Color.DarkMagenta, Color.Brown,  Color.LightGray,
+            Color.DarkGray, Color.Blue,     Color.Green,     Color.Cyan,     Color.Red,     Color.Magenta,     Color.Yellow, Color.White 
+        };
 
-        /* This is really, really slow, and it doesn't appear to match VGA character size and resolution, 
-        but it works well enough for now. I'll revisit all of this later. */
-        public void DrawCharacter(char ch, int left, int top, int fgColor, int bgColor) {
-            BeginInvoke((Action)(() => { 
-                int pxLeft = left * 8;
-                int pxTop = top * 16;
-                byte[] chPattern = chPatterns[ch];
-                Color cbgColor = vgaColors[bgColor];
-                Color cfgColor = vgaColors[fgColor];
+        private void DrawBitmapPattern(int left, int top, int fgColor, int bgColor, byte[] chPattern) {
+            BitmapData data = chBitmap.LockBits(rect, ImageLockMode.ReadWrite, PixelFormat.Format24bppRgb);
+            Color fg = vgaColors[fgColor];
+            Color bg = vgaColors[bgColor];
+            Color c = bg;
 
-                int y = 0;
+            unsafe {
+                byte* ptr = (byte*)data.Scan0;
+                byte bits = 0;
 
-                for (int i = 0; i < 16; ++i) {
-                    byte bits = chPattern[i];
-                    byte mask = 0b_1000_0000;
+                // for (int y = 0; y < 16; ++y)
+                // Parallel.For(0, 16, y =>
+                /* As you can see from the above comments, I've tried a couple of different approaches to 
+                the following code. I've settled on unrolling the outer loop (walking down the list of bytes 
+                that make up the rows of the bitmap) and the inner loop (walking through the bits of each 
+                row). I've also placed the bitmaps into a native array for speed, and I've used LockBits to 
+                allow me to create the bitmap all at once rather than calling SetPixel for each bit. */
+                {
+                    /* Start at the top row of bits (chPattern[0x00]). Walk through each bit in the row, one 
+                    bit per line, and set the color based on whether the bit is on (foreground color) or off 
+                    (background color). */
+                    bits = chPattern[0x00];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R; 
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R; 
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R; 
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R; 
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R; 
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R; 
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R; 
+                    ptr += data.Stride;
 
-                    for (int x = 0; x < 8; ++x) {
-                        if ((bits & mask) == mask) {
-                            chBitmap.SetPixel(x, y, cfgColor);
-                        }
-                        else {
-                            chBitmap.SetPixel(x, y, cbgColor);
-                        }
+                    /* Same as above, next row, and so on. */
+                    bits = chPattern[0x01];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
 
-                        mask >>= 1;
-                    }
+                    bits = chPattern[0x02];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
 
-                    ++y;
+                    bits = chPattern[0x03];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x04];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x05];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x06];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x07];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x08];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x09];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0A];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0B];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0C];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0D];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0E];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
+
+                    bits = chPattern[0x0F];
+                    c = (bits & 0x80) == 0x80 ? fg : bg; ptr[0x00] = c.B; ptr[0x01] = c.G; ptr[0x02] = c.R;
+                    c = (bits & 0x40) == 0x40 ? fg : bg; ptr[0x03] = c.B; ptr[0x04] = c.G; ptr[0x05] = c.R;
+                    c = (bits & 0x20) == 0x20 ? fg : bg; ptr[0x06] = c.B; ptr[0x07] = c.G; ptr[0x08] = c.R;
+                    c = (bits & 0x10) == 0x10 ? fg : bg; ptr[0x09] = c.B; ptr[0x0A] = c.G; ptr[0x0B] = c.R;
+                    c = (bits & 0x08) == 0x08 ? fg : bg; ptr[0x0C] = c.B; ptr[0x0D] = c.G; ptr[0x0E] = c.R;
+                    c = (bits & 0x04) == 0x04 ? fg : bg; ptr[0x0F] = c.B; ptr[0x10] = c.G; ptr[0x11] = c.R;
+                    c = (bits & 0x02) == 0x02 ? fg : bg; ptr[0x12] = c.B; ptr[0x13] = c.G; ptr[0x14] = c.R;
+                    c = (bits & 0x01) == 0x01 ? fg : bg; ptr[0x15] = c.B; ptr[0x16] = c.G; ptr[0x17] = c.R;
+                    ptr += data.Stride;
                 }
+                // );
+            }
 
-                consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
+            chBitmap.UnlockBits(data);
+
+            int pxLeft = left * 8;
+            int pxTop = top * 16;
+            consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
+        }
+
+        public void DrawCharacter(char ch, int left, int top, int fgColor, int bgColor) {
+            // BeginInvoke((Action)(() => {
+                byte[] chPattern = chPatterns[ch];
+                DrawBitmapPattern(left, top, fgColor, bgColor, chPattern);
+            // }));
+        }
+
+        private void DrawCursor(int left, int top, int fgColor, int bgColor) {
+            BeginInvoke((Action)(() => {
+                DrawBitmapPattern(left, top, fgColor, bgColor, cursor);
             }));
         }
-
-        void InitBitmaps() {
-            for (int i = 0; i < 256; ++i) {
-
-            }
-        }
-
 
         public void Clear() {
             CursorLocation = 0;
             consoleGraphics.Clear(Color.Black);
+            Console.Clear();
         }
 
         private void TortillaConsole_Shown(object sender, EventArgs e) {
@@ -295,6 +553,7 @@ namespace TortillaUI {
             pictureBox.BackColor = Color.Black;
             Clear();
             DataBusSet = true;
+            cursorTimer.Start();
         }
 
         byte[] Memory = new byte[0xf02];
@@ -349,11 +608,12 @@ namespace TortillaUI {
         public IDataBus<UInt64> AddressBus { get; set; }
         public IDataBus<UInt64> IOBus { get; set; }
 
-        public void OnTick(ClockState state) {
+        public IBusComponent PrivilegeFlags { get; set; }
+
+        public void OnTick(ClockState state, IBusComponent cpuFlags) {
             switch (state) {
             case ClockState.TickSet:
-                Maize.RegValue busValue = IOBus.Value;
-                var opcode = busValue.B0;
+                var opcode = IOBus.Value & 0xFF;
 
                 switch (opcode) {
                 case 0x00:
@@ -361,35 +621,35 @@ namespace TortillaUI {
                     break;
 
                 case 0x01:
-                    WriteCharacter(busValue);
+                    WriteCharacterAtCursorPosition(IOBus.Value);
                     break;
 
                 case 0x02:
-                    WriteCharacterAndColor(busValue);
+                    WriteCharacterAndColor(IOBus.Value);
                     break;
 
                 case 0x03:
-                    WriteCharacterAt(busValue);
+                    WriteCharacterAt(IOBus.Value);
                     break;
 
                 case 0x04:
-                    WriteCharacterAndColorAt(busValue);
+                    WriteCharacterAndColorAt(IOBus.Value);
                     break;
 
                 case 0x05:
-                    SetForegroundColor(busValue);
+                    SetForegroundColor(IOBus.Value);
                     break;
 
                 case 0x06:
-                    SetBackgroundColor(busValue);
+                    SetBackgroundColor(IOBus.Value);
                     break;
 
                 case 0x07:
-                    SetCursorLocation(busValue);
+                    SetCursorLocation(IOBus.Value);
                     break;
 
                 case 0x08:
-                    GetKeyCode(busValue);
+                    GetKeyCode(IOBus.Value);
                     break;
                 }
 
@@ -401,38 +661,43 @@ namespace TortillaUI {
 
         MaizeRegister BusData { get; set; } = new MaizeRegister();
 
-        private void TortillaConsole_KeyDown(object sender, KeyEventArgs e) {
-            KeyCode = e.KeyCode;
-            BusData.Value = (ulong)KeyCode;
-            MB?.RaiseInterrupt(InterruptID);
-        }
-
-        protected Keys KeyCode { get; set; }
-
-        private void GetKeyCode(RegValue busValue) {
-            BusData.Value = (ulong)KeyCode;
-            BusData.Enable(BusTypes.IOBus);
-        }
-
         private void SetCursorLocation(RegValue busValue) {
             CursorLocation = busValue.H1;
         }
 
-        private void WriteCharacter(RegValue busValue) {
-            // CursorLocation = busValue.H1;
-            var address = CursorLocation * 2;
-            int offset = (int)CursorLocation;
-            int top = offset / 80;
-            int left = offset % 80;
-            char ch = (char)busValue.B2;
-            int fgColor = DefaultFgColor;
-            int bgColor = DefaultBgColor;
-            var chcoPair = busValue.Q1;
+        private void WriteCharacter(char ch, int left, int top, int fgColor, int bgColor, int count) {
+            ConWriteCharacter(ch, left, top, fgColor, bgColor, count);
 
-            WriteDoubleByte(address, chcoPair);
-            DrawCharacter(ch, left, top, fgColor, bgColor);
-            ++CursorLocation;
+            CursorLocation = (uint)(left + (top * 80));
+            RegValue tmp = 0;
+            tmp.B0 = (byte)ch;
+            tmp.B1 = (byte)((bgColor << 4) & ((fgColor & 0x0F) & 0xFF));
+            cursorTimer.Stop();
+
+            do {
+                DrawCharacter(ch, left, top, fgColor, bgColor);
+                // var address = CursorLocation * 2;
+                // WriteDoubleByte(address, tmp.Q0);
+                ++CursorLocation;
+                --count;
+
+                if (count > 0) {
+                    int offset = (int)CursorLocation;
+                    left = offset % 80;
+                    top = offset / 80;
+                }
+            } while (count > 0);
+
+            cursorTimer.Start();
         }
+
+        private void ConWriteCharacter(char ch, int left, int top, int fgColor, int bgColor, int count) {
+            do {
+                Console.Write(ch);
+                --count;
+            } while (count > 0);
+        }
+
 
         // WHOLEWRD
         // HLF1HLF0
@@ -440,60 +705,53 @@ namespace TortillaUI {
         // 76543210
 
         // B0 = opcode
-        // B1 = empty
+        // B1 = repeat count
         // B2 = character
-        // B3 = empty
+        // B3 = color
         // B4 = x position
         // B5 = y position
-        private void WriteCharacterAt(RegValue busValue) {
+
+        private void WriteCharacterAtCursorPosition(RegValue busValue) {
+            int offset = (int)CursorLocation;
+            int left = offset % 80;
+            int top = offset / 80;
             char ch = (char)busValue.B2;
+
+            WriteCharacter(ch, left, top, DefaultFgColor, DefaultBgColor, busValue.B1);
+        }
+
+        private void WriteCharacterAt(RegValue busValue) {
             int left = busValue.B4;
             int top = busValue.B5;
-            CursorLocation = (uint)(left + (top * 80));
-            var address = CursorLocation * 2;
-            int fgColor = DefaultFgColor;
-            int bgColor = DefaultBgColor;
-            var chcoPair = busValue.Q1;
+            char ch = (char)busValue.B2;
 
-            WriteDoubleByte(address, chcoPair);
-            DrawCharacter(ch, left, top, fgColor, bgColor);
-            ++CursorLocation;
+            WriteCharacter(ch, left, top, DefaultFgColor, DefaultBgColor, busValue.B1);
         }
 
         private void WriteCharacterAndColor(RegValue busValue) {
-            // CursorLocation = busValue.H1;
-            var address = CursorLocation * 2;
             int offset = (int)CursorLocation;
-            int top = offset / 80;
             int left = offset % 80;
+            int top = offset / 80;
             char ch = (char)busValue.B2;
             char co = (char)busValue.B3;
             int fgColor = (co & 0x0f);
             int bgColor = (co & 0xf0) >> 4;
-            var chcoPair = busValue.Q1;
 
-            WriteDoubleByte(address, chcoPair);
-            DrawCharacter(ch, left, top, fgColor, bgColor);
-            ++CursorLocation;
+            WriteCharacter(ch, left, top, fgColor, bgColor, busValue.B1);
         }
 
         private void WriteCharacterAndColorAt(RegValue busValue) {
-            char ch = (char)busValue.B2;
             int left = busValue.B4;
             int top = busValue.B5;
-            CursorLocation = (uint)(left + (top * 80));
-            var address = CursorLocation * 2;
+            char ch = (char)busValue.B2;
             char co = (char)busValue.B3;
             int fgColor = (co & 0x0f);
             int bgColor = (co & 0xf0) >> 4;
-            var chcoPair = busValue.Q1;
 
-            WriteDoubleByte(address, chcoPair);
-            DrawCharacter(ch, left, top, fgColor, bgColor);
-            ++CursorLocation;
+            WriteCharacter(ch, left, top, fgColor, bgColor, busValue.B1);
         }
 
-        private void ClockTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
+        private void CursorTimer_Elapsed(object sender, System.Timers.ElapsedEventArgs e) {
             CursorOn = !CursorOn;
             int fgColor = DefaultBgColor;
 
@@ -507,42 +765,11 @@ namespace TortillaUI {
             DrawCursor(left, top, fgColor, DefaultBgColor);
         }
 
-        private void DrawCursor(int left, int top, int fgColor, int bgColor) {
-            BeginInvoke((Action)(() => {
-                int pxLeft = left * 8;
-                int pxTop = top * 16;
-                byte[] chPattern = cursor;
-                Color cbgColor = vgaColors[bgColor];
-                Color cfgColor = vgaColors[fgColor];
-
-                int y = 0;
-
-                for (int i = 0; i < 16; ++i) {
-                    byte bits = chPattern[i];
-                    byte mask = 0b_1000_0000;
-
-                    for (int x = 0; x < 8; ++x) {
-                        if ((bits & mask) == mask) {
-                            chBitmap.SetPixel(x, y, cfgColor);
-                        }
-                        else {
-                            chBitmap.SetPixel(x, y, cbgColor);
-                        }
-
-                        mask >>= 1;
-                    }
-
-                    ++y;
-                }
-
-                consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
-            }));
-        }
-
-
         int DefaultFgColor { get; set; } = 0x07;
         int DefaultBgColor { get; set; } = 0x00;
         uint CursorLocation { get; set; } = 0x00000000;
+
+        public bool AccessCheck(IBusComponent flags) => true;
 
         private void SetForegroundColor(RegValue busValue) {
             char co = (char)busValue.B3;
@@ -570,4 +797,5 @@ namespace TortillaUI {
             WriteByte(address + 1, tmp.B1);
         }
     }
+
 }

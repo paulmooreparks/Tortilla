@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "mazm": {
+      "commandName": "Project",
+      "commandLineArgs": "C:\\Users\\paul\\OneDrive\\source\\repos\\Tortilla\\tests.asm"
+    }
+  }
+}

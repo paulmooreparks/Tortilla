@@ -9,9 +9,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Tortilla;
+using System.Configuration;
 
 namespace TortillaUI {
     public partial class TortillaConsole : Form, Tortilla.IBusComponent {
+        UserSettings us = new UserSettings();
+
         public TortillaConsole() {
             InitializeComponent();
             FormBorderStyle = FormBorderStyle.FixedSingle;
@@ -46,13 +49,13 @@ namespace TortillaUI {
                 new Rectangle(RestoreBounds.Left, RestoreBounds.Top, this.Width, this.Height);
 
             var pos = $"{(int)this.WindowState},{rect.Left},{rect.Top},{rect.Width},{rect.Height}";
-            Properties.Settings.Default.ConsoleWindowPosition = pos;
-            Properties.Settings.Default.Save();
+            us.ConsoleWindowPosition = pos;
+            us.Save();
         }
 
         private void RestoreWindowPosition() {
             try {
-                string pos = Properties.Settings.Default.ConsoleWindowPosition;
+                string pos = us.ConsoleWindowPosition;
 
                 if (!string.IsNullOrEmpty(pos)) {
                     List<int> settings = pos.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(v => int.Parse(v)).ToList();
@@ -64,6 +67,7 @@ namespace TortillaUI {
                 }
             }
             catch { /* Just leave current position if error */ }
+            
         }
 
         protected override CreateParams CreateParams {
@@ -508,35 +512,37 @@ namespace TortillaUI {
         }
 
         private void DrawCursor(int left, int top, int fgColor, int bgColor) {
-            BeginInvoke((Action)(() => {
-                int pxLeft = left * 8;
-                int pxTop = top * 16;
-                byte[] chPattern = cursor;
-                Color cbgColor = vgaColors[bgColor];
-                Color cfgColor = vgaColors[fgColor];
+            if (this.IsHandleCreated) {
+                BeginInvoke((Action)(() => {
+                    int pxLeft = left * 8;
+                    int pxTop = top * 16;
+                    byte[] chPattern = cursor;
+                    Color cbgColor = vgaColors[bgColor];
+                    Color cfgColor = vgaColors[fgColor];
 
-                int y = 0;
+                    int y = 0;
 
-                for (int i = 0; i < 16; ++i) {
-                    byte bits = chPattern[i];
-                    byte mask = 0b_1000_0000;
+                    for (int i = 0; i < 16; ++i) {
+                        byte bits = chPattern[i];
+                        byte mask = 0b_1000_0000;
 
-                    for (int x = 0; x < 8; ++x) {
-                        if ((bits & mask) == mask) {
-                            chBitmap.SetPixel(x, y, cfgColor);
+                        for (int x = 0; x < 8; ++x) {
+                            if ((bits & mask) == mask) {
+                                chBitmap.SetPixel(x, y, cfgColor);
+                            }
+                            else {
+                                chBitmap.SetPixel(x, y, cbgColor);
+                            }
+
+                            mask >>= 1;
                         }
-                        else {
-                            chBitmap.SetPixel(x, y, cbgColor);
-                        }
 
-                        mask >>= 1;
+                        ++y;
                     }
 
-                    ++y;
-                }
-
-                consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
-            }));
+                    consoleGraphics.DrawImage(chBitmap, pxLeft, pxTop);
+                }));
+            }
         }
 
 

@@ -54,28 +54,29 @@
             // 
             this.registers.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.registers.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.registers.Location = new System.Drawing.Point(15, 106);
-            this.registers.Margin = new System.Windows.Forms.Padding(6);
+            this.registers.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.registers.Location = new System.Drawing.Point(15, 136);
+            this.registers.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.registers.Multiline = true;
             this.registers.Name = "registers";
             this.registers.ReadOnly = true;
             this.registers.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.registers.Size = new System.Drawing.Size(1152, 171);
+            this.registers.Size = new System.Drawing.Size(1297, 218);
             this.registers.TabIndex = 0;
             // 
             // debug
             // 
-            this.debug.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            this.debug.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.debug.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.debug.Location = new System.Drawing.Point(15, 512);
-            this.debug.Margin = new System.Windows.Forms.Padding(6);
+            this.debug.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.debug.Location = new System.Drawing.Point(15, 626);
+            this.debug.Margin = new System.Windows.Forms.Padding(6, 8, 6, 20);
             this.debug.Multiline = true;
             this.debug.Name = "debug";
             this.debug.ReadOnly = true;
             this.debug.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.debug.Size = new System.Drawing.Size(1152, 468);
+            this.debug.Size = new System.Drawing.Size(1297, 441);
             this.debug.TabIndex = 1;
             // 
             // menuStrip1
@@ -86,8 +87,8 @@
             this.toolsToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Padding = new System.Windows.Forms.Padding(12, 4, 0, 4);
-            this.menuStrip1.Size = new System.Drawing.Size(1182, 48);
+            this.menuStrip1.Padding = new System.Windows.Forms.Padding(13, 5, 0, 5);
+            this.menuStrip1.Size = new System.Drawing.Size(1329, 46);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -97,20 +98,20 @@
             this.openBIOSROMToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
-            this.fileToolStripMenuItem.Size = new System.Drawing.Size(72, 36);
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(71, 36);
             this.fileToolStripMenuItem.Text = "&File";
             // 
             // openBIOSROMToolStripMenuItem
             // 
             this.openBIOSROMToolStripMenuItem.Name = "openBIOSROMToolStripMenuItem";
-            this.openBIOSROMToolStripMenuItem.Size = new System.Drawing.Size(342, 44);
+            this.openBIOSROMToolStripMenuItem.Size = new System.Drawing.Size(340, 44);
             this.openBIOSROMToolStripMenuItem.Text = "&Open BIOS ROM...";
             this.openBIOSROMToolStripMenuItem.Click += new System.EventHandler(this.openBIOSROMToolStripMenuItem_Click);
             // 
             // exitToolStripMenuItem
             // 
             this.exitToolStripMenuItem.Name = "exitToolStripMenuItem";
-            this.exitToolStripMenuItem.Size = new System.Drawing.Size(342, 44);
+            this.exitToolStripMenuItem.Size = new System.Drawing.Size(340, 44);
             this.exitToolStripMenuItem.Text = "E&xit";
             this.exitToolStripMenuItem.Click += new System.EventHandler(this.exitToolStripMenuItem_Click);
             // 
@@ -123,46 +124,46 @@
             this.stopToolStripMenuItem,
             this.resetToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
-            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(130, 36);
+            this.toolsToolStripMenuItem.Size = new System.Drawing.Size(129, 36);
             this.toolsToolStripMenuItem.Text = "E&mulator";
             // 
             // runToolStripMenuItem
             // 
             this.runToolStripMenuItem.Name = "runToolStripMenuItem";
-            this.runToolStripMenuItem.Size = new System.Drawing.Size(208, 44);
+            this.runToolStripMenuItem.Size = new System.Drawing.Size(206, 44);
             this.runToolStripMenuItem.Text = "&Run";
             this.runToolStripMenuItem.Click += new System.EventHandler(this.runToolStripMenuItem_Click);
             // 
             // breakToolStripMenuItem
             // 
             this.breakToolStripMenuItem.Name = "breakToolStripMenuItem";
-            this.breakToolStripMenuItem.Size = new System.Drawing.Size(208, 44);
+            this.breakToolStripMenuItem.Size = new System.Drawing.Size(206, 44);
             this.breakToolStripMenuItem.Text = "&Break";
             // 
             // stepToolStripMenuItem
             // 
             this.stepToolStripMenuItem.Name = "stepToolStripMenuItem";
-            this.stepToolStripMenuItem.Size = new System.Drawing.Size(208, 44);
+            this.stepToolStripMenuItem.Size = new System.Drawing.Size(206, 44);
             this.stepToolStripMenuItem.Text = "S&tep";
             // 
             // stopToolStripMenuItem
             // 
             this.stopToolStripMenuItem.Name = "stopToolStripMenuItem";
-            this.stopToolStripMenuItem.Size = new System.Drawing.Size(208, 44);
+            this.stopToolStripMenuItem.Size = new System.Drawing.Size(206, 44);
             this.stopToolStripMenuItem.Text = "&Stop";
             // 
             // resetToolStripMenuItem
             // 
             this.resetToolStripMenuItem.Name = "resetToolStripMenuItem";
-            this.resetToolStripMenuItem.Size = new System.Drawing.Size(208, 44);
+            this.resetToolStripMenuItem.Size = new System.Drawing.Size(206, 44);
             this.resetToolStripMenuItem.Text = "R&eset";
             // 
             // runButton
             // 
-            this.runButton.Location = new System.Drawing.Point(177, 50);
-            this.runButton.Margin = new System.Windows.Forms.Padding(6);
+            this.runButton.Location = new System.Drawing.Point(192, 64);
+            this.runButton.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.runButton.Name = "runButton";
-            this.runButton.Size = new System.Drawing.Size(150, 44);
+            this.runButton.Size = new System.Drawing.Size(162, 56);
             this.runButton.TabIndex = 3;
             this.runButton.Text = "&Run/Step";
             this.runButton.UseVisualStyleBackColor = true;
@@ -170,10 +171,10 @@
             // 
             // breakButton
             // 
-            this.breakButton.Location = new System.Drawing.Point(339, 50);
-            this.breakButton.Margin = new System.Windows.Forms.Padding(6);
+            this.breakButton.Location = new System.Drawing.Point(367, 64);
+            this.breakButton.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.breakButton.Name = "breakButton";
-            this.breakButton.Size = new System.Drawing.Size(150, 44);
+            this.breakButton.Size = new System.Drawing.Size(162, 56);
             this.breakButton.TabIndex = 4;
             this.breakButton.Text = "&Break";
             this.breakButton.UseVisualStyleBackColor = true;
@@ -181,10 +182,10 @@
             // 
             // stopButton
             // 
-            this.stopButton.Location = new System.Drawing.Point(501, 50);
-            this.stopButton.Margin = new System.Windows.Forms.Padding(6);
+            this.stopButton.Location = new System.Drawing.Point(543, 64);
+            this.stopButton.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.stopButton.Name = "stopButton";
-            this.stopButton.Size = new System.Drawing.Size(150, 44);
+            this.stopButton.Size = new System.Drawing.Size(162, 56);
             this.stopButton.TabIndex = 6;
             this.stopButton.Text = "S&top";
             this.stopButton.UseVisualStyleBackColor = true;
@@ -192,10 +193,10 @@
             // 
             // resetButton
             // 
-            this.resetButton.Location = new System.Drawing.Point(15, 50);
-            this.resetButton.Margin = new System.Windows.Forms.Padding(6);
+            this.resetButton.Location = new System.Drawing.Point(16, 64);
+            this.resetButton.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.resetButton.Name = "resetButton";
-            this.resetButton.Size = new System.Drawing.Size(150, 44);
+            this.resetButton.Size = new System.Drawing.Size(162, 56);
             this.resetButton.TabIndex = 7;
             this.resetButton.Text = "&Start/Reset";
             this.resetButton.UseVisualStyleBackColor = true;
@@ -206,10 +207,10 @@
             this.traceCheckBox.AutoSize = true;
             this.traceCheckBox.Checked = true;
             this.traceCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.traceCheckBox.Location = new System.Drawing.Point(831, 58);
-            this.traceCheckBox.Margin = new System.Windows.Forms.Padding(6);
+            this.traceCheckBox.Location = new System.Drawing.Point(900, 74);
+            this.traceCheckBox.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.traceCheckBox.Name = "traceCheckBox";
-            this.traceCheckBox.Size = new System.Drawing.Size(198, 29);
+            this.traceCheckBox.Size = new System.Drawing.Size(212, 36);
             this.traceCheckBox.TabIndex = 8;
             this.traceCheckBox.Text = "Tr&ace execution";
             this.traceCheckBox.UseVisualStyleBackColor = true;
@@ -217,53 +218,52 @@
             // 
             // memoryOutput
             // 
-            this.memoryOutput.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            this.memoryOutput.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.memoryOutput.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.memoryOutput.Location = new System.Drawing.Point(15, 340);
-            this.memoryOutput.Margin = new System.Windows.Forms.Padding(6);
+            this.memoryOutput.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.memoryOutput.Location = new System.Drawing.Point(15, 426);
+            this.memoryOutput.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.memoryOutput.Multiline = true;
             this.memoryOutput.Name = "memoryOutput";
             this.memoryOutput.ReadOnly = true;
             this.memoryOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.memoryOutput.Size = new System.Drawing.Size(1152, 160);
+            this.memoryOutput.Size = new System.Drawing.Size(1297, 184);
             this.memoryOutput.TabIndex = 9;
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(10, 295);
+            this.label1.Location = new System.Drawing.Point(11, 378);
             this.label1.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(63, 25);
+            this.label1.Size = new System.Drawing.Size(67, 32);
             this.label1.TabIndex = 10;
             this.label1.Text = "Start:";
             // 
             // startAddress
             // 
-            this.startAddress.Location = new System.Drawing.Point(86, 290);
-            this.startAddress.Margin = new System.Windows.Forms.Padding(6);
+            this.startAddress.Location = new System.Drawing.Point(93, 371);
+            this.startAddress.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.startAddress.Name = "startAddress";
-            this.startAddress.Size = new System.Drawing.Size(196, 31);
+            this.startAddress.Size = new System.Drawing.Size(212, 39);
             this.startAddress.TabIndex = 11;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(298, 295);
+            this.label2.Location = new System.Drawing.Point(323, 378);
             this.label2.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(56, 25);
+            this.label2.Size = new System.Drawing.Size(62, 32);
             this.label2.TabIndex = 12;
-            this.label2.Text = "End:";
+            this.label2.Text = "Si&ze:";
             // 
             // viewSize
             // 
-            this.viewSize.Location = new System.Drawing.Point(368, 290);
-            this.viewSize.Margin = new System.Windows.Forms.Padding(6);
+            this.viewSize.Location = new System.Drawing.Point(399, 371);
+            this.viewSize.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.viewSize.Name = "viewSize";
-            this.viewSize.Size = new System.Drawing.Size(196, 31);
+            this.viewSize.Size = new System.Drawing.Size(212, 39);
             this.viewSize.TabIndex = 13;
             // 
             // addressRangeError
@@ -271,10 +271,10 @@
             this.addressRangeError.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.addressRangeError.ForeColor = System.Drawing.Color.Red;
-            this.addressRangeError.Location = new System.Drawing.Point(580, 295);
+            this.addressRangeError.Location = new System.Drawing.Point(-803, 378);
             this.addressRangeError.Margin = new System.Windows.Forms.Padding(6, 0, 6, 0);
             this.addressRangeError.Name = "addressRangeError";
-            this.addressRangeError.Size = new System.Drawing.Size(562, 33);
+            this.addressRangeError.Size = new System.Drawing.Size(658, 42);
             this.addressRangeError.TabIndex = 14;
             this.addressRangeError.Text = "Error text here";
             this.addressRangeError.Visible = false;
@@ -282,10 +282,10 @@
             // stepCheckBox
             // 
             this.stepCheckBox.AutoSize = true;
-            this.stepCheckBox.Location = new System.Drawing.Point(663, 58);
-            this.stepCheckBox.Margin = new System.Windows.Forms.Padding(6);
+            this.stepCheckBox.Location = new System.Drawing.Point(718, 74);
+            this.stepCheckBox.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.stepCheckBox.Name = "stepCheckBox";
-            this.stepCheckBox.Size = new System.Drawing.Size(151, 29);
+            this.stepCheckBox.Size = new System.Drawing.Size(164, 36);
             this.stepCheckBox.TabIndex = 15;
             this.stepCheckBox.Text = "S&ingle step";
             this.stepCheckBox.UseVisualStyleBackColor = true;
@@ -293,9 +293,9 @@
             // 
             // MainWindow
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(12F, 25F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(13F, 32F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1182, 995);
+            this.ClientSize = new System.Drawing.Size(1329, 1096);
             this.Controls.Add(this.stepCheckBox);
             this.Controls.Add(this.addressRangeError);
             this.Controls.Add(this.viewSize);
@@ -311,8 +311,9 @@
             this.Controls.Add(this.debug);
             this.Controls.Add(this.registers);
             this.Controls.Add(this.menuStrip1);
+            this.DoubleBuffered = true;
             this.MainMenuStrip = this.menuStrip1;
-            this.Margin = new System.Windows.Forms.Padding(6);
+            this.Margin = new System.Windows.Forms.Padding(6, 8, 6, 8);
             this.Name = "MainWindow";
             this.Text = "Tortilla CPU Emulator";
             this.Load += new System.EventHandler(this.MainWindow_Load);

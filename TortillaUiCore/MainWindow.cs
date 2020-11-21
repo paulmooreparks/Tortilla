@@ -12,30 +12,29 @@ using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
-/* 
-IntervalTree implementation by Ido Ran 
-https://archive.codeplex.com/?p=intervaltree
-http://dotdotnet.blogspot.com/2011/06/interval-tree-c-implementation.html
-BSD License
-*/
-using IntervalTreeLib;
 using Tortilla;
+using System.Configuration;
 
 namespace TortillaUI {
 
     public partial class MainWindow : Form {
         public MainWindow() {
+            us = new UserSettings();
+            us.SettingsLoaded += Us_SettingsLoaded;
             InitializeComponent();
         }
+
+        private void Us_SettingsLoaded(object sender, SettingsLoadedEventArgs e) {
+            BiosPath = us.BiosPath;
+        }
+
+        protected UserSettings us;
 
         protected override void OnLoad(EventArgs e) {
             base.OnLoad(e);
             InitEnvironment();
 
-            ConnectAddressRangesToMethods();
-            ConnectPortAddressesToMethods();
-
-            RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
+            // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
 
             startAddress.Text = $"{startAddressView:X8}";
             viewSize.Text = $"{viewSizeView:X8}";
@@ -48,36 +47,11 @@ namespace TortillaUI {
 
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
+            tConsole.Close();
             PowerOff();
         }
 
         protected delegate void AddressRangeDelegate(UInt64 address);
-        protected IntervalTree<AddressRangeDelegate, UInt64> RangeDelegates { get; } = new IntervalTree<AddressRangeDelegate, UInt64>();
-
-        protected virtual void ConnectAddressRangesToMethods() {
-            System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.IgnoreCase |
-                System.Reflection.BindingFlags.InvokeMethod |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-
-            foreach (System.Reflection.MethodInfo method in methods) {
-                object[] outattrs = method.GetCustomAttributes(typeof(AddressRangeHandlerAttribute), true);
-
-                if (outattrs != null) {
-                    foreach (System.Attribute attr in outattrs) {
-                        AddressRangeHandlerAttribute methodAttr = (AddressRangeHandlerAttribute)attr;
-
-                        if (methodAttr.AddressRangeHandlers != null) {
-                            foreach (Tuple<UInt32, UInt32> addressRange in methodAttr.AddressRangeHandlers) {
-                                RangeDelegates.AddInterval(addressRange.Item1, addressRange.Item2, (AddressRangeDelegate)AddressRangeDelegate.CreateDelegate(typeof(AddressRangeDelegate), this, method));
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
         protected delegate void PortOutHandlerDelegate(UInt16 address, UInt16 value);
         protected Dictionary<UInt16, PortOutHandlerDelegate> PortOutHandlerMap { get; } = new Dictionary<ushort, PortOutHandlerDelegate>();
@@ -85,62 +59,14 @@ namespace TortillaUI {
         protected delegate UInt16 PortInHandlerDelegate(UInt16 address);
         protected Dictionary<UInt16, PortInHandlerDelegate> PortInHandlerMap { get; } = new Dictionary<ushort, PortInHandlerDelegate>();
 
-        protected virtual void ConnectPortAddressesToMethods() {
-            System.Reflection.MethodInfo[] methods = this.GetType().GetMethods(
-                System.Reflection.BindingFlags.Instance |
-                System.Reflection.BindingFlags.IgnoreCase |
-                System.Reflection.BindingFlags.InvokeMethod |
-                System.Reflection.BindingFlags.Public |
-                System.Reflection.BindingFlags.NonPublic);
-
-            foreach (System.Reflection.MethodInfo method in methods) {
-                object[] outattrs = method.GetCustomAttributes(typeof(PortOutHandlerAttribute), true);
-
-                if (outattrs != null) {
-                    foreach (System.Attribute attr in outattrs) {
-                        PortOutHandlerAttribute methodAttr = (PortOutHandlerAttribute)attr;
-
-                        if (methodAttr.PortOutHandlers != null) {
-                            foreach (byte address in methodAttr.PortOutHandlers) {
-                                if (PortOutHandlerMap.ContainsKey(address)) {
-                                    throw new Exception($"Duplicate port out handler for address {address:X2}");
-                                }
-
-                                PortOutHandlerMap[address] = (PortOutHandlerDelegate)PortOutHandlerDelegate.CreateDelegate(typeof(PortOutHandlerDelegate), this, method);
-                            }
-                        }
-                    }
-                }
-
-                object[] inattrs = method.GetCustomAttributes(typeof(PortInHandlerAttribute), true);
-
-                if (inattrs != null) {
-                    foreach (System.Attribute attr in inattrs) {
-                        PortInHandlerAttribute methodAttr = (PortInHandlerAttribute)attr;
-
-                        if (methodAttr.PortInHandlers != null) {
-                            foreach (byte address in methodAttr.PortInHandlers) {
-                                if (PortInHandlerMap.ContainsKey(address)) {
-                                    throw new Exception($"Duplicate port in handler for address {address:X2}");
-                                }
-
-                                PortInHandlerMap[address] = (PortInHandlerDelegate)PortInHandlerDelegate.CreateDelegate(typeof(PortInHandlerDelegate), this, method);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
         public UInt16[] ports = new UInt16[0x10000];
 
         UInt32 startAddressView = 0x80; // 0xb8000;
         UInt32 viewSizeView = 0x120; // 0xb8060;
-        UInt32 maxAddressRange = 0x1008;
+        UInt32 maxAddressRange = 0x4008;
 
         bool StartEndRangeValid() {
-            if (viewSizeView <= startAddressView || (viewSizeView - startAddressView) > maxAddressRange) {
+            if (viewSizeView <= 0 || (viewSizeView > maxAddressRange)) {
                 addressRangeError.Visible = true;
                 addressRangeError.Text = "Address range error";
                 memoryOutput.Clear();
@@ -151,7 +77,7 @@ namespace TortillaUI {
         }
 
         private void startAddress_TextChanged(object sender, EventArgs e) {
-            RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
+            // RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
             var temp = startAddressView;
 
             try {
@@ -162,7 +88,7 @@ namespace TortillaUI {
                 }
 
                 if (traceCheckBox.Checked) {
-                    RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
+                    // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
                 }
             }
             catch (Exception) {
@@ -173,7 +99,7 @@ namespace TortillaUI {
         }
 
         private void viewSize_TextChanged(object sender, EventArgs e) {
-            RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
+            // RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
             var temp = viewSizeView;
 
             try {
@@ -184,7 +110,7 @@ namespace TortillaUI {
                 }
 
                 if (traceCheckBox.Checked) {
-                    RangeDelegates.AddInterval(startAddressView, startAddressView + viewSizeView, UpdateMemoryWindow);
+                    // RangeDelegates.AddInterval(startAddressView, startAddressView + viewSizeView, UpdateMemoryWindow);
                 }
             }
             catch (Exception) {
@@ -213,8 +139,9 @@ namespace TortillaUI {
         AutoResetEvent haltEvent = new AutoResetEvent(false);
 
         AutoResetEvent powerOffEvent = new AutoResetEvent(false);
-        
-        TortillaConsole tConsole = new TortillaConsole();
+
+        // TortillaGraphicalConsole tConsole = new TortillaGraphicalConsole();
+        TortillaCharacterConsole tConsole = new TortillaCharacterConsole();
 
         private void RunBackground(Action fn) {
             new Thread(new ThreadStart(fn)).Start();
@@ -223,6 +150,13 @@ namespace TortillaUI {
         private string BiosPath { get; set; }
 
         private void openBIOSROMToolStripMenuItem_Click(object sender, EventArgs e) {
+            tConsole.Clear();
+            debug.Clear();
+            registers.Clear();
+
+            Motherboard.Reset();
+            tConsole.Connect(Motherboard);
+
             OpenBIOS();
         }
 
@@ -242,9 +176,8 @@ namespace TortillaUI {
 
             if (openDlg.ShowDialog() == DialogResult.OK) {
                 BiosPath = openDlg.FileName;
-                Properties.Settings.Default.DefaultBIOS = BiosPath;
-                Properties.Settings.Default.Save();
-
+                us.BiosPath = BiosPath;
+                us.Save();
                 LoadBIOS();
             }
 
@@ -256,14 +189,10 @@ namespace TortillaUI {
                 IsBIOSLoaded = false;
             }
             else {
-                byte[] tempMemory = new byte[Motherboard.MemorySize];
+                byte[] tempMemory = File.ReadAllBytes(BiosPath);
 
-                using (BinaryReader reader = new BinaryReader(File.Open(BiosPath, FileMode.Open))) {
-                    int bytesRead = reader.Read(tempMemory, 0, tempMemory.Length);
-
-                    for (uint i = 0; i < bytesRead; ++i) {
-                        Motherboard.WriteByte(i, tempMemory[i]);
-                    }
+                for (uint i = 0; i < tempMemory.Length; ++i) {
+                    Motherboard.WriteByte(i, tempMemory[i]);
                 }
 
                 IsBIOSLoaded = true;
@@ -278,10 +207,8 @@ namespace TortillaUI {
             Motherboard = new Maize.MaizeMotherboard();
             Motherboard.Debug += Hardware_Debug;
 
-            // tConsole.Connect(Motherboard);
             tConsole.Show();
-
-            BiosPath = Properties.Settings.Default.DefaultBIOS;
+            BiosPath = us.BiosPath;
         }
 
         private void Cpu_DecodeInstruction(object sender, Tuple<UInt64, UInt64> e) {
@@ -313,7 +240,7 @@ namespace TortillaUI {
 
             Motherboard.Cpu.SingleStep = stepCheckBox.Checked;
             Motherboard.Cpu.DecodeInstruction += Cpu_DecodeInstruction;
-            // Motherboard.PowerOn();
+            Motherboard.PowerOn();
             Motherboard.RaiseInterrupt(0);
 
             haltEvent.Set();
@@ -334,19 +261,21 @@ namespace TortillaUI {
                 new Rectangle(RestoreBounds.Left, RestoreBounds.Top, this.Width, this.Height);
 
             var pos = $"{(int)this.WindowState},{rect.Left},{rect.Top},{rect.Width},{rect.Height}";
-            Properties.Settings.Default.WindowPosition = pos;
-            Properties.Settings.Default.Save();
+            us.MainWindowPosition = pos;
+            us.Save();
         }
 
         private void RestoreWindowPosition() {
             try {
-                string pos = Properties.Settings.Default.WindowPosition;
+                string pos = us.MainWindowPosition;
 
                 if (!string.IsNullOrEmpty(pos)) {
                     List<int> settings = pos.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries).Select(v => int.Parse(v)).ToList();
 
                     if (settings.Count == 5) {
-                        this.SetDesktopBounds(settings[1], settings[2], settings[3], settings[4]);
+                        this.SetDesktopLocation(settings[1], settings[2]);
+                        this.Width = settings[3];
+                        this.Height = settings[4];
                         this.WindowState = (FormWindowState)settings[0];
                     }
                 }
@@ -363,15 +292,23 @@ namespace TortillaUI {
         }
 
         private void MainWindow_Load(object sender, EventArgs e) {
+            this.debug.Height = this.ClientSize.Height - this.debug.Top - debug.Margin.Bottom;
             RestoreWindowPosition();
-            Move += new EventHandler(MainWindow_Move);
-            SizeChanged += new EventHandler(MainWindow_SizeChanged);
         }
 
         private void MainWindow_Shown(object sender, EventArgs e) {
             // RestoreWindowPosition();
-            // Move += new EventHandler(MainWindow_Move);
-            // SizeChanged += new EventHandler(MainWindow_SizeChanged);
+            // Move += MainWindow_Move;
+            // SizeChanged += MainWindow_SizeChanged;
+            FormClosing += MainWindow_FormClosing;
+        }
+
+        private void MainWindow_FormClosing(object sender, FormClosingEventArgs e) {
+            SaveWindowPosition();
+        }
+
+        private void MainWindow_ClientSizeChanged(object sender, EventArgs e) {
+            // throw new NotImplementedException();
         }
 
         private void runButton_Click(object sender, EventArgs e) {
@@ -392,10 +329,10 @@ namespace TortillaUI {
 
         private void traceCheckBox_CheckedChanged(object sender, EventArgs e) {
             if (traceCheckBox.Checked) {
-                RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
+                // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
             }
             else {
-                RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
+                // RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
             }
         }
 
@@ -454,18 +391,6 @@ namespace TortillaUI {
 
         public byte Read8(UInt64 address) {
             return Motherboard.ReadByte(address);
-        }
-
-        public void Write8(UInt64 address, byte value) {
-            Motherboard.WriteByte(address, value);
-
-            var delegateList = RangeDelegates.Get(address, StubMode.ContainsStartThenEnd);
-
-            if (delegateList != null) {
-                foreach (var handler in delegateList) {
-                    handler(address);
-                }
-            }
         }
 
         public byte ReadPort8(ushort address) {
@@ -543,6 +468,26 @@ namespace TortillaUI {
         public AddressRangeHandlerAttribute(params Tuple<UInt32, UInt32>[] addresses) {
             AddressRangeHandlers = (Tuple<UInt32, UInt32>[])Array.CreateInstance(typeof(Tuple<UInt32, UInt32>), addresses.Length);
             Array.Copy(addresses, AddressRangeHandlers, addresses.Length);
+        }
+    }
+
+    public class UserSettings : ApplicationSettingsBase {
+        [UserScopedSetting()]
+        public string MainWindowPosition {
+            get => (string)this["MainWindowPosition"];
+            set => this["MainWindowPosition"] = (string)value;
+        }
+
+        [UserScopedSetting]
+        public string ConsoleWindowPosition {
+            get => (string)this["ConsoleWindowPosition"];
+            set => this["ConsoleWindowPosition"] = (string)value;
+        }
+
+        [UserScopedSetting]
+        public string BiosPath {
+            get => (string)this["BiosPath"];
+            set => this["BiosPath"] = (string)value;
         }
     }
 

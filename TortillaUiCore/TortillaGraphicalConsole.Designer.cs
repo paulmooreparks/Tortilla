@@ -1,5 +1,5 @@
 ﻿namespace TortillaUI {
-    partial class TortillaConsole {
+    partial class TortillaGraphicalConsole {
         /// <summary>
         /// Required designer variable.
         /// </summary>
@@ -33,7 +33,7 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.pictureBox.Location = new System.Drawing.Point(0, 0);
-            this.pictureBox.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.pictureBox.Margin = new System.Windows.Forms.Padding(6);
             this.pictureBox.MinimumSize = new System.Drawing.Size(1280, 800);
             this.pictureBox.Name = "pictureBox";
             this.pictureBox.Size = new System.Drawing.Size(1280, 800);
@@ -46,7 +46,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.ClientSize = new System.Drawing.Size(1280, 800);
             this.Controls.Add(this.pictureBox);
-            this.Margin = new System.Windows.Forms.Padding(6, 6, 6, 6);
+            this.DoubleBuffered = true;
+            this.Margin = new System.Windows.Forms.Padding(6);
             this.MaximizeBox = false;
             this.Name = "TortillaConsole";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Hide;
