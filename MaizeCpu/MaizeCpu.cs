@@ -344,6 +344,20 @@ namespace Maize {
             Cpu.PowerOn();
         }
 
+        public void EnableDebug(bool isEnabled) {
+            if (Cpu is null) {
+                return;
+            }
+
+            if (isEnabled) {
+                Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssignDebug;
+                Cpu.Decoder.TickDecodeActions = Cpu.Decoder.TickDecodeDebug;
+            }
+            else {
+                Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssign;
+                Cpu.Decoder.TickDecodeActions = Cpu.Decoder.TickDecode;
+            }
+        }
 
         public IDataBus<UInt64> DataBus { get; set; }
         public IDataBus<UInt64> AddressBus { get; protected set; }
@@ -375,7 +389,7 @@ namespace Maize {
             RaiseException?.Invoke(this, id);
         }
 
-        public void RaiseInterrupt(int id) {
+        public void RaiseInterrupt(UInt64 id) {
             Cpu.RaiseInterrupt(id);
         }
 
@@ -387,29 +401,33 @@ namespace Maize {
             MemoryModule.WriteByte(address, value);
         }
 
-        public void EnablePort(byte address) {
+        public void EnablePortIO(UInt64 address) {
             IBusComponent component = deviceTable[address];
             component?.Enable(BusTypes.IOBus);
         }
 
-        public void SetPort(byte address) {
+        public void SetPortAddress(UInt64 address) {
+            IBusComponent component = deviceTable[address];
+            component?.Set(BusTypes.AddressBus);
+        }
+
+        public void SetPortIO(UInt64 address) {
             IBusComponent component = deviceTable[address];
             component?.Set(BusTypes.IOBus);
         }
 
-        protected System.Collections.Generic.Dictionary<int, IBusComponent> deviceTable =
-            new System.Collections.Generic.Dictionary<int, IBusComponent>();
+        protected System.Collections.Generic.Dictionary<UInt64, IBusComponent> deviceTable = new();
 
         public void ConnectComponent(IBusComponent component) {
             Clock.ConnectComponent(component);
         }
 
-        public void ConnectDevice(IBusComponent component, int address) {
+        public void ConnectDevice(IBusComponent component, UInt64 address) {
             Clock.ConnectComponent(component);
             deviceTable[address] = component;
         }
 
-        public int ConnectInterrupt(IBusComponent component, int address) {
+        public UInt64 ConnectInterrupt(IBusComponent component, UInt64 address) {
             return address;
         }
     }
@@ -929,8 +947,9 @@ namespace Maize {
         public const UInt64 Flag_Zero =       0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
         public const UInt64 Flag_Sign =       0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100000;
         public const UInt64 Flag_Reserved =   0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000000;
-        public const UInt64 Flag_Interrupt =  0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_10000000;
+
         public const UInt64 Flag_Privilege =  0b_00000000_00000000_00000000_00000001_00000000_00000000_00000000_00000000;
+        public const UInt64 Flag_Interrupt =  0b_00000000_00000000_00000000_00000010_00000000_00000000_00000000_00000000;
 
         public MaizeCpu(MaizeMotherboard motherboard) {
             MB = motherboard;
@@ -1149,7 +1168,7 @@ namespace Maize {
         public MaizeRegister M { get; protected set; } = new MaizeRegister();
         public MaizeRegister Z { get; protected set; } = new MaizeRegister();
         public MaizeRegister F { get; protected set; } = new MaizeRegister();
-        public MaizeRegister I { get; protected set; } = new MaizeRegister();
+        public MaizeRegister I => Decoder; 
         public MaizeRegister P { get; protected set; } = new MaizeRegister();
         public MaizeRegister S { get; protected set; } = new MaizeRegister();
         public MappedRegisterH0 PC { get; protected set; } = new MappedRegisterH0();
@@ -1164,7 +1183,7 @@ namespace Maize {
             SingleStep = true;
         }
 
-        public void Continue() {
+        public void Run() {
             IsPowerOn = true;
 
             if (SingleStep) {
@@ -1187,15 +1206,16 @@ namespace Maize {
         public void PowerOn() {
             IsPowerOn = true;
             Privilege = true;
+            // Continue();
         }
 
-        public int InterruptID { get; set; }
+        public UInt64 InterruptID { get; set; }
 
-        public void RaiseInterrupt(int id) {
+        public void RaiseInterrupt(UInt64 id) {
             // Set interrupt flag
             Interrupt = true;
             InterruptID = id;
-            Continue();
+            Run();
         }
 
         public void Reset() {
@@ -1243,13 +1263,19 @@ namespace Maize {
             MB.ConnectComponent(this);
 
             BuildMicrocode();
+
+            // TickDecodeActions = TickDecode;
+            TickDecodeActions = TickDecodeDebug;
+
+            // DecoderValueAssignActions = DecoderValueAssign;
+            DecoderValueAssignActions = DecoderValueAssignDebug;
         }
 
         public void JumpTo(Action[] microcode) {
             ActiveMicrocode = microcode;
             Step = 0;
-            handler = ActiveMicrocode[Step];
-            handler();
+            microcodeAction = ActiveMicrocode[Step];
+            microcodeAction();
         }
 
         protected Dictionary<byte, Action[]> MicrocodeMap;
@@ -1262,8 +1288,7 @@ namespace Maize {
             get => base.Value;
             set {
                 base.Value = value;
-                /* DEBUG */
-                InstructionRead?.Invoke(this, Tuple.Create(value, MB.Cpu.PC.Value - 1));
+                DecoderValueAssignActions[0]();
             }
         }
 
@@ -1279,9 +1304,19 @@ namespace Maize {
 
         public int Step { get; set; }
         public int Cycle { get; protected set; }
-        Action handler = null;
+        Action microcodeAction = null;
 
         public IDictionary<byte, MaizeRegister> RegisterMap = new System.Collections.Generic.Dictionary<byte, MaizeRegister>();
+
+        // this will point at one of the below, depending on whether debugging is on
+        public Action[] TickDecodeActions; 
+        public Action[] TickDecode;
+        public Action[] TickDecodeDebug;
+
+        // this will point at one of the below, depending on whether debugging is on
+        public Action[] DecoderValueAssignActions; 
+        public Action[] DecoderValueAssign;
+        public Action[] DecoderValueAssignDebug;
 
         public Action[] ReadOpcodeAndDispatch;
         public Action[] ReadImmediate1Byte;
@@ -1294,35 +1329,15 @@ namespace Maize {
 
             switch (state) {
             case ClockState.TickDecode:
-                if (Step >= ActiveMicrocode.Length) {
-                    Cycle = 0;
+                switch (Cycle) {
+                case 0:
+                    TickDecodeActions[0]();
+                    break;
+
+                default:
+                    TickDecodeActions[1]();
+                    break;
                 }
-
-                if (Cycle == 0) {
-                    Step = 0;
-                    ActiveMicrocode = ReadOpcodeAndDispatch;
-
-                    if (MB.Cpu.Interrupt) {
-                        MB.Cpu.Interrupt = false;
-
-                        if (MB.Cpu.InterruptID != 0) {
-                            MB.Cpu.S.Value -= 8;
-                            MB.MemoryModule.WriteHalfWord(MB.Cpu.S.H0, MB.Cpu.PC.H0);
-                        }
-
-                        // Vector to interrupt handler for MB.Cpu.InterruptID
-                        UInt32 intAddress = (UInt32)(MB.Cpu.InterruptID * 4);
-                        UInt32 startAddress = MB.MemoryModule.ReadHalfWord(intAddress);
-                        MB.Cpu.PC.Value = startAddress;
-                    }
-                }
-
-                handler = ActiveMicrocode[Step];
-                handler();
-                /* DEBUG */
-                MB.OnDebug();
-                ++Cycle;
-                ++Step;
 
                 break;
             }
@@ -1349,8 +1364,8 @@ namespace Maize {
                 break;
             }
 
-            handler = ActiveMicrocode[0];
-            handler();
+            microcodeAction = ActiveMicrocode[0];
+            microcodeAction();
         }
 
         public void ExitInstruction() {
@@ -1371,12 +1386,68 @@ namespace Maize {
             ActiveMicrocode = MicrocodeStack.Pop();
             Step = StepStack.Pop();
             ++Step;
-            handler = ActiveMicrocode[Step];
-            handler();
+            microcodeAction = ActiveMicrocode[Step];
+            microcodeAction();
         }
 
         protected void BuildMicrocode() {
             MaizeInstruction.MB = MB;
+
+            TickDecode = new Action[] {
+                () => {
+                    Step = 0;
+                    ActiveMicrocode = ReadOpcodeAndDispatch;
+
+                    if (MB.Cpu.Interrupt) {
+                        MB.Cpu.Interrupt = false;
+
+                        if (MB.Cpu.InterruptID != 0) {
+                            MB.Cpu.S.Value -= 8;
+                            MB.MemoryModule.WriteHalfWord(MB.Cpu.S.H0, MB.Cpu.PC.H0);
+                        }
+
+                        // Vector to interrupt handler for MB.Cpu.InterruptID
+                        UInt32 intAddress = (UInt32)(MB.Cpu.InterruptID * 4);
+                        UInt32 startAddress = MB.MemoryModule.ReadHalfWord(intAddress);
+                        MB.Cpu.PC.Value = startAddress;
+                    }
+
+                    ++Cycle;
+                },
+                () => {
+                    microcodeAction = ActiveMicrocode[Step];
+                    microcodeAction();
+                    ++Cycle;
+                    ++Step;
+
+                    if (Step >= ActiveMicrocode.Length) {
+                        Cycle = 0;
+                    }
+                }
+            };
+
+            TickDecodeDebug = new Action[] {
+                TickDecode[0],
+                () => {
+                    /* DEBUG */
+                    MB.OnDebug();
+                    TickDecode[1]();
+                }
+            };
+
+            DecoderValueAssign = new Action[] {
+                () => {
+                    /* Nothing here yet */
+                }
+            };
+
+            DecoderValueAssignDebug = new Action[] {
+                () => {
+                    DecoderValueAssign[0]();
+                    /* DEBUG */
+                    InstructionRead?.Invoke(this, Tuple.Create(this.Value, MB.Cpu.PC.Value - 1));
+                }
+            };
 
             ReadOpcodeAndDispatch = new Action[] {
                 () => {

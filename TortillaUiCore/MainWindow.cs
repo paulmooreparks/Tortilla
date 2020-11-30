@@ -24,6 +24,16 @@ namespace TortillaUI {
             InitializeComponent();
         }
 
+        private const UInt32 StdOutputHandle = 0xFFFFFFF5;
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetStdHandle(UInt32 nStdHandle);
+        [DllImport("kernel32.dll")]
+        private static extern void SetStdHandle(UInt32 nStdHandle, IntPtr handle);
+        [DllImport("kernel32")]
+        static extern bool AllocConsole();
+        [DllImport("kernel32")]
+        static extern bool FreeConsole();
+
         private void Us_SettingsLoaded(object sender, SettingsLoadedEventArgs e) {
             BiosPath = us.BiosPath;
         }
@@ -48,6 +58,7 @@ namespace TortillaUI {
         protected override void OnClosing(CancelEventArgs e) {
             base.OnClosing(e);
             tConsole.Close();
+            FreeConsole();
             PowerOff();
         }
 
@@ -86,10 +97,6 @@ namespace TortillaUI {
                 if (!StartEndRangeValid()) {
                     return;
                 }
-
-                if (traceCheckBox.Checked) {
-                    // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
-                }
             }
             catch (Exception) {
                 startAddressView = temp;
@@ -107,10 +114,6 @@ namespace TortillaUI {
 
                 if (!StartEndRangeValid()) {
                     return;
-                }
-
-                if (traceCheckBox.Checked) {
-                    // RangeDelegates.AddInterval(startAddressView, startAddressView + viewSizeView, UpdateMemoryWindow);
                 }
             }
             catch (Exception) {
@@ -136,16 +139,10 @@ namespace TortillaUI {
         }
 
         AutoResetEvent exceptionEvent = new AutoResetEvent(false);
-        AutoResetEvent haltEvent = new AutoResetEvent(false);
-
         AutoResetEvent powerOffEvent = new AutoResetEvent(false);
 
         // TortillaGraphicalConsole tConsole = new TortillaGraphicalConsole();
-        TortillaCharacterConsole tConsole = new TortillaCharacterConsole();
-
-        private void RunBackground(Action fn) {
-            new Thread(new ThreadStart(fn)).Start();
-        }
+        Tortilla.ITortillaConsole tConsole = new TortillaCharacterConsole();
 
         private string BiosPath { get; set; }
 
@@ -207,6 +204,7 @@ namespace TortillaUI {
             Motherboard = new Maize.MaizeMotherboard();
             Motherboard.Debug += Hardware_Debug;
 
+            AllocConsole();
             tConsole.Show();
             BiosPath = us.BiosPath;
         }
@@ -223,27 +221,23 @@ namespace TortillaUI {
             }
         }
 
-        public void Wait() {
-        }
-
         public void ResetCPU() {
-            tConsole.Clear();
             debug.Clear();
             registers.Clear();
 
             Motherboard.Reset();
             tConsole.Connect(Motherboard);
+            tConsole.Clear();
 
             if (!LoadBIOS()) {
                 OpenBIOS();
             }
 
             Motherboard.Cpu.SingleStep = stepCheckBox.Checked;
+            Motherboard.EnableDebug(traceCheckBox.Checked);
             Motherboard.Cpu.DecodeInstruction += Cpu_DecodeInstruction;
             Motherboard.PowerOn();
             Motherboard.RaiseInterrupt(0);
-
-            haltEvent.Set();
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {
@@ -312,7 +306,7 @@ namespace TortillaUI {
         }
 
         private void runButton_Click(object sender, EventArgs e) {
-            Motherboard.Cpu.Continue();
+            Motherboard.Cpu.Run();
         }
 
         private void breakButton_Click(object sender, EventArgs e) {
@@ -328,12 +322,7 @@ namespace TortillaUI {
         }
 
         private void traceCheckBox_CheckedChanged(object sender, EventArgs e) {
-            if (traceCheckBox.Checked) {
-                // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
-            }
-            else {
-                // RangeDelegates.RemoveInterval(startAddressView, viewSizeView);
-            }
+            Motherboard.EnableDebug(traceCheckBox.Checked);
         }
 
         private void stepCheckBox_CheckedChanged(object sender, EventArgs e) {
@@ -380,95 +369,10 @@ namespace TortillaUI {
             }));
         }
 
-        public void RaiseException(byte id) {
-            exceptionEvent.Set();
-            // Console.WriteLine("EXCEPTION {0:x}", id);
-        }
-
-        public void RaiseInterrupt(byte id) {
-            // Console.WriteLine("Interrupt 0x{0:X}", id);
-        }
-
         public byte Read8(UInt64 address) {
             return Motherboard.ReadByte(address);
         }
 
-        public byte ReadPort8(ushort address) {
-            return (byte)(ReadPort16(address) & 0x00FF);
-        }
-
-        public ushort ReadPort16(ushort address) {
-            PortInHandlerDelegate handler = PortInHandlerMap[address];
-            UInt16 value = 0;
-
-            if (handler != null) {
-                value = handler(address);
-            }
-            else {
-                // DbgIns(string.Format("No port-in handler for address {0:X}", address));
-            }
-            return value;
-        }
-
-        public void WritePort8(ushort address, byte value) {
-            WritePort16(address, (UInt16)(value & 0x00FF));
-        }
-
-        public void WritePort16(ushort address, UInt16 value) {
-            PortOutHandlerDelegate handler = PortOutHandlerMap[address];
-
-            if (handler != null) {
-                handler(address, value);
-            }
-            else {
-                // DbgIns(string.Format("No port-out handler for address {0:X}", address));
-            }
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    sealed public class PortOutHandlerAttribute : System.Attribute {
-        public byte[] PortOutHandlers { get; set; }
-
-        public PortOutHandlerAttribute(byte address) {
-            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
-            PortOutHandlers[0] = address;
-        }
-
-        public PortOutHandlerAttribute(params byte[] addresses) {
-            PortOutHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
-            Array.Copy(addresses, PortOutHandlers, addresses.Length);
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    sealed public class PortInHandlerAttribute : System.Attribute {
-        public byte[] PortInHandlers { get; set; }
-
-        public PortInHandlerAttribute(byte address) {
-            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), 1);
-            PortInHandlers[0] = address;
-        }
-
-        public PortInHandlerAttribute(params byte[] addresses) {
-            PortInHandlers = (byte[])Array.CreateInstance(typeof(byte), addresses.Length);
-            Array.Copy(addresses, PortInHandlers, addresses.Length);
-        }
-    }
-
-    [AttributeUsage(AttributeTargets.Method)]
-    sealed public class AddressRangeHandlerAttribute : System.Attribute {
-        public Tuple<UInt32, UInt32>[] AddressRangeHandlers { get; set; }
-
-        public AddressRangeHandlerAttribute(UInt32 startAddress, UInt32 endAddress) {
-            AddressRangeHandlers = (Tuple<UInt32, UInt32>[])Array.CreateInstance(typeof(Tuple<UInt32, UInt32>), 1);
-            AddressRangeHandlers[0] = new Tuple<uint, uint>(startAddress, endAddress);
-        }
-
-        public AddressRangeHandlerAttribute(params Tuple<UInt32, UInt32>[] addresses) {
-            AddressRangeHandlers = (Tuple<UInt32, UInt32>[])Array.CreateInstance(typeof(Tuple<UInt32, UInt32>), addresses.Length);
-            Array.Copy(addresses, AddressRangeHandlers, addresses.Length);
-        }
     }
 
     public class UserSettings : ApplicationSettingsBase {

@@ -56,7 +56,7 @@
             }
         }
 
-        public abstract void OnTick(ClockState state, IBusComponent _flags);
+        public abstract void OnTick(ClockState state, IBusComponent cpuFlags);
     }
 
     public abstract class Register<DataType> : BusComponent, Tortilla.IRegister<DataType> {

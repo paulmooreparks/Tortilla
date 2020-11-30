@@ -113,7 +113,7 @@ namespace Maize {
                         Decoder.LoadImmediate(SrcImmSize);
                     },
                     () => {
-                        MM.AddressRegister.Set(BusTypes.AddressBus);
+                        MM.AddressRegister.Set(BusTypes.DataBus);
                     },
                     () => {
                         MM.DataRegister.Enable(BusTypes.DataBus);
@@ -296,7 +296,7 @@ namespace Maize {
                         Decoder.LoadImmediate(SrcImmSize);
                     },
                     () => {
-                        MM.AddressRegister.Set(BusTypes.AddressBus);
+                        MM.AddressRegister.Set(BusTypes.DataBus);
                     },
                     () => {
                         MM.DataRegister.Enable(BusTypes.AddressBus, ImmSizeSubRegMap[SrcImmSizeFlag]);
@@ -818,7 +818,7 @@ namespace Maize {
                         Decoder.LoadImmediate(SrcImmSize);
                     },
                     () => {
-                        MM.AddressRegister.Set(BusTypes.AddressBus);
+                        MM.AddressRegister.Set(BusTypes.DataBus);
                     },
                     () => {
                         MM.DataRegister.Enable(BusTypes.DataBus);
@@ -889,7 +889,7 @@ namespace Maize {
                     },
                     () => {
                         if (Cpu.Zero) {
-                            MM.AddressRegister.Set(BusTypes.AddressBus);
+                            MM.AddressRegister.Set(BusTypes.DataBus);
                         }
                     },
                     () => {
@@ -963,7 +963,7 @@ namespace Maize {
                     },
                     () => {
                         if (!Cpu.Zero) {
-                            MM.AddressRegister.Set(BusTypes.AddressBus);
+                            MM.AddressRegister.Set(BusTypes.DataBus);
                         }
                     },
                     () => {
@@ -1150,8 +1150,12 @@ namespace Maize {
                         OperandRegister2.Set(BusTypes.DataBus);
                     },
                     () => {
+                        OperandRegister2.Enable(BusTypes.AddressBus);
+                        MB.SetPortAddress(OperandRegister2.W0);
+                    },
+                    () => {
                         SrcReg.Enable(BusTypes.IOBus);
-                        MB.SetPort(OperandRegister2.B0);
+                        MB.SetPortIO(OperandRegister2.W0);
                     }
                 };
             }
@@ -1164,8 +1168,14 @@ namespace Maize {
                         PC.Increment(2);
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag];
                         DestReg = Decoder.RegisterMap[DestRegisterFlag];
+                    },
+                    () => {
+                        DestReg.Enable(BusTypes.AddressBus);
+                        MB.SetPortAddress(DestReg.W0);
+                    },
+                    () => {
                         SrcReg.Enable(BusTypes.IOBus);
-                        MB.SetPort(DestReg.B0);
+                        MB.SetPortIO(DestReg.W0);
                     }
                 };
             }
@@ -1183,8 +1193,12 @@ namespace Maize {
                         OperandRegister2.Set(BusTypes.DataBus);
                     },
                     () => {
+                        DestReg.Enable(BusTypes.AddressBus);
+                        MB.SetPortAddress(DestReg.W0);
+                    },
+                    () => {
                         OperandRegister2.Enable(BusTypes.IOBus, ImmSizeSubRegMap[SrcImmSizeFlag]);
-                        MB.SetPort(DestReg.B0);
+                        MB.SetPortIO(DestReg.W0);
                     }
                 };
             }
@@ -1197,8 +1211,14 @@ namespace Maize {
                         PC.Increment(2);
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag];
                         DestReg = Decoder.RegisterMap[DestRegisterFlag];
+                    },
+                    () => {
+                        DestReg.Enable(BusTypes.AddressBus);
+                        MB.SetPortAddress(DestReg.W0);
+                    },
+                    () => {
                         SrcReg.Set(BusTypes.IOBus);
-                        MB.EnablePort(DestReg.B0);
+                        MB.EnablePortIO(DestReg.W0);
                     }
                 };
             }
@@ -1216,8 +1236,12 @@ namespace Maize {
                         OperandRegister2.Set(BusTypes.DataBus);
                     },
                     () => {
+                        OperandRegister2.Enable(BusTypes.AddressBus);
+                        MB.SetPortAddress(OperandRegister2.W0);
+                    },
+                    () => {
                         DestReg.Set(BusTypes.IOBus, SubRegisterMap[DestSubRegisterFlag]);
-                        MB.EnablePort(OperandRegister2.B0);
+                        MB.EnablePortIO(OperandRegister2.W0);
                     }
                 };
             }

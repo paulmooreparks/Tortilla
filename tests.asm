@@ -15,14 +15,16 @@ LD $00002000,00002000 S
 
 ; Clear screen
 CLR A         
-OUT A $01
+OUT A $7F
 
+CLR A         
 LD $41 A.B0 ; Character to write
 LD $85 A.B5 ; Count
 LD $0A A.B1 ; Function to execute
 INT $10     ; BIOS interrupt
 
-INT $01 ; halt CPU and await interrupts
+LD $0001 A
+INT $40 ; halt CPU and await interrupts
 
 LD $02 A.B0   
 CMP $02 A.B0
@@ -39,7 +41,7 @@ LD zerotext A.H0
 
 done:
 INT $03 ; output string
-INT $01 ; halt CPU and await interrupts
+INT $40 ; halt CPU and await interrupts
 
 zerotext: 
 STRING "Equal\0"

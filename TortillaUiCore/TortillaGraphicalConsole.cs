@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 
 namespace TortillaUI {
-    public partial class TortillaGraphicalConsole : Form, Tortilla.IBusComponent, TortillaUI.ITortillaConsole {
+    public partial class TortillaGraphicalConsole : Form, Tortilla.IBusComponent, Tortilla.ITortillaConsole {
         UserSettings us = new UserSettings();
 
         private const UInt32 StdOutputHandle = 0xFFFFFFF5;
@@ -602,7 +602,7 @@ namespace TortillaUI {
         }
 
         IMotherboard<UInt64> MB { get; set; }
-        int InterruptID { get; set; }
+        UInt64 InterruptID { get; set; }
 
         public IDataBus<UInt64> DataBus { get; set; }
         public IDataBus<UInt64> AddressBus { get; set; }

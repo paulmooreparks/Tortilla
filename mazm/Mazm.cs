@@ -190,7 +190,7 @@ namespace mazm {
 
             using (BinaryWriter binWriter = new BinaryWriter(File.Open(binfile, FileMode.Create))) {
                 var lastBlock = MemoryMap.Last().Key << 8;
-                var end = lastBlock + byte.MaxValue - 1;
+                var end = lastBlock + byte.MaxValue; // - 1;
                 CurrentAddress = 0;
 
                 while (CurrentAddress < end) {

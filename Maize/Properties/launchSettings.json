@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "maize": {
+      "commandName": "Project",
+      "commandLineArgs": "-img \"C:/Users/paul/OneDrive/source/repos/Tortilla/PadmaJairam.bin\""
+    }
+  }
+}

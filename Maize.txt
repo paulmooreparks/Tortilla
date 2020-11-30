@@ -141,6 +141,11 @@ Opcodes
 %0011`0101  $25   NOT   reg
 %0011`0110  $26   POP   reg
 %0011`0111  $27   RET    
+%0011`1000  $28   IRET    
+%0011`1001  $29   STI
+%0011`1010  $30   CLI
+%0011`1011  $31   STC
+%0011`1100  $32   CLC
 %1010`1010  $AA   NOP    
 %1111`1111  $FF   BRK   (INT 0)
             
@@ -204,35 +209,6 @@ Sub-register bit field
 %xxxx1101   $D   X.H1 (4-byte data)
 %xxxx1110   $E   X    (8-byte data)
 
-OLD Register param
-
-%xBBB`xxxx        register ID
-%x000`xxxx  $0x   A register
-%x001`xxxx  $1x   B register
-%x010`xxxx  $2x   C register
-%x011`xxxx  $3x   D register
-%x100`xxxx  $4x   E register
-%x101`xxxx  $5x   I register
-%x110`xxxx  $6x   S register
-%x111`xxxx  $7x   F register
-                  
-%xxxx`0000  $x0   X.B0 (1-byte data)
-%xxxx`0001  $x1   X.B1 (1-byte data)
-%xxxx`0010  $x2   X.B2 (1-byte data)
-%xxxx`0011  $x3   X.B3 (1-byte data)
-%xxxx`0100  $x4   X.B4 (1-byte data)
-%xxxx`0101  $x5   X.B5 (1-byte data)
-%xxxx`0110  $x6   X.B6 (1-byte data)
-%xxxx`0111  $x7   X.B7 (1-byte data)
-%xxxx`1000  $x8   X.Q0 (2-byte data)
-%xxxx`1001  $x9   X.Q1 (2-byte data)
-%xxxx`1010  $xA   X.Q2 (2-byte data)
-%xxxx`1011  $xB   X.Q3 (2-byte data)
-%xxxx`1100  $xC   X.H0 (4-byte data)
-%xxxx`1101  $xD   X.H1 (4-byte data)
-%xxxx`1110  $xC   X    (8-byte data)
-
-
 Immediate param
 %xxxx`0xxx        immediate is operand
 %xxxx`1xxx        immediate is math operation on next operand
@@ -241,9 +217,6 @@ Immediate param
 %xxxx`x001  $01   instruction reads 2-byte immediate (16 bits) 
 %xxxx`x010  $02   instruction reads 4-byte immediate (32 bits) 
 %xxxx`x011  $03   instruction reads 8-byte immediate (64 bits)
-
-
-
 
 Immediate operation bit
 %xxxx`0xxx  Read immediate value as operand
@@ -288,156 +261,56 @@ $FFFE1000   hexadecimal
 
 
 
-LD
-Load register from register, value, or memory location
+BIOS Interface
 
-<LD>     ::= <opcode> <src> <dest> <imm>
-<opcode  ::= 00000001 
-<src>    ::= 
+BIOS calls will track as closely as possible to the "standard" BIOS routines found on typical 
+x86 PCs. The x86 registers used in BIOS calls will map to Maize registers as follows:
 
-LD sreg/[reg]/imm/[imm], dreg
-01 src08b dest08b [imm08b|imm16b|imm32b|imm64b]
-00000001 xxxx`xxxx xxxx`xxxx
-
-81 01 LD $01, A.B0
-10000001 xxxx`xxxx
-
-A1 01 02 LD $0201, A.Q0
-10100001 xxxx`xxxx xxxx`xxxx
-
-C1 01 02 03 04 LD $04030201, A.H0
-11000001 xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx
-
-E1 01 02 03 04 05 06 07 08 LD $0807060504030201, A
-11100001 xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx xxxx`xxxx
+AX -> A.Q0
+   AL -> A.B0
+   AH -> A.B1
+BX -> A.Q1
+   BL -> A.B2
+   BH -> A.B3
+CX -> A.Q2
+   CL -> A.B4
+   CH -> A.B5
+DX -> A.Q3
+   DL -> A.B6
+   DH -> A.B7
 
 
-ST
-Store register or value to memory
+OS ABI
 
-ST sreg, [reg]|[imm08b]|[imm16b]|[imm32b]|[imm64b]
-01 src08b dest08b (imm08b|imm16b|imm32b|imm64b)
-00000010 xxxx`xxxx xxxx`xxxx
+The first six arguments to OS-level routines will be placed, from left to right, into the 
+G, H, J, K, L, and M registers. Any remaining arguments will be pushed onto the stack. 
+For example:
 
-ST A.B0, [imm08b]
-82 xx 
-10000010 xxxx`xxxx
+; Call C function "void random_os_function(int a, const char *b, size_t c, int* d)"
+LD $0000`1234 G         ; int a
+LD A.H0 H               ; const char* b, assuming the pointer is in A.H0
+LD $0000`00FF J         ; size_t c
+LD B.H1 K               ; int* d, assuming the pointer is in B.H1
+CALL random_os_function
 
-ST A.Q0, [imm16b]
-A2 xx xx 
-10100010 xxxx`xxxx`xxxx`xxxx
+The called routine will preserve B, C, D, E, Z, and S. Any other registers may not be 
+preserved. Return values will placed into the A register. For example:
 
-ST A.H0, [imm32b]
-C2 xx xx xx xx 
-11000010 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+; Implement C function "int add(int a, int b)"
+LD G A
+ADD H A
+RET
 
-ST A, [imm64b]
-E2 xx xx xx xx xx xx xx xx
-11100010 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
+For syscalls, the same standard will be followed for syscall parameters. The syscall number 
+will be placed into the A register prior to calling the interrupt. 
 
+; Output a string using sys_write
+LD $01 A             ; syscall 1 = sys_write
+LD $01 G             ; file descriptor 1 (STDOUT) in register G
+LD hello_world H.H0  ; string address in register H
+LD hello_world_end J 
+SUB hello_world J    ; string length in register J
+INT $80              ; call sys_write
 
-ADD
-Add reg2 or imm to reg1, store in reg1
+User applications should follow this convention where reasonable to do so.
 
-ADD sreg/val + dreg -> dreg
-03 xx xx ADD src, dest
-00000011 xxxx`xxxx`xxxx`xxxx
-
-ADD A.B0 (embedded 8-bit operand as memory location)
-83 ADD 08b val + A.B0 -> A.B0
-83 xx 
-10000011 xxxx`xxxx
-
-ADD A.Q0 (embedded 16-bit operand)
-A3 ADD 16b val + A.Q0 -> A.Q0
-A3 xx xx 
-10100011 xxxx`xxxx`xxxx`xxxx
-
-ADD A.H0 (embedded 32-bit operand)
-C3 ADD 32b val + A.H0 -> A.H0
-C3 xx xx xx xx 
-11000011 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
-
-ADD A (embedded 64-bit operand)
-E3 ADD 64b + A -> A
-E3 xx xx xx xx xx xx xx xx
-11100011 xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx`xxxx
-
-
-
-
-
-
-
-
-
-
-;-------------------------------------------
-; OLD
-
-0000001E  E1 50 07 61 07 64 07 6D 07   LD $076D076407610750, A ; "Padm"
-0000002A  A2 80 00                     ST A.Q0, [$0080]
-00000027  02 50 05 82 00               ST A.Q1, [$0082]
-00000024  02 60 05 84 00               ST A.Q2, [$0084]
-00000021  02 70 05 86 00               ST A.Q3, [$0086]
-0000001E  E1 61 07 20 07 4A 07 61 07   LD $0761074A07200761, A ; "a Ja"
-0000002A  A2 88 00                     ST A.Q0, [$0088]
-00000027  02 50 05 8A 00               ST A.Q1, [$008A]
-00000024  02 60 05 8C 00               ST A.Q2, [$008C]
-00000021  02 70 05 8E 00               ST A.Q3, [$008E]
-0000001E  E1 69 07 72 07 61 07 6D 07   LD $076D076107720769, A ; "iram"
-0000002A  A2 90 00                     ST A.Q0, [$0090]
-00000027  02 50 05 92 00               ST A.Q1, [$0092]
-00000024  02 60 05 94 00               ST A.Q2, [$0094]
-00000021  02 70 05 96 00               ST A.Q3, [$0096]
-
-
-;-------------------------------------------
-
-EVEN OLDER
-
-; Test, not in use, etc.
-
-00000000 0C CC    LD $CC, A.B0
-00000002 14 51    ST A.B0, [$51]
-
-
-00000000  81 50     LD $50, A.B0
-00000002  82 80     ST A.B0, [$80]
-00000004  81 07     LD $07, A.B0
-00000006  82 81     ST A.B0, [$81]
-00000008  81 61     LD $61, A.B0
-0000000A  82 82     ST A.B0, [$82]
-0000000C  81 07     LD $07, A.B0
-0000000E  82 83     ST A.B0, [$83]
-00000010  81 64     LD $64, A.B0
-00000012  82 84     ST A.B0, [$84]
-00000014  81 07     LD $07, A.B0
-00000016  82 85     ST A.B0, [$85]
-00000018  81 6D     LD $6D, A.B0
-0000001A  82 86     ST A.B0, [$86]
-0000001C  81 07     LD $07, A.B0
-0000001E  82 87     ST A.B0, [$87]
-00000020  81 61     LD $61, A.B0
-00000022  82 88     ST A.B0, [$88]
-00000024  81 07     LD $07, A.B0
-00000026  82 89     ST A.B0, [$89]
-
-00000000  A1 50 07    LD $0750, A.Q0
-00000003  A2 80 00    ST A.Q0, [$0080]
-00000006  A1 61 07    LD $0761, A.Q0
-00000009  A2 82 00    ST A.Q0, [$0082]
-0000000C  A1 64 07    LD $0764, A.Q0
-0000000F  A2 84 00    ST A.Q0, [$0084]
-00000013  A1 6D 07    LD $076D, A.Q0
-00000016  A2 86 00    ST A.Q0, [$0086]
-00000019  A1 61 07    LD $0761, A.Q0
-0000001C  A2 88 00    ST A.Q0, [$0088]
-
-00000000  E1 50 07 61 07 64 07 6D 07   LD $076D076407610750, A ; "Padm"
-00000009  A2 80 00                     ST A.Q0, [$0080]
-0000000C  02 50 05 82 00               ST A.Q1, [$0082]
-00000011  02 60 05 84 00               ST A.Q2, [$0084]
-00000016  02 70 05 86 00               ST A.Q3, [$0086]
-0000001B  A1 61 07                     LD $0761, A.Q0
-0000001E  A2 88 00                     ST A.Q0, [$0088]

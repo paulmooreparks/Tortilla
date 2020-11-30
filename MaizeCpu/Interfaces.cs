@@ -38,7 +38,7 @@ namespace Tortilla {
     }
 
     public interface IBusComponent {
-        void OnTick(ClockState state, IBusComponent _flags);
+        void OnTick(ClockState state, IBusComponent cpuFlags);
         void Enable(BusTypes type);
         void Set(BusTypes type);
         bool AddressBusEnabled { get; }
@@ -67,7 +67,7 @@ namespace Tortilla {
         void OnDebug();
         void OnPowerOff();
         void OnRaiseException(byte id);
-        void RaiseInterrupt(int id);
+        void RaiseInterrupt(DataType id);
 
         event EventHandler<string> Debug;
         event EventHandler PoweredOff;
@@ -83,22 +83,24 @@ namespace Tortilla {
         void PowerOff();
         byte ReadByte(DataType address);
         void WriteByte(DataType address, byte value);
-        void EnablePort(byte address);
-        void SetPort(byte address);
+        void EnablePortIO(DataType address);
+        void SetPortIO(DataType address);
+        void SetPortAddress(DataType address);
 
         void ConnectComponent(IBusComponent component);
-        void ConnectDevice(IBusComponent component, int address);
-        int ConnectInterrupt(IBusComponent component, int address);
+        void ConnectDevice(IBusComponent component, DataType address);
+        DataType ConnectInterrupt(IBusComponent component, DataType address);
+        void EnableDebug(bool @checked);
     }
 
     public interface ICpu<DataType> : IBusComponent {
         void PowerOn();
         void PowerOff();
         void Reset();
-        void RaiseInterrupt(int id);
+        void RaiseInterrupt(DataType id);
         void Break();
         bool SingleStep { get; set; }
-        void Continue();
+        void Run();
         string RegisterDump { get; }
         bool IsPowerOn { get; }
 
