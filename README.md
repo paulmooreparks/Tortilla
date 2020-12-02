@@ -2,7 +2,11 @@
 ## Implemented on the Tortilla Emulation Platform
 
 This project implements a virtual CPU (called "Maize") on a library that enables the creation of virtual CPUs (called "Tortilla"). 
-See the file Maize.txt for more details on the CPU assembly language and the system that runs on it.
+See the file [Maize.txt](https://github.com/paulmooreparks/Tortilla/blob/master/Maize.txt) for more details on the CPU assembly 
+language and the system that runs on it.
+
+The goal is to create a "BIOS" layer above the virtual devices, a simple OS, a subset of Unix/Linux system calls (interrupt $80), 
+and finally an implementation of a C/C++ compiler (likely Clang or GCC) that will compile and link to Maize machine code.
 
 ## Hello, World
 
