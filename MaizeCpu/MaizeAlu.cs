@@ -20,6 +20,14 @@ namespace Maize {
 
             this.DataBus = Motherboard.DataBus;
             Motherboard.ConnectComponent(this);
+
+            RequestTickSetFromAddressBus += OnRequestTickSet;
+            RequestTickSetFromDataBus += OnRequestTickSet;
+            RequestTickSetFromIOBus += OnRequestTickSet;
+        }
+
+        private void OnRequestTickSet(IBusComponent obj) {
+            RegisterTickExecute();
         }
 
         MaizeMotherboard Motherboard { get; set; }
@@ -27,11 +35,6 @@ namespace Maize {
 
         public MaizeRegister DestReg { get; set; } = new MaizeRegister();
         public MaizeRegister SrcReg { get; set; } = new MaizeRegister();
-
-        public byte OpCode {
-            get { return this.B0; }
-            set { this.B0 = value; }
-        }
 
         public const byte OpCode_ADD  = 0b_0000_0000;
         public const byte OpCode_SUB  = 0b_0000_0001;
@@ -63,38 +66,28 @@ namespace Maize {
         protected const byte OpCodeFlag_Ctrl =  0b_1100_0000;
 
         public byte CarryIn {
-            get { return (byte)(this.B0 & OpCodeCtrl_CarryIn); }
-            set { this.B0 = (byte)((this.B0 & ~OpCodeCtrl_CarryIn) | ((value & 0b_0000_0001) << (OpCodeCtrl_CarryIn / 4))); }
+            get { return (byte)(this.RegData.B0 & OpCodeCtrl_CarryIn); }
+            set { this.RegData.B0 = (byte)((this.RegData.B0 & ~OpCodeCtrl_CarryIn) | ((value & 0b_0000_0001) << (OpCodeCtrl_CarryIn / 4))); }
         }
 
-        public override void OnTick(ClockState state, IBusComponent cpuFlags) {
-            base.OnTick(state, cpuFlags);
-
-            switch (state) {
-            case ClockState.TickSet:
-                ExecuteOperation();
-                break;
-            }
-        }
-
-        void ExecuteOperation() {
-            switch (OpCode & OpCodeFlag_Code) {
+        public override void OnTickExecute(IBusComponent cpuFlags) {
+            switch (RegData.B0 & OpCodeFlag_Code) {
             case OpCode_ADD:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = ADD_Byte();
+                    DestReg.RegData.B0 = ADD_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = ADD_QuarterWord();
+                    DestReg.RegData.Q0 = ADD_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = ADD_HalfWord();
+                    DestReg.RegData.H0 = ADD_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = ADD_Word();
+                    DestReg.RegData.W0 = ADD_Word();
                     break;
 
                 default:
@@ -104,21 +97,21 @@ namespace Maize {
                 break;
 
             case OpCode_SUB:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = SUB_Byte();
+                    DestReg.RegData.B0 = SUB_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = SUB_QuarterWord();
+                    DestReg.RegData.Q0 = SUB_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = SUB_HalfWord();
+                    DestReg.RegData.H0 = SUB_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = SUB_Word();
+                    DestReg.RegData.W0 = SUB_Word();
                     break;
 
                 default:
@@ -128,21 +121,21 @@ namespace Maize {
                 break;
 
             case OpCode_MUL:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = MUL_Byte();
+                    DestReg.RegData.B0 = MUL_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = MUL_QuarterWord();
+                    DestReg.RegData.Q0 = MUL_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = MUL_HalfWord();
+                    DestReg.RegData.H0 = MUL_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = MUL_Word();
+                    DestReg.RegData.W0 = MUL_Word();
                     break;
 
                 default:
@@ -152,21 +145,21 @@ namespace Maize {
                 break;
 
             case OpCode_DIV:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = DIV_Byte();
+                    DestReg.RegData.B0 = DIV_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = DIV_QuarterWord();
+                    DestReg.RegData.Q0 = DIV_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = DIV_HalfWord();
+                    DestReg.RegData.H0 = DIV_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = DIV_Word();
+                    DestReg.RegData.W0 = DIV_Word();
                     break;
 
                 default:
@@ -176,21 +169,21 @@ namespace Maize {
                 break;
 
             case OpCode_MOD:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = MOD_Byte();
+                    DestReg.RegData.B0 = MOD_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = MOD_QuarterWord();
+                    DestReg.RegData.Q0 = MOD_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = MOD_HalfWord();
+                    DestReg.RegData.H0 = MOD_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = MOD_Word();
+                    DestReg.RegData.W0 = MOD_Word();
                     break;
 
                 default:
@@ -200,21 +193,21 @@ namespace Maize {
                 break;
 
             case OpCode_INC:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = INC_Byte();
+                    DestReg.RegData.B0 = INC_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = INC_QuarterWord();
+                    DestReg.RegData.Q0 = INC_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = INC_HalfWord();
+                    DestReg.RegData.H0 = INC_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = INC_Word();
+                    DestReg.RegData.W0 = INC_Word();
                     break;
 
                 default:
@@ -224,21 +217,21 @@ namespace Maize {
                 break;
 
             case OpCode_DEC:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = DEC_Byte();
+                    DestReg.RegData.B0 = DEC_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = DEC_QuarterWord();
+                    DestReg.RegData.Q0 = DEC_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = DEC_HalfWord();
+                    DestReg.RegData.H0 = DEC_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = DEC_Word();
+                    DestReg.RegData.W0 = DEC_Word();
                     break;
 
                 default:
@@ -248,21 +241,21 @@ namespace Maize {
                 break;
 
             case OpCode_AND:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = AND_Byte();
+                    DestReg.RegData.B0 = AND_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = AND_QuarterWord();
+                    DestReg.RegData.Q0 = AND_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = AND_HalfWord();
+                    DestReg.RegData.H0 = AND_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.W0 = AND_Word();
+                    DestReg.RegData.W0 = AND_Word();
                     break;
 
                 default:
@@ -272,21 +265,21 @@ namespace Maize {
                 break;
 
             case OpCode_OR:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = OR_Byte();
+                    DestReg.RegData.B0 = OR_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = OR_QuarterWord();
+                    DestReg.RegData.Q0 = OR_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = OR_HalfWord();
+                    DestReg.RegData.H0 = OR_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = OR_Word();
+                    DestReg.RegData.W0 = OR_Word();
                     break;
 
                 default:
@@ -296,21 +289,21 @@ namespace Maize {
                 break;
 
             case OpCode_NOR:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = NOR_Byte();
+                    DestReg.RegData.B0 = NOR_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = NOR_QuarterWord();
+                    DestReg.RegData.Q0 = NOR_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = NOR_HalfWord();
+                    DestReg.RegData.H0 = NOR_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = NOR_Word();
+                    DestReg.RegData.W0 = NOR_Word();
                     break;
 
                 default:
@@ -320,21 +313,21 @@ namespace Maize {
                 break;
 
             case OpCode_NOT:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = NOT_Byte();
+                    DestReg.RegData.B0 = NOT_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = NOT_QuarterWord();
+                    DestReg.RegData.Q0 = NOT_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = NOT_HalfWord();
+                    DestReg.RegData.H0 = NOT_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = NOT_Word();
+                    DestReg.RegData.W0 = NOT_Word();
                     break;
 
                 default:
@@ -344,21 +337,21 @@ namespace Maize {
                 break;
 
             case OpCode_NAND:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = NAND_Byte();
+                    DestReg.RegData.B0 = NAND_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = NAND_QuarterWord();
+                    DestReg.RegData.Q0 = NAND_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = NAND_HalfWord();
+                    DestReg.RegData.H0 = NAND_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = NAND_Word();
+                    DestReg.RegData.W0 = NAND_Word();
                     break;
 
                 default:
@@ -368,21 +361,21 @@ namespace Maize {
                 break;
 
             case OpCode_XOR:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = XOR_Byte();
+                    DestReg.RegData.B0 = XOR_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = XOR_QuarterWord();
+                    DestReg.RegData.Q0 = XOR_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = XOR_HalfWord();
+                    DestReg.RegData.H0 = XOR_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = XOR_Word();
+                    DestReg.RegData.W0 = XOR_Word();
                     break;
 
                 default:
@@ -392,21 +385,21 @@ namespace Maize {
                 break;
 
             case OpCode_SHL:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = SHL_Byte();
+                    DestReg.RegData.B0 = SHL_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = SHL_QuarterWord();
+                    DestReg.RegData.Q0 = SHL_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = SHL_HalfWord();
+                    DestReg.RegData.H0 = SHL_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = SHL_Word();
+                    DestReg.RegData.W0 = SHL_Word();
                     break;
 
                 default:
@@ -416,21 +409,21 @@ namespace Maize {
                 break;
 
             case OpCode_SHR:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
-                    DestReg.B0 = SHR_Byte();
+                    DestReg.RegData.B0 = SHR_Byte();
                     break;
 
                 case OpSize_QuarterWord:
-                    DestReg.Q0 = SHR_QuarterWord();
+                    DestReg.RegData.Q0 = SHR_QuarterWord();
                     break;
 
                 case OpSize_HalfWord:
-                    DestReg.H0 = SHR_HalfWord();
+                    DestReg.RegData.H0 = SHR_HalfWord();
                     break;
 
                 case OpSize_Word:
-                    DestReg.Value = SHR_Word();
+                    DestReg.RegData.W0 = SHR_Word();
                     break;
 
                 default:
@@ -440,7 +433,7 @@ namespace Maize {
                 break;
 
             case OpCode_CMP:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
                     SUB_Byte();
                     break;
@@ -464,7 +457,7 @@ namespace Maize {
                 break;
 
             case OpCode_TEST:
-                switch (OpCode & OpCodeFlag_Size) {
+                switch (RegData.B0 & OpCodeFlag_Size) {
                 case OpSize_Byte:
                     AND_Byte();
                     break;
@@ -490,26 +483,26 @@ namespace Maize {
         }
 
         byte UpdateFlags(byte result) {
-            Cpu.Zero = (result == 0);
-            Cpu.Negative = ((result & 0b_1000_0000) != 0);
+            Cpu.ZeroFlag = (result == 0);
+            Cpu.NegativeFlag = ((result & 0b_1000_0000) != 0);
             return result;
         }
 
         UInt16 UpdateFlags(UInt16 result) {
-            Cpu.Zero = (result == 0);
-            Cpu.Negative = ((Int16)result) < 0;
+            Cpu.ZeroFlag = (result == 0);
+            Cpu.NegativeFlag = ((Int16)result) < 0;
             return result;
         }
 
         UInt32 UpdateFlags(UInt32 result) {
-            Cpu.Zero = (result == 0);
-            Cpu.Negative = ((Int32)result) < 0;
+            Cpu.ZeroFlag = (result == 0);
+            Cpu.NegativeFlag = ((Int32)result) < 0;
             return result;
         }
 
         UInt64 UpdateFlags(UInt64 result) {
-            Cpu.Zero = (result == 0);
-            Cpu.Negative = ((Int64)result) < 0;
+            Cpu.ZeroFlag = (result == 0);
+            Cpu.NegativeFlag = ((Int64)result) < 0;
             return result;
         }
 
@@ -518,14 +511,14 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 + SrcReg.B0));
+                result = checked((byte)(DestReg.RegData.B0 + SrcReg.RegData.B0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 + SrcReg.B0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 + SrcReg.RegData.B0));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -533,14 +526,14 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 + SrcReg.Q0));
+                result = checked((ushort)(DestReg.RegData.Q0 + SrcReg.RegData.Q0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 + SrcReg.Q0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 + SrcReg.RegData.Q0));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -548,14 +541,14 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 + SrcReg.H0);
+                result = checked(DestReg.RegData.H0 + SrcReg.RegData.H0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 + SrcReg.H0);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 + SrcReg.RegData.H0);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -563,14 +556,14 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value + SrcReg.Value);
+                result = checked(DestReg.RegData.W0 + SrcReg.RegData.W0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value + SrcReg.Value);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 + SrcReg.RegData.W0);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -579,14 +572,14 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 - SrcReg.B0));
+                result = checked((byte)(DestReg.RegData.B0 - SrcReg.RegData.B0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 - SrcReg.B0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 - SrcReg.RegData.B0));
             }
 
-            Cpu.Carry = (SrcReg.B0 > DestReg.B0);
+            Cpu.CarryFlag = (SrcReg.RegData.B0 > DestReg.RegData.B0);
             return UpdateFlags(result);
         }
 
@@ -594,14 +587,14 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 - SrcReg.Q0));
+                result = checked((ushort)(DestReg.RegData.Q0 - SrcReg.RegData.Q0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 - SrcReg.Q0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 - SrcReg.RegData.Q0));
             }
 
-            Cpu.Carry = (SrcReg.Q0 > DestReg.Q0);
+            Cpu.CarryFlag = (SrcReg.RegData.Q0 > DestReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
@@ -609,14 +602,14 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 - SrcReg.H0);
+                result = checked(DestReg.RegData.H0 - SrcReg.RegData.H0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 - SrcReg.H0);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 - SrcReg.RegData.H0);
             }
 
-            Cpu.Carry = (SrcReg.H0 > DestReg.H0);
+            Cpu.CarryFlag = (SrcReg.RegData.H0 > DestReg.RegData.H0);
             return UpdateFlags(result);
         }
 
@@ -624,14 +617,14 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value - SrcReg.Value);
+                result = checked(DestReg.RegData.W0 - SrcReg.RegData.W0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value - SrcReg.Value);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 - SrcReg.RegData.W0);
             }
 
-            Cpu.Carry = (SrcReg.W0 > DestReg.W0);
+            Cpu.CarryFlag = (SrcReg.RegData.W0 > DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -640,14 +633,14 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 + 1));
+                result = checked((byte)(DestReg.RegData.B0 + 1));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 + 1));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 + 1));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -655,14 +648,14 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 + 1));
+                result = checked((ushort)(DestReg.RegData.Q0 + 1));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 + 1));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 + 1));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -670,14 +663,14 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 + 1);
+                result = checked(DestReg.RegData.H0 + 1);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 + 1);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 + 1);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -685,14 +678,14 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value + 1);
+                result = checked(DestReg.RegData.W0 + 1);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value + 1);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 + 1);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -701,14 +694,14 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 - 1));
+                result = checked((byte)(DestReg.RegData.B0 - 1));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 - 1));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 - 1));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -716,14 +709,14 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 - 1));
+                result = checked((ushort)(DestReg.RegData.Q0 - 1));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 - 1));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 - 1));
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -731,14 +724,14 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 - 1);
+                result = checked(DestReg.RegData.H0 - 1);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 - 1);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 - 1);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
@@ -746,43 +739,43 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value - 1);
+                result = checked(DestReg.RegData.W0 - 1);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value - 1);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 - 1);
             }
 
-            Cpu.Carry = (result < DestReg.Value);
+            Cpu.CarryFlag = (result < DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte MUL_Byte() {
-            UInt16 result = (UInt16)(DestReg.B0 * SrcReg.B0);
-            Cpu.Overflow = result > (int)byte.MaxValue;
-            Cpu.Carry = result > byte.MaxValue;
+            UInt16 result = (UInt16)(DestReg.RegData.B0 * SrcReg.RegData.B0);
+            Cpu.OverflowFlag = result > (int)byte.MaxValue;
+            Cpu.CarryFlag = result > byte.MaxValue;
             return UpdateFlags((byte)result);
         }
 
         private UInt16 MUL_QuarterWord() {
-            UInt32 result = (UInt32)(DestReg.Q0 * SrcReg.Q0);
-            Cpu.Overflow = result > Int16.MaxValue;
-            Cpu.Carry = result > UInt16.MaxValue;
+            UInt32 result = (UInt32)(DestReg.RegData.Q0 * SrcReg.RegData.Q0);
+            Cpu.OverflowFlag = result > Int16.MaxValue;
+            Cpu.CarryFlag = result > UInt16.MaxValue;
             return UpdateFlags((UInt16)result);
         }
 
         private UInt32 MUL_HalfWord() {
-            UInt64 result = (UInt64)(DestReg.Q0 * SrcReg.Q0);
-            Cpu.Overflow = result > Int32.MaxValue;
-            Cpu.Carry = result > UInt32.MaxValue;
+            UInt64 result = (UInt64)(DestReg.RegData.Q0 * SrcReg.RegData.Q0);
+            Cpu.OverflowFlag = result > Int32.MaxValue;
+            Cpu.CarryFlag = result > UInt32.MaxValue;
             return UpdateFlags((UInt32)result);
         }
 
         private UInt64 MUL_Word() {
-            BigInteger result = (BigInteger)(DestReg.Q0 * SrcReg.Q0);
-            Cpu.Overflow = result > Int64.MaxValue;
-            Cpu.Carry = result > UInt64.MaxValue;
+            BigInteger result = (BigInteger)(DestReg.RegData.Q0 * SrcReg.RegData.Q0);
+            Cpu.OverflowFlag = result > Int64.MaxValue;
+            Cpu.CarryFlag = result > UInt64.MaxValue;
             return UpdateFlags((UInt64)result);
         }
 
@@ -791,11 +784,11 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 / SrcReg.B0));
+                result = checked((byte)(DestReg.RegData.B0 / SrcReg.RegData.B0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 / SrcReg.B0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 / SrcReg.RegData.B0));
             }
 
             return UpdateFlags(result);
@@ -805,11 +798,11 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 / SrcReg.Q0));
+                result = checked((ushort)(DestReg.RegData.Q0 / SrcReg.RegData.Q0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 / SrcReg.Q0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 / SrcReg.RegData.Q0));
             }
 
             return UpdateFlags(result);
@@ -819,11 +812,11 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 / SrcReg.H0);
+                result = checked(DestReg.RegData.H0 / SrcReg.RegData.H0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 / SrcReg.H0);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 / SrcReg.RegData.H0);
             }
 
             return UpdateFlags(result);
@@ -833,11 +826,11 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value / SrcReg.Value);
+                result = checked(DestReg.RegData.W0 / SrcReg.RegData.W0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value / SrcReg.Value);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 / SrcReg.RegData.W0);
             }
 
             return UpdateFlags(result);
@@ -848,11 +841,11 @@ namespace Maize {
             byte result;
 
             try {
-                result = checked((byte)(DestReg.B0 % SrcReg.B0));
+                result = checked((byte)(DestReg.RegData.B0 % SrcReg.RegData.B0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((byte)(DestReg.B0 % SrcReg.B0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((byte)(DestReg.RegData.B0 % SrcReg.RegData.B0));
             }
 
             return UpdateFlags(result);
@@ -862,11 +855,11 @@ namespace Maize {
             UInt16 result;
 
             try {
-                result = checked((ushort)(DestReg.Q0 % SrcReg.Q0));
+                result = checked((ushort)(DestReg.RegData.Q0 % SrcReg.RegData.Q0));
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked((ushort)(DestReg.Q0 % SrcReg.Q0));
+                Cpu.OverflowFlag = true;
+                result = unchecked((ushort)(DestReg.RegData.Q0 % SrcReg.RegData.Q0));
             }
 
             return UpdateFlags(result);
@@ -876,11 +869,11 @@ namespace Maize {
             UInt32 result;
 
             try {
-                result = checked(DestReg.H0 % SrcReg.H0);
+                result = checked(DestReg.RegData.H0 % SrcReg.RegData.H0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.H0 % SrcReg.H0);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.H0 % SrcReg.RegData.H0);
             }
 
             return UpdateFlags(result);
@@ -890,182 +883,182 @@ namespace Maize {
             UInt64 result;
 
             try {
-                result = checked(DestReg.Value % SrcReg.Value);
+                result = checked(DestReg.RegData.W0 % SrcReg.RegData.W0);
             }
             catch (OverflowException) {
-                Cpu.Overflow = true;
-                result = unchecked(DestReg.Value % SrcReg.Value);
+                Cpu.OverflowFlag = true;
+                result = unchecked(DestReg.RegData.W0 % SrcReg.RegData.W0);
             }
 
-            Cpu.Carry = (result < SrcReg.Value);
+            Cpu.CarryFlag = (result < SrcReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte AND_Byte() {
-            byte result = (byte)(DestReg.B0 & SrcReg.B0);
+            byte result = (byte)(DestReg.RegData.B0 & SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 AND_QuarterWord() {
-            UInt16 result = (ushort)(DestReg.Q0 & SrcReg.Q0);
+            UInt16 result = (ushort)(DestReg.RegData.Q0 & SrcReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 AND_HalfWord() {
-            UInt32 result = DestReg.H0 & SrcReg.H0;
+            UInt32 result = DestReg.RegData.H0 & SrcReg.RegData.H0;
             return UpdateFlags(result);
         }
 
         private UInt64 AND_Word() {
-            UInt64 result = DestReg.Value & SrcReg.Value;
+            UInt64 result = DestReg.RegData.W0 & SrcReg.RegData.W0;
             return UpdateFlags(result);
         }
 
 
         private byte OR_Byte() {
-            byte result = (byte)(DestReg.B0 | SrcReg.B0);
+            byte result = (byte)(DestReg.RegData.B0 | SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 OR_QuarterWord() {
-            UInt16 result = (ushort)(DestReg.Q0 | SrcReg.Q0);
+            UInt16 result = (ushort)(DestReg.RegData.Q0 | SrcReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 OR_HalfWord() {
-            UInt32 result = DestReg.H0 | SrcReg.H0;
+            UInt32 result = DestReg.RegData.H0 | SrcReg.RegData.H0;
             return UpdateFlags(result);
         }
 
         private UInt64 OR_Word() {
-            UInt64 result = DestReg.Value | SrcReg.Value;
+            UInt64 result = DestReg.RegData.W0 | SrcReg.RegData.W0;
             return UpdateFlags(result);
         }
 
 
         private byte NOR_Byte() {
-            byte result = (byte)~(DestReg.B0 | SrcReg.B0);
+            byte result = (byte)~(DestReg.RegData.B0 | SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 NOR_QuarterWord() {
-            UInt16 result = (ushort)~(DestReg.Q0 | SrcReg.Q0);
+            UInt16 result = (ushort)~(DestReg.RegData.Q0 | SrcReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 NOR_HalfWord() {
-            UInt32 result = ~(DestReg.H0 | SrcReg.H0);
+            UInt32 result = ~(DestReg.RegData.H0 | SrcReg.RegData.H0);
             return UpdateFlags(result);
         }
 
         private UInt64 NOR_Word() {
-            UInt64 result = ~(DestReg.Value | SrcReg.Value);
+            UInt64 result = ~(DestReg.RegData.W0 | SrcReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte NOT_Byte() {
-            byte result = (byte)~(DestReg.B0); 
+            byte result = (byte)~(DestReg.RegData.B0); 
             return UpdateFlags(result);
         }
 
         private UInt16 NOT_QuarterWord() {
-            UInt16 result = (ushort)~(DestReg.Q0);
+            UInt16 result = (ushort)~(DestReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 NOT_HalfWord() {
-            UInt32 result = ~(DestReg.H0);
+            UInt32 result = ~(DestReg.RegData.H0);
             return UpdateFlags(result);
         }
 
         private UInt64 NOT_Word() {
-            UInt64 result = ~(DestReg.Value);
+            UInt64 result = ~(DestReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte NAND_Byte() {
-            byte result = (byte)~(DestReg.B0 & SrcReg.B0);
+            byte result = (byte)~(DestReg.RegData.B0 & SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 NAND_QuarterWord() {
-            UInt16 result = (ushort)~(DestReg.Q0 & SrcReg.Q0);
+            UInt16 result = (ushort)~(DestReg.RegData.Q0 & SrcReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 NAND_HalfWord() {
-            UInt32 result = ~(DestReg.H0 & SrcReg.H0);
+            UInt32 result = ~(DestReg.RegData.H0 & SrcReg.RegData.H0);
             return UpdateFlags(result);
         }
 
         private UInt64 NAND_Word() {
-            UInt64 result = ~(DestReg.Value & SrcReg.Value);
+            UInt64 result = ~(DestReg.RegData.W0 & SrcReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte XOR_Byte() {
-            byte result = (byte)(DestReg.B0 ^ SrcReg.B0);
+            byte result = (byte)(DestReg.RegData.B0 ^ SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 XOR_QuarterWord() {
-            UInt16 result = (ushort)(DestReg.Q0 ^ SrcReg.Q0);
+            UInt16 result = (ushort)(DestReg.RegData.Q0 ^ SrcReg.RegData.Q0);
             return UpdateFlags(result);
         }
 
         private UInt32 XOR_HalfWord() {
-            UInt32 result = (DestReg.H0 ^ SrcReg.H0);
+            UInt32 result = (DestReg.RegData.H0 ^ SrcReg.RegData.H0);
             return UpdateFlags(result);
         }
 
         private UInt64 XOR_Word() {
-            UInt64 result = (DestReg.Value ^ SrcReg.Value);
+            UInt64 result = (DestReg.RegData.W0 ^ SrcReg.RegData.W0);
             return UpdateFlags(result);
         }
 
 
         private byte SHL_Byte() {
-            byte result = (byte)(DestReg.B0 << SrcReg.B0);
+            byte result = (byte)(DestReg.RegData.B0 << SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 SHL_QuarterWord() {
-            UInt16 result = (ushort)(DestReg.Q0 << SrcReg.B0);
+            UInt16 result = (ushort)(DestReg.RegData.Q0 << SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt32 SHL_HalfWord() {
-            UInt32 result = (DestReg.H0 << SrcReg.B0);
+            UInt32 result = (DestReg.RegData.H0 << SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt64 SHL_Word() {
-            UInt64 result = (DestReg.Value << SrcReg.B0);
+            UInt64 result = (DestReg.RegData.W0 << SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
 
         private byte SHR_Byte() {
-            byte result = (byte)(DestReg.B0 >> SrcReg.B0);
+            byte result = (byte)(DestReg.RegData.B0 >> SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt16 SHR_QuarterWord() {
-            UInt16 result = (ushort)(DestReg.Q0 >> SrcReg.B0);
+            UInt16 result = (ushort)(DestReg.RegData.Q0 >> SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt32 SHR_HalfWord() {
-            UInt32 result = (DestReg.H0 >> SrcReg.B0);
+            UInt32 result = (DestReg.RegData.H0 >> SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 
         private UInt64 SHR_Word() {
-            UInt64 result = (DestReg.Value >> SrcReg.B0);
+            UInt64 result = (DestReg.RegData.W0 >> SrcReg.RegData.B0);
             return UpdateFlags(result);
         }
 

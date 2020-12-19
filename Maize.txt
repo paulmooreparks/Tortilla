@@ -8,31 +8,31 @@ Opcode Byte
 %x1xx`xxxx  immediate source
 
 Opcodes
-%0000`0000  $00   HALT  
-%0000`0001  $01   LD    reg reg
-%0100`0001  $41   LD    imm reg
-%1000`0001  $81   LD    regAddr reg
-%1100`0001  $C1   LD    immAddr reg
-%0000`0010  $02   ST    reg immAddr
-%0100`0010  $42   ST    imm immAddr
-%1000`0010  $82   res
-%1100`0010  $C2   res
-%0000`0011  $03   ADD   reg reg
-%0100`0011  $43   ADD   imm reg
-%1000`0011  $83   ADD   regAddr reg
-%1100`0011  $C3   ADD   immAddr reg
-%0000`0100  $04   SUB   reg reg
-%0100`0100  $44   SUB   imm reg
-%1010`0100  $84   SUB   regAddr reg
-%1110`0100  $C4   SUB   immAddr reg
-%0000`0101  $05   MUL   reg reg
-%0100`0101  $45   MUL   imm reg
-%1000`0101  $85   MUL   regAddr reg
-%1100`0101  $C5   MUL   immAddr reg
-%0000`0110  $06   DIV   reg reg
-%0100`0110  $46   DIV   imm reg
-%1000`0110  $86   DIV   regAddr reg
-%1100`0110  $C6   DIV   immAddr reg
+%0000`0000  $00   HALT                 Halt the clock, and by extension the CPU. 
+%0000`0001  $01   LD    reg reg        Load source register value into destination register
+%0100`0001  $41   LD    imm reg        Load immediate value into destination register 
+%1000`0001  $81   LD    regAddr reg    Load value at address in source register into destination register
+%1100`0001  $C1   LD    immAddr reg    Load value at immediate address into destination register
+%0000`0010  $02   STIM  reg immAddr    Store source register value at immediate address
+%0100`0010  $42   STIM  imm immAddr    Store immediate value at immediate address
+%1000`0010  $82   res                  Reserved
+%1100`0010  $C2   res                  Reserved
+%0000`0011  $03   ADD   reg reg        Add source register value to destination register
+%0100`0011  $43   ADD   imm reg        Add immediate value to destination register
+%1000`0011  $83   ADD   regAddr reg    Add value at address in source register to destination register
+%1100`0011  $C3   ADD   immAddr reg    Add value at immediate address to destination register
+%0000`0100  $04   SUB   reg reg        Subtract source register value from destination register
+%0100`0100  $44   SUB   imm reg        Subtract immediate value from destination register
+%1010`0100  $84   SUB   regAddr reg    Subtract value at address in source register from destination register
+%1110`0100  $C4   SUB   immAddr reg    Subtract value at immediate address from destination register
+%0000`0101  $05   MUL   reg reg        Multiply destination register by source register value
+%0100`0101  $45   MUL   imm reg        Multiply destination register by immediate value
+%1000`0101  $85   MUL   regAddr reg    Multiply destination register by value at address in source register
+%1100`0101  $C5   MUL   immAddr reg    Multiply destination register by value at immediate address
+%0000`0110  $06   DIV   reg reg        Divide destination register by source register value
+%0100`0110  $46   DIV   imm reg        Divide destination register by immediate value
+%1000`0110  $86   DIV   regAddr reg    Divide destination register by value at address in source register
+%1100`0110  $C6   DIV   immAddr reg    Divide destination register by value at immediate address
 %0000`0111  $07   MOD   reg reg
 %0100`0111  $47   MOD   imm reg
 %1000`0111  $87   MOD   regAddr reg
@@ -81,8 +81,8 @@ Opcodes
 %0101`0010  $52   INT   imm
 %1001`0010  $92   res   
 %1101`0010  $D2   res   
-%0001`0011  $13   STIN  reg regAddr
-%0101`0011  $53   STIN  imm regAddr
+%0001`0011  $13   ST    reg regAddr    Store source register value at memory location in destination register
+%0101`0011  $53   ST    imm regAddr    Store immediate value at memory location in destination register
 %1001`0011  $93   res   
 %1101`0011  $D3   res   
 %0001`0100  $14   OUT   reg imm
@@ -147,7 +147,7 @@ Opcodes
 %0011`1011  $31   STC
 %0011`1100  $32   CLC
 %1010`1010  $AA   NOP    
-%1111`1111  $FF   BRK   (INT 0)
+%1111`1111  $FF   BRK   (INT 3)
             
 Registers
 

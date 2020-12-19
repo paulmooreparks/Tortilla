@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using Tortilla;
 
 namespace Tortilla {
-    public class TortillaCharacterConsole : IBusComponent, ITortillaConsole {
+    public class TortillaCharacterConsole : MaizeRegister, ITortillaConsole {
 
         public TortillaCharacterConsole() {
         }
@@ -23,16 +23,10 @@ namespace Tortilla {
             ConsoleColor.DarkGray, ConsoleColor.Blue,     ConsoleColor.Green,     ConsoleColor.Cyan,     ConsoleColor.Red,     ConsoleColor.Magenta,     ConsoleColor.Yellow, ConsoleColor.White
         };
 
-        MaizeRegister BusData { get; set; } = new MaizeRegister();
+        MaizeRegister DataRegister { get; } = new();
 
         IMotherboard<UInt64> MB { get; set; }
         UInt64 KbdInterruptID { get; set; }
-
-        public IDataBus<UInt64> DataBus { get; set; }
-        public IDataBus<UInt64> AddressBus { get; set; }
-        public IDataBus<UInt64> IOBus { get; set; }
-
-        public IBusComponent PrivilegeFlags { get; set; }
 
 
         UInt64 AddressValue { get; set; }
@@ -41,76 +35,18 @@ namespace Tortilla {
 
         // Maize system implementation
 
-        protected int KeyChar => KeyInfo.KeyChar;
+        protected int KeyChar { get; set; }
         protected ConsoleKeyInfo KeyInfo { get; set; }
 
-        class Reader {
-            private static Thread inputThread;
-            private static AutoResetEvent getInput, gotInput;
-            private static ConsoleKeyInfo KeyInfo { get; set; }
-
-            static Reader() {
-                getInput = new AutoResetEvent(false);
-                gotInput = new AutoResetEvent(false);
-                inputThread = new Thread(ReadProc);
-                inputThread.IsBackground = true;
-                inputThread.Start();
-            }
-
-            private static void ReadProc() {
-                while (true) {
-                    getInput.WaitOne();
-                    KeyInfo = Console.ReadKey(true);
-                    gotInput.Set();
-                }
-            }
-
-            public static bool TryReadLine(out ConsoleKeyInfo keyInfo, int timeOutMillisecs = Timeout.Infinite) {
-                getInput.Set();
-                bool success = gotInput.WaitOne(timeOutMillisecs);
-
-                if (success) {
-                    keyInfo = KeyInfo;
-                }
-                else {
-                    keyInfo = new();
-                }
-
-                return success;
-            }
-
-            public static ConsoleKeyInfo ReadKey(int timeOutMillisecs = Timeout.Infinite) {
-                getInput.Set();
-                bool success = gotInput.WaitOne(timeOutMillisecs);
-
-                if (success) {
-                    return KeyInfo;
-                }
-                else {
-                    throw new TimeoutException("User did not provide input within the timelimit.");
-                }
-            }
-        }
-
-        public static void InputProc(object o) {
-            var tConsole = o as TortillaCharacterConsole;
-            var token = tConsole.CTS.Token;
-
-            while (!token.IsCancellationRequested) {
-                tConsole.KeyInfo = Reader.ReadKey();
-                tConsole.MB?.RaiseInterrupt(tConsole.KbdInterruptID);
-            }
-        }
-
         private void GetKeyCode(RegValue busValue) {
-            BusData.Q0 = KeyInfo.KeyChar;
-            BusData.Enable(BusTypes.IOBus);
+            DataRegister.RegData.Q0 = NextKey.KeyChar;
+            IOBus.Value = DataRegister.RegData.W0;
         }
 
         private void GetCursorLocation(RegValue busValue) {
-            BusData.B6 = (byte)Console.CursorLeft;
-            BusData.B7 = (byte)Console.CursorTop;
-            BusData.Enable(BusTypes.IOBus);
+            DataRegister.RegData.B6 = (byte)Console.CursorLeft;
+            DataRegister.RegData.B7 = (byte)Console.CursorTop;
+            IOBus.Value = DataRegister.RegData.W0;
         }
 
         private void SetCursorLocation(RegValue busValue) {
@@ -192,22 +128,51 @@ namespace Tortilla {
 
             KbdInterruptID = MB.ConnectInterrupt(this, 0x21);
 
-            BusData.IOBus = MB.IOBus;
-            BusData.AddressBus = MB.AddressBus;
-            MB.ConnectComponent(BusData);
+            DataRegister.IOBus = MB.IOBus;
+            DataRegister.AddressBus = MB.AddressBus;
+            MB.ConnectComponent(DataRegister);
         }
 
-        private Thread inputThread { get; set; }
         protected CancellationTokenSource CTS { get; } = new();
+
+        protected Queue<ConsoleKeyInfo> KeyQueue { get; } = new();
+        public ConsoleKeyInfo NextKey {
+            get {
+                return KeyQueue.Dequeue();
+            }
+            set {
+                KeyQueue.Enqueue(value);
+                MB?.RaiseInterrupt(KbdInterruptID);
+            }
+        }
+
+        void KeyReader() {
+            WaitHandle[] handles = new WaitHandle[] { ConsoleClose };
+
+            while (true) {
+                int index = WaitHandle.WaitAny(handles, 0x20);
+
+                if (index == 0) {
+                    return;
+                }
+                else {
+                    while (Console.KeyAvailable) {
+                        NextKey = Console.ReadKey(true);
+                    }
+                }
+            }
+        }
 
         public void Show() {
             Console.Title = "Maize Console";
-            // inputThread = new Thread(InputProc);
-            Task.Run(() => InputProc(this), CTS.Token);
+            // CTS.Token.ThrowIfCancellationRequested();
+            Task.Run(KeyReader);
         }
 
+        ManualResetEvent ConsoleClose = new(false);
+
         public void Close() {
-            CTS.Cancel();
+            ConsoleClose.Set();
         }
 
         public void Clear() {
@@ -217,149 +182,114 @@ namespace Tortilla {
 
         // IBusComponent interface
 
-        public bool AddressBusEnabled { get; protected set; }
-        public bool AddressBusSet { get; protected set; }
-        public bool DataBusEnabled { get; protected set; }
-        public bool DataBusSet { get; protected set; }
-        public bool IOBusEnabled { get; protected set; }
-        public bool IOBusSet { get; protected set; }
-        public bool IsEnabled => IOBusEnabled;
-        public bool IsSet => IOBusSet | AddressBusSet;
+        public override void OnTickEnableToIOBus(IBusComponent cpuFlags) {
+            //IOBusEnabled = false;
 
-        public void Enable(BusTypes type) {
-            switch (type) {
-            case BusTypes.IOBus:
-                BusData.Enable(BusTypes.IOBus);
-                IOBusEnabled = true;
+            switch (AddressValue) {
+            case 0x60:
+                GetKeyCode(IOBus.Value);
+                break;
+
+            case 0x64:
+                break;
+
+            default:
                 break;
             }
         }
 
-        public void Set(BusTypes type) {
-            switch (type) {
-            case BusTypes.IOBus:
-                IOBusSet = true;
-                break;
-            case BusTypes.AddressBus:
-                AddressBusSet = true;
-                break;
-            }
+        public override void OnTickSetFromAddressBus(IBusComponent cpuFlags) {
+            AddressValue = AddressBus.Value;
         }
-        public void OnTick(ClockState state, IBusComponent cpuFlags) {
-            switch (state) {
-            case ClockState.TickEnable:
-                IOBusEnabled = false;
 
-                switch (AddressValue) {
-                case 0x60:
-                    GetKeyCode(IOBus.Value);
+        public override void OnTickSetFromIOBus(IBusComponent cpuFlags) {
+            RegValue value = IOBus.Value;
+
+            switch (AddressValue) {
+            case 0x7F:
+                var opcode = value.B1;
+
+                switch (opcode) {
+                case 0x00:
+                    // Set video mode
+                    // See http://www.ctyme.com/intr/rb-0069.htm for more on this
                     break;
 
-                case 0x64:
+                case 0x01:
+                    // set cursor shape
                     break;
 
-                default:
+                case 0x02:
+                    SetCursorLocation(IOBus.Value);
                     break;
-                }
 
-                break;
+                case 0x03:
+                    // GetCursorLocation(IOBus.Value);
+                    break;
 
-            case ClockState.TickSet:
-                if (AddressBusSet) {
-                    AddressBusSet = false;
-                    AddressValue = AddressBus.Value;
-                }
+                case 0x04:
+                    Clear();
+                    break;
 
-                if (IOBusSet) {
-                    IOBusSet = false;
-                    RegValue value = IOBus.Value;
+                case 0x05:
+                    // select active display page
+                    break;
 
-                    switch (AddressValue) {
-                    case 0x7F:
-                        var opcode = value.B1;
+                case 0x06:
+                    // scroll window up
+                    break;
 
-                        switch (opcode) {
-                        case 0x00:
-                            // Set video mode
-                            // See http://www.ctyme.com/intr/rb-0069.htm for more on this
-                            break;
+                case 0x07:
+                    // scroll window down
+                    break;
 
-                        case 0x01:
-                            // set cursor shape
-                            break;
+                case 0x08:
+                    // read character and attribute
+                    break;
 
-                        case 0x02:
-                            SetCursorLocation(IOBus.Value);
-                            break;
+                case 0x09:
+                    WriteCharacterAndColorAtCursorPosition(IOBus.Value);
+                    break;
 
-                        case 0x03:
-                            // GetCursorLocation(IOBus.Value);
-                            break;
+                case 0x0A:
+                    WriteCharacterAtCursorPosition(IOBus.Value);
+                    break;
 
-                        case 0x04:
-                            Clear();
-                            break;
+                case 0x0B:
+                    RegValue r = IOBus.Value;
 
-                        case 0x05:
-                            // select active display page
-                            break;
-
-                        case 0x06:
-                            // scroll window up
-                            break;
-
-                        case 0x07:
-                            // scroll window down
-                            break;
-
-                        case 0x08:
-                            // read character and attribute
-                            break;
-
-                        case 0x09:
-                            WriteCharacterAndColorAtCursorPosition(IOBus.Value);
-                            break;
-
-                        case 0x0A:
-                            WriteCharacterAtCursorPosition(IOBus.Value);
-                            break;
-
-                        case 0x0B:
-                            RegValue r = IOBus.Value;
-
-                            if (r.B3 == 0) { 
-                                SetBackgroundColor(IOBus.Value);
-                            }
-                            else if (r.B3 == 1) {
-                                SetForegroundColor(IOBus.Value);
-                            }
-
-                            break;
-
-                        case 0x0C:
-                            break;
-
-                        case 0x0D:
-                            WriteCharacterAndColor(IOBus.Value);
-                            break;
-
-                        case 0x0E:
-                            WriteCharacter(IOBus.Value);
-                            break;
-                        }
-
-                        break;
-
-                    default:
-                        break;
+                    if (r.B3 == 0) {
+                        SetBackgroundColor(IOBus.Value);
+                    }
+                    else if (r.B3 == 1) {
+                        SetForegroundColor(IOBus.Value);
                     }
 
+                    break;
 
+                case 0x0C:
+                    break;
 
+                case 0x0D:
+                    WriteCharacterAndColor(IOBus.Value);
+                    break;
+
+                case 0x0E:
+                    WriteCharacter(IOBus.Value);
+                    break;
                 }
 
                 break;
+
+            default:
+                break;
             }
+        }
+
+        public override void OnTickStore(IBusComponent cpuFlags) {
+        }
+
+        public override void OnTickExecute(IBusComponent cpuFlags) {
         }
     }
 }

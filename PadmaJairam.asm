@@ -1,6 +1,6 @@
 INCLUDE "core.asm"
 
-LABEL _start            AUTO
+LABEL _start            $00001000
 LABEL output            AUTO
 LABEL first_name        AUTO
 LABEL first_name_end    AUTO

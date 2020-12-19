@@ -7,11 +7,53 @@ using System.Threading.Tasks;
 
 namespace Tortilla {
     public enum ClockState {
-        TickOn,
-        TickEnable,
-        TickSet,
-        TickOff,
-        TickDecode
+        Dynamic =                   0b_0000_0000_0000,
+        TickExecute =               0b_0000_0000_0001,
+        TickEnableToAddressBus =    0b_0000_0000_0010,
+        TickEnableToDataBus =       0b_0000_0000_0100,
+        TickEnableToIOBus =         0b_0000_0000_1000,
+        TickSetFromAddressBus =     0b_0000_0001_0000,
+        TickSetFromDataBus =        0b_0000_0010_0000,
+        TickSetFromIOBus =          0b_0000_0100_1000,
+        TickStore =                 0b_0000_1000_0000,
+        TickLoad =                  0b_0001_0000_0000,
+    }
+
+    public enum Register {
+        A = 0x00,
+        B = 0x01,
+        C = 0x02,
+        D = 0x03,
+        E = 0x04,
+        G = 0x05,
+        H = 0x06,
+        J = 0x07,
+        K = 0x08,
+        L = 0x09,
+        M = 0x0A,
+        Z = 0x0B,
+        F = 0x0C,
+        I = 0x0D,
+        P = 0x0E,
+        S = 0x0F
+    }
+
+    public enum SubRegister {
+        B0 = 0x00,
+        B1 = 0x01,
+        B2 = 0x02,
+        B3 = 0x03,
+        B4 = 0x04,
+        B5 = 0x05,
+        B6 = 0x06,
+        B7 = 0x07,
+        Q0 = 0x08,
+        Q1 = 0x09,
+        Q2 = 0x0A,
+        Q3 = 0x0B,
+        H0 = 0x0C,
+        H1 = 0x0D,
+        W0 = 0x0E
     }
 
     public interface IClock {
@@ -23,11 +65,7 @@ namespace Tortilla {
         void Initialize();
     }
 
-    public interface IBus {
-
-    }
-
-    public interface IDataBus<DataType> : IBus {
+    public interface IDataBus<DataType> {
         DataType Value { get; set; }
     }
 
@@ -38,32 +76,41 @@ namespace Tortilla {
     }
 
     public interface IBusComponent {
-        void OnTick(ClockState state, IBusComponent cpuFlags);
-        void Enable(BusTypes type);
-        void Set(BusTypes type);
-        bool AddressBusEnabled { get; }
-        bool AddressBusSet { get; }
-        bool DataBusEnabled { get; }
-        bool DataBusSet { get; }
-        bool IOBusEnabled { get; }
-        bool IOBusSet { get; }
+        void EnableToAddressBus(SubRegister subReg);
+        void EnableToDataBus(SubRegister subReg);
+        void EnableToIOBus(SubRegister subReg);
 
-        bool IsEnabled { get; }
-        bool IsSet { get; }
-    }
+        void SetFromAddressBus(SubRegister subReg);
+        void SetFromDataBus(SubRegister subReg);
+        void SetFromIOBus(SubRegister subReg);
 
-    public interface IRegister<DataType> : IBusComponent {
-        IDataBus<DataType> DataBus { get; set; }
-        IDataBus<DataType> AddressBus { get; set; }
-        IDataBus<DataType> IOBus { get; set; }
-        DataType Value { get; set; }
-        DataType PrivilegeFlags { get; set; }
-        DataType PrivilegeMask { get; set; }
+        event Action<IBusComponent> RequestTickExecute;
+        event Action<IBusComponent> RequestTickUpdate;
+        event Action<IBusComponent> RequestTickEnableToAddressBus;
+        event Action<IBusComponent> RequestTickEnableToDataBus;
+        event Action<IBusComponent> RequestTickEnableToIOBus;
+        event Action<IBusComponent> RequestTickSetFromAddressBus;
+        event Action<IBusComponent> RequestTickSetFromDataBus;
+        event Action<IBusComponent> RequestTickSetFromIOBus;
+        event Action<IBusComponent> OnRegisterTickStore;
+        event Action<IBusComponent> OnRegisterTickLoad;
+
+        void OnTickUpdate(IBusComponent cpuFlags);
+
+        void OnTickEnableToAddressBus(IBusComponent cpuFlags);
+        void OnTickEnableToDataBus(IBusComponent cpuFlags);
+        void OnTickEnableToIOBus(IBusComponent cpuFlags);
+
+        void OnTickSetFromAddressBus(IBusComponent cpuFlags);
+        void OnTickSetFromDataBus(IBusComponent cpuFlags);
+        void OnTickSetFromIOBus(IBusComponent cpuFlags);
+
+        void OnTickLoad(IBusComponent cpuFlags);
+        void OnTickStore(IBusComponent cpuFlags);
+        void OnTickExecute(IBusComponent cpuFlags);
     }
 
     public interface IMotherboard<DataType> {
-        IClock Clock { get; }
-       
         void OnDebug();
         void OnPowerOff();
         void OnRaiseException(byte id);
@@ -105,11 +152,6 @@ namespace Tortilla {
         bool IsPowerOn { get; }
 
         event EventHandler<Tuple<UInt64, UInt64>> DecodeInstruction;
-    }
-
-    public interface IPic<DataType> : IRegister<DataType> {
-        UInt32 CommandPort { get; set; }
-        UInt32 DataPort { get; set; }
     }
 
     public interface IDissasember<DataType, AddressType> {

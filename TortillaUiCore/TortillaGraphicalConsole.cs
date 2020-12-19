@@ -47,15 +47,21 @@ namespace TortillaUI {
 
         private void TortillaConsole_KeyDown(object sender, KeyEventArgs e) {
             KeyCode = (int)e.KeyCode;
-            BusData.Value = (ulong)KeyCode;
+            BusData.RegData.W0 = (ulong)KeyCode;
             MB?.RaiseInterrupt(InterruptID);
         }
+
+        public System.Threading.Semaphore CharSemaphore { get; } = new(0, 255);
+        public char NextChar { get; }
+
+        public ConsoleKeyInfo NextKey { get; set; }
+        public System.Threading.Semaphore KeySemaphore { get; } = new(0, 255);
 
         protected int KeyCode { get; set; }
 
         private void GetKeyCode(RegValue busValue) {
-            BusData.Value = (ulong)KeyCode;
-            BusData.Enable(BusTypes.IOBus);
+            BusData.RegData.W0 = (ulong)KeyCode;
+            BusData.EnableToIOBus(SubRegister.W0);
         }
 
         private bool CursorOn { get; set; }
@@ -558,6 +564,57 @@ namespace TortillaUI {
 
         byte[] Memory = new byte[0xf02];
 
+        public event Action<IBusComponent> RequestTickExecute;
+        public event Action<IBusComponent> RequestTickUpdate;
+        public event Action<IBusComponent> RequestTickEnableToAddressBus;
+        public event Action<IBusComponent> RequestTickEnableToDataBus;
+        public event Action<IBusComponent> RequestTickEnableToIOBus;
+        public event Action<IBusComponent> RequestTickSetFromAddressBus;
+        public event Action<IBusComponent> RequestTickSetFromDataBus;
+        public event Action<IBusComponent> RequestTickSetFromIOBus;
+        public event Action<IBusComponent> OnRegisterTickStore;
+        public event Action<IBusComponent> OnRegisterTickLoad;
+
+        public void RegisterTickExecute() {
+            RequestTickExecute?.Invoke(this);
+        }
+
+        public void RegisterTickUpdate() {
+            RequestTickUpdate?.Invoke(this);
+        }
+
+        public void RegisterTickEnableToAddressBus() {
+            RequestTickEnableToAddressBus?.Invoke(this);
+        }
+
+        public void RegisterTickEnableToDataBus() {
+            RequestTickEnableToDataBus?.Invoke(this);
+        }
+
+        public void RegisterTickEnableToIOBus() {
+            RequestTickEnableToIOBus?.Invoke(this);
+        }
+
+        public void RegisterTickSetFromAddressBus() {
+            RequestTickSetFromAddressBus?.Invoke(this);
+        }
+
+        public void RegisterTickSetFromDataBus() {
+            RequestTickSetFromDataBus?.Invoke(this);
+        }
+
+        public void RegisterTickSetFromIOBus() {
+            RequestTickSetFromIOBus?.Invoke(this);
+        }
+        public void RegisterTickStore() {
+            OnRegisterTickStore?.Invoke(this);
+        }
+
+        public void RegisterTickLoad() {
+            OnRegisterTickLoad?.Invoke(this);
+        }
+
+
         UInt32 AddressValue { get; set; }
         UInt64 DataValue { get; set; }
 
@@ -572,22 +629,29 @@ namespace TortillaUI {
         public bool IsEnabled { get { return IOBusEnabled; } }
         public bool IsSet { get { return IOBusSet; } }
 
-        public void Enable(BusTypes type) {
-            switch (type) {
-            case BusTypes.IOBus:
-                BusData.Enable(BusTypes.IOBus);
-                IOBusEnabled = true;
-                break;
-            }
+        public void EnableToAddressBus(SubRegister subReg) {
         }
 
-        public void Set(BusTypes type) {
-            switch (type) {
-            case BusTypes.IOBus:
-                IOBusSet = true;
-                break;
-            }
+        public void EnableToDataBus(SubRegister subReg) {
         }
+
+        public void EnableToIOBus(SubRegister subReg) {
+            BusData.EnableToIOBus(subReg);
+            IOBusEnabled = true;
+            RegisterTickEnableToIOBus();
+        }
+
+        public void SetFromAddressBus(SubRegister subReg) {
+        }
+
+        public void SetFromDataBus(SubRegister subReg) {
+        }
+
+        public void SetFromIOBus(SubRegister subReg) {
+            IOBusSet = true;
+            RegisterTickSetFromIOBus();
+        }
+
 
         public void Connect(IMotherboard<UInt64> _motherboard) {
             MB = _motherboard;
@@ -610,53 +674,81 @@ namespace TortillaUI {
 
         public IBusComponent PrivilegeFlags { get; set; }
 
-        public void OnTick(ClockState state, IBusComponent cpuFlags) {
-            switch (state) {
-            case ClockState.TickSet:
-                var opcode = IOBus.Value & 0xFF;
+        public void OnTickUpdate(IBusComponent cpuFlags) {
+        }
 
-                switch (opcode) {
-                case 0x00:
-                    Clear();
-                    break;
+        public void OnTickEnable(IBusComponent cpuFlags) {
+        }
 
-                case 0x01:
-                    WriteCharacterAtCursorPosition(IOBus.Value);
-                    break;
+        public void OnTickEnableToAddressBus(IBusComponent cpuFlags) {
+        }
 
-                case 0x02:
-                    WriteCharacterAndColor(IOBus.Value);
-                    break;
+        public void OnTickEnableToDataBus(IBusComponent cpuFlags) {
+        }
 
-                case 0x03:
-                    WriteCharacterAt(IOBus.Value);
-                    break;
+        public void OnTickEnableToIOBus(IBusComponent cpuFlags) {
+        }
 
-                case 0x04:
-                    WriteCharacterAndColorAt(IOBus.Value);
-                    break;
+        public void OnTickSet(IBusComponent cpuFlags) {
+            var opcode = IOBus.Value & 0xFF;
 
-                case 0x05:
-                    SetForegroundColor(IOBus.Value);
-                    break;
+            switch (opcode) {
+            case 0x00:
+                Clear();
+                break;
 
-                case 0x06:
-                    SetBackgroundColor(IOBus.Value);
-                    break;
+            case 0x01:
+                WriteCharacterAtCursorPosition(IOBus.Value);
+                break;
 
-                case 0x07:
-                    SetCursorLocation(IOBus.Value);
-                    break;
+            case 0x02:
+                WriteCharacterAndColor(IOBus.Value);
+                break;
 
-                case 0x08:
-                    GetKeyCode(IOBus.Value);
-                    break;
-                }
+            case 0x03:
+                WriteCharacterAt(IOBus.Value);
+                break;
 
-                IOBusSet = false;
+            case 0x04:
+                WriteCharacterAndColorAt(IOBus.Value);
+                break;
 
+            case 0x05:
+                SetForegroundColor(IOBus.Value);
+                break;
+
+            case 0x06:
+                SetBackgroundColor(IOBus.Value);
+                break;
+
+            case 0x07:
+                SetCursorLocation(IOBus.Value);
+                break;
+
+            case 0x08:
+                GetKeyCode(IOBus.Value);
                 break;
             }
+
+            IOBusSet = false;
+        }
+
+        public void OnTickSetFromAddressBus(IBusComponent cpuFlags) {
+        }
+
+        public void OnTickSetFromDataBus(IBusComponent cpuFlags) {
+        }
+
+        public void OnTickSetFromIOBus(IBusComponent cpuFlags) {
+        }
+
+        public virtual void OnTickLoad(IBusComponent cpuFlags) {
+        }
+
+        public void OnTickStore(IBusComponent cpuFlags) {
+        }
+
+        public void OnTickExecute(IBusComponent cpuFlags) {
         }
 
         MaizeRegister BusData { get; set; } = new MaizeRegister();

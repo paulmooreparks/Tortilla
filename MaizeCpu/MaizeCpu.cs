@@ -6,18 +6,12 @@ using System.Linq;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-// using System.Runtime.Remoting.Messaging;
+using System.Text;
+using System.Threading;
 using Tortilla;
 
 namespace Maize {
-    public enum SubRegisters : UInt64 {
-        W0 = 0b_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111,
-        H0 = 0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111,
-        H1 = 0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000,
-        Q0 = 0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_11111111,
-        Q1 = 0b_00000000_00000000_00000000_00000000_11111111_11111111_00000000_00000000,
-        Q2 = 0b_00000000_00000000_11111111_11111111_00000000_00000000_00000000_00000000,
-        Q3 = 0b_11111111_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
+    public enum SubRegisterMask : UInt64 {
         B0 = 0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_11111111,
         B1 = 0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_00000000,
         B2 = 0b_00000000_00000000_00000000_00000000_00000000_11111111_00000000_00000000,
@@ -26,13 +20,26 @@ namespace Maize {
         B5 = 0b_00000000_00000000_11111111_00000000_00000000_00000000_00000000_00000000,
         B6 = 0b_00000000_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
         B7 = 0b_11111111_00000000_00000000_00000000_00000000_00000000_00000000_00000000,
+        Q0 = 0b_00000000_00000000_00000000_00000000_00000000_00000000_11111111_11111111,
+        Q1 = 0b_00000000_00000000_00000000_00000000_11111111_11111111_00000000_00000000,
+        Q2 = 0b_00000000_00000000_11111111_11111111_00000000_00000000_00000000_00000000,
+        Q3 = 0b_11111111_11111111_00000000_00000000_00000000_00000000_00000000_00000000,
+        H0 = 0b_00000000_00000000_00000000_00000000_11111111_11111111_11111111_11111111,
+        H1 = 0b_11111111_11111111_11111111_11111111_00000000_00000000_00000000_00000000,
+        W0 = 0b_11111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111,
     }
 
+    public class Bus<DataType> : Tortilla.IDataBus<DataType> {
+        public DataType Value { get; set; }
+        public override string ToString() {
+            return $"0x{Value:X16}";
+        }
+    }
 
     [StructLayout(LayoutKind.Explicit)]
     public struct RegValue {
         public RegValue(UInt64 init) : this() {
-            Value = init;
+            W0 = init;
         }
 
         public RegValue(UInt32 init) : this() {
@@ -47,7 +54,7 @@ namespace Maize {
             B0 = init;
         }
 
-        [FieldOffset(0)] public UInt64 Value;
+        [FieldOffset(0)] public UInt64 W0;
         [FieldOffset(0)] public UInt32 H0;
         [FieldOffset(4)] public UInt32 H1;
         [FieldOffset(0)] public UInt16 Q0;
@@ -66,24 +73,14 @@ namespace Maize {
         public byte this[int i] {
             get {
                 int shift = i * 8;
-                return (byte)(Value >> shift);
+                return (byte)(W0 >> shift);
             }
             set {
                 int shift = i * 8;
                 UInt64 newValue = value;
                 newValue <<= shift;
-                Value |= newValue;
+                W0 |= newValue;
             }
-        }
-
-        public UInt64 Base {
-            get { return Value >> 8; }
-            set { Value |= (value << 8); }
-        }
-
-        public int Offset {
-            get { return B0; }
-            set { B0 = (byte)(value); }
         }
 
         public static implicit operator RegValue(UInt64 v) => new RegValue(v);
@@ -92,229 +89,337 @@ namespace Maize {
         public static implicit operator RegValue(byte v) => new RegValue(v);
 
         public override string ToString() {
-            return $"0x{Value:X16}";
+            return $"0x{W0:X16}";
         }
     }
 
-    public class MaizeRegister : Register<UInt64> {
-        protected RegValue RegData;
+    public class MaizeRegister : Tortilla.IBusComponent {
+        public event Action<IBusComponent> RequestTickExecute;
+        public event Action<IBusComponent> RequestTickUpdate;
+        public event Action<IBusComponent> RequestTickEnableToAddressBus;
+        public event Action<IBusComponent> RequestTickEnableToDataBus;
+        public event Action<IBusComponent> RequestTickEnableToIOBus;
+        public event Action<IBusComponent> RequestTickSetFromAddressBus;
+        public event Action<IBusComponent> RequestTickSetFromDataBus;
+        public event Action<IBusComponent> RequestTickSetFromIOBus;
+        public event Action<IBusComponent> OnRegisterTickStore;
+        public event Action<IBusComponent> OnRegisterTickLoad;
 
-        public override UInt64 Value {
-            get { return RegData.Value; }
-            set { RegData.Value = value; }
+        public void RegisterTickExecute() {
+            RequestTickExecute?.Invoke(this);
         }
 
-        public virtual UInt64 W0 {
-            get { return Value; }
-            set { Value = value; }
+        protected void RegisterTickUpdate() {
+            RequestTickUpdate?.Invoke(this);
         }
 
-        public virtual UInt32 H0 {
-            get { return RegData.H0; }
-            set { RegData.H0 = value; }
+        protected void RegisterTickEnableToAddressBus() {
+            RequestTickEnableToAddressBus?.Invoke(this);
         }
 
-        public virtual UInt32 H1 {
-            get { return RegData.H1; }
-            set { RegData.H1 = value; }
+        protected void RegisterTickEnableToDataBus() {
+            RequestTickEnableToDataBus?.Invoke(this);
         }
 
-
-        public virtual UInt16 Q0 {
-            get { return RegData.Q0; }
-            set { RegData.Q0 = value; }
+        protected void RegisterTickEnableToIOBus() {
+            RequestTickEnableToIOBus?.Invoke(this);
         }
 
-        public virtual UInt16 Q1 {
-            get { return RegData.Q1; }
-            set { RegData.Q1 = value; }
+        protected void RegisterTickSetFromAddressBus() {
+            RequestTickSetFromAddressBus?.Invoke(this);
         }
 
-        public virtual UInt16 Q2 {
-            get { return RegData.Q2; }
-            set { RegData.Q2 = value; }
+        protected void RegisterTickSetFromDataBus() {
+            RequestTickSetFromDataBus?.Invoke(this);
         }
 
-        public virtual UInt16 Q3 {
-            get { return RegData.Q3; }
-            set { RegData.Q3 = value; }
+        protected void RegisterTickSetFromIOBus() {
+            RequestTickSetFromIOBus?.Invoke(this);
         }
 
-        public virtual byte B0 {
-            get { return RegData.B0; }
-            set { RegData.B0 = value; }
+        protected void RegisterTickStore() {
+            OnRegisterTickStore?.Invoke(this);
         }
 
-        public virtual byte B1 {
-            get { return RegData.B1; }
-            set { RegData.B1 = value; }
+        protected void RegisterTickLoad() {
+            OnRegisterTickLoad?.Invoke(this);
         }
 
-        public virtual byte B2 {
-            get { return RegData.B2; }
-            set { RegData.B2 = value; }
-        }
+        public RegValue RegData;
 
-        public virtual byte B3 {
-            get { return RegData.B3; }
-            set { RegData.B3 = value; }
-        }
+        public UInt64 PrivilegeFlags = 0;
+        public UInt64 PrivilegeMask = 0;
+        public IDataBus<UInt64> DataBus = null;
+        public IDataBus<UInt64> AddressBus = null;
+        public IDataBus<UInt64> IOBus = null;
 
-        public virtual byte B4 {
-            get { return RegData.B4; }
-            set { RegData.B4 = value; }
-        }
-
-        public virtual byte B5 {
-            get { return RegData.B5; }
-            set { RegData.B5 = value; }
-        }
-
-        public virtual byte B6 {
-            get { return RegData.B6; }
-            set { RegData.B6 = value; }
-        }
-
-        public virtual byte B7 {
-            get { return RegData.B7; }
-            set { RegData.B7 = value; }
-        }
-
-        public virtual byte this[int i] {
-            get {
-                return RegData[i];
-            }
-            set {
-                RegData[i] = value;
-            }
-        }
-
-        public UInt64 Base {
-            get { return RegData.Base; }
-            set { RegData.Base = value; }
-        }
-
-        public int Offset {
-            get { return RegData.Offset; }
-            set { RegData.Offset = value; }
-        }
-
-        protected Dictionary<SubRegisters, int> OffsetMap { get; set; } = new Dictionary<SubRegisters, int>() { 
-            { SubRegisters.B0, 0 },
-            { SubRegisters.B1, 8 },
-            { SubRegisters.B2, 16 },
-            { SubRegisters.B3, 24 },
-            { SubRegisters.B4, 32 },
-            { SubRegisters.B5, 40 },
-            { SubRegisters.B6, 48 },
-            { SubRegisters.B7, 56 },
-            { SubRegisters.Q0, 0 },
-            { SubRegisters.Q1, 16 },
-            { SubRegisters.Q2, 32 },
-            { SubRegisters.Q3, 48 },
-            { SubRegisters.H0, 0 },
-            { SubRegisters.H1, 32 },
-            { SubRegisters.W0, 0 },
+        protected int[] OffsetMap = new int[] {
+            0,
+            8,
+            16,
+            24,
+            32,
+            40,
+            48,
+            56,
+            0,
+            16,
+            32,
+            48,
+            0,
+            32,
+            0
         };
 
-        public SubRegisters EnableSubRegisterMask { get; protected set; } = SubRegisters.W0;
-        public SubRegisters SetSubRegisterMask { get; protected set; } = SubRegisters.W0;
+        public SubRegister SetSubRegister = SubRegister.W0;
+        public int SetOffset = 0;
+        public SubRegisterMask SetSubRegisterMask = SubRegisterMask.W0;
 
-        public override void Enable(BusTypes type) {
-            base.Enable(type);
-            EnableSubRegisterMask = SubRegisters.W0;
+        public SubRegister EnableSubRegister = SubRegister.W0;
+        public int EnableOffset = 0;
+        public SubRegisterMask EnableSubRegisterMask = SubRegisterMask.W0;
+
+        public void EnableToAddressBus(SubRegister subReg) {
+            EnableSubRegister = subReg;
+            EnableSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)EnableSubRegister];
+            EnableOffset = OffsetMap[(int)EnableSubRegister];
+            RequestTickEnableToAddressBus?.Invoke(this);
         }
 
-        public override void Set(BusTypes type) {
-            base.Set(type);
-            SetSubRegisterMask = SubRegisters.W0;
+        public void EnableToDataBus(SubRegister subReg) {
+            EnableSubRegister = subReg;
+            EnableSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)EnableSubRegister];
+            EnableOffset = OffsetMap[(int)EnableSubRegister];
+            RequestTickEnableToDataBus?.Invoke(this);
         }
 
-        public void Enable(BusTypes type, SubRegisters mask) {
-            base.Enable(type);
-            EnableSubRegisterMask = mask;
+        public void EnableToIOBus(SubRegister subReg) {
+            EnableSubRegister = subReg;
+            EnableSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)EnableSubRegister];
+            EnableOffset = OffsetMap[(int)EnableSubRegister];
+            RequestTickEnableToIOBus?.Invoke(this);
         }
 
-        public void Set(BusTypes type, SubRegisters mask) {
-            base.Set(type);
-            SetSubRegisterMask = mask;
+
+        public void SetFromAddressBus(SubRegister subReg) {
+            SetSubRegister = subReg;
+            SetSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)SetSubRegister];
+            SetOffset = OffsetMap[(int)SetSubRegister];
+            RequestTickSetFromAddressBus?.Invoke(this);
         }
 
-        protected UInt64 IncrementCount { get; set; }
-        protected UInt64 DecrementCount { get; set; }
-
-        public void Increment(int count) {
-            IncrementCount = (UInt64)count;
+        public void SetFromDataBus(SubRegister subReg) {
+            SetSubRegister = subReg;
+            SetSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)SetSubRegister];
+            SetOffset = OffsetMap[(int)SetSubRegister];
+            RequestTickSetFromDataBus?.Invoke(this);
         }
 
-        public void Decrement(int count) {
-            DecrementCount = (UInt64)count;
+        public void SetFromIOBus(SubRegister subReg) {
+            SetSubRegister = subReg;
+            SetSubRegisterMask = MaizeInstruction.SubRegisterMaskMap[(int)SetSubRegister];
+            SetOffset = OffsetMap[(int)SetSubRegister];
+            RequestTickSetFromIOBus?.Invoke(this);
         }
 
-        public bool PrivilegeCheck(IBusComponent cpuFlags) {
-            var regFlags = cpuFlags as MaizeRegister;
-            return (PrivilegeFlags & regFlags.Value) == PrivilegeFlags;
+
+        protected UInt64 IncrementCount = 0;
+        protected UInt64 DecrementCount = 0;
+
+        public void Increment() {
+            IncrementCount += 1;
+            RequestTickUpdate?.Invoke(this);
         }
 
-        public override void OnTick(ClockState state, IBusComponent cpuFlags) {
-            switch (state) {
-            case ClockState.TickOn:
-                if (IncrementCount > 0 || DecrementCount > 0) {
-                    Value += IncrementCount;
-                    IncrementCount = 0;
-                    Value -= DecrementCount;
-                    DecrementCount = 0;
-                }
-                break;
+        public void Increment(Int64 count) {
+            IncrementCount += (UInt64)count;
+            RequestTickUpdate?.Invoke(this);
+        }
 
-            case ClockState.TickEnable:
-                var enableMask = (UInt64)EnableSubRegisterMask;
-                var enableOffset = OffsetMap[EnableSubRegisterMask];
+        public void Decrement() {
+            DecrementCount += 1;
+            RequestTickUpdate?.Invoke(this);
+        }
 
-                if (DataBusEnabled) {
-                    DataBus.Value = (Value & enableMask) >> enableOffset;
-                    DataBusEnabled = false;
-                }
-                else if (AddressBusEnabled) {
-                    AddressBus.Value = (Value & enableMask) >> enableOffset;
-                    AddressBusEnabled = false;
-                }
-                else if (IOBusEnabled) {
-                    IOBus.Value = (Value & enableMask) >> enableOffset;
-                    IOBusEnabled = false;
-                }
+        public void Decrement(Int64 count) {
+            DecrementCount += (UInt64)count;
+            RequestTickUpdate?.Invoke(this);
+        }
 
-                break;
-
-            case ClockState.TickSet:
-                var setMask = (UInt64)SetSubRegisterMask;
-                var setOffset = OffsetMap[SetSubRegisterMask];
-
-                if ((PrivilegeMask & setMask) != 0) {
-                    if (!PrivilegeCheck(cpuFlags)) {
-                        throw new Exception("Privilege exception");
-                    }
+        public void PrivilegeCheck(IBusComponent cpuFlags) {
+            if ((PrivilegeMask & (UInt64)SetSubRegisterMask) != 0) {
+                var regFlags = cpuFlags as MaizeRegister;
+                if ((PrivilegeFlags & regFlags.RegData.W0) != PrivilegeFlags) {
+                    throw new Exception("Privilege exception");
                 }
-
-                if (DataBusSet) {
-                    Value = (~setMask & Value) | (DataBus.Value << setOffset) & setMask;
-                    DataBusSet = false;
-                }
-                else if (AddressBusSet) {
-                    Value = (~setMask & Value) | (AddressBus.Value << setOffset) & setMask;
-                    AddressBusSet = false;
-                }
-                else if (IOBusSet) {
-                    Value = (~setMask & Value) | (IOBus.Value << setOffset) & setMask;
-                    IOBusSet = false;
-                }
-
-                break;
             }
+        }
+
+        public virtual void OnTickUpdate(IBusComponent cpuFlags) {
+            RegData.W0 += IncrementCount;
+            IncrementCount = 0;
+            RegData.W0 -= DecrementCount;
+            DecrementCount = 0;
+        }
+
+        public virtual void OnTickEnableToAddressBus(IBusComponent cpuFlags) {
+            AddressBus.Value = (RegData.W0 & (UInt64)EnableSubRegisterMask) >> EnableOffset;
+        }
+
+        public virtual void OnTickEnableToDataBus(IBusComponent cpuFlags) {
+            DataBus.Value = (RegData.W0 & (UInt64)EnableSubRegisterMask) >> EnableOffset;
+        }
+
+        public virtual void OnTickEnableToIOBus(IBusComponent cpuFlags) {
+            IOBus.Value = (RegData.W0 & (UInt64)EnableSubRegisterMask) >> EnableOffset;
+        }
+
+        public virtual void OnTickSetFromAddressBus(IBusComponent cpuFlags) {
+            PrivilegeCheck(cpuFlags);
+            RegData.W0 = (~(UInt64)SetSubRegisterMask & RegData.W0) | (AddressBus.Value << SetOffset) & (UInt64)SetSubRegisterMask;
+        }
+
+        public virtual void OnTickSetFromDataBus(IBusComponent cpuFlags) {
+            PrivilegeCheck(cpuFlags);
+            RegData.W0 = (~(UInt64)SetSubRegisterMask & RegData.W0) | (DataBus.Value << SetOffset) & (UInt64)SetSubRegisterMask;
+        }
+
+        public virtual void OnTickSetFromIOBus(IBusComponent cpuFlags) {
+            PrivilegeCheck(cpuFlags);
+            RegData.W0 = (~(UInt64)SetSubRegisterMask & RegData.W0) | (IOBus.Value << SetOffset) & (UInt64)SetSubRegisterMask;
+        }
+
+        public virtual void OnTickLoad(IBusComponent cpuFlags) {
+        }
+
+        public virtual void OnTickStore(IBusComponent cpuFlags) {
+        }
+
+        public virtual void OnTickExecute(IBusComponent cpuFlags) {
         }
 
         public override string ToString() {
-            return $"0x{Value:X16}";
+            return $"0x{RegData.W0:X16}";
+        }
+    }
+
+    public class Clock : IClock {
+        public Clock() {
+        }
+
+        public bool IsRunning { get; protected set; } = false;
+
+        public void Start() {
+            IsRunning = true;
+        }
+
+        public void Initialize() {
+            IBusComponent[] tmp = new IBusComponent[compNextIndex];
+            TickEvents = new Action<IBusComponent>[compNextIndex];
+
+            for (var i = 0; i < compNextIndex; ++i) {
+                var component = compList[i];
+                tmp[i] = compList[i];
+            }
+
+            compList = tmp;
+        }
+
+        public void RegisterTickExecute(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickExecute;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickUpdate(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickUpdate;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickEnableToAddressBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickEnableToAddressBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickEnableToDataBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickEnableToDataBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickEnableToIOBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickEnableToIOBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickSetFromAddressBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickSetFromAddressBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickSetFromDataBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickSetFromDataBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickSetFromIOBus(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickSetFromIOBus;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickStore(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickStore;
+            ++TickEventsCount;
+        }
+
+        private void RegisterTickLoad(IBusComponent comp) {
+            TickEvents[TickEventsCount] = comp.OnTickLoad;
+            ++TickEventsCount;
+        }
+
+        protected Action<IBusComponent>[] TickEvents = null;
+        protected int TickEventsCount = 0;
+        protected int TickExecuteCount = 0;
+
+        public void Tick(IBusComponent cpuFlags) {
+            for (var i = 0; i < TickEventsCount; ++i) {
+                TickEvents[i](cpuFlags);
+            }
+
+            TickEventsCount = 0;
+        }
+
+        public void Stop() {
+            IsRunning = false;
+        }
+
+        protected IBusComponent[] compList = new IBusComponent[32];
+        protected int compNextIndex = 0;
+
+        public void ConnectComponent(IBusComponent component) {
+            foreach (var c in compList) {
+                if (c == component) {
+                    return;
+                }
+            }
+
+            if (compNextIndex == compList.Length) {
+                IBusComponent[] tmp = new IBusComponent[compNextIndex * 2];
+                compList.CopyTo(tmp, 0);
+                compList = tmp;
+            }
+
+            component.RequestTickExecute += RegisterTickExecute;
+            component.RequestTickUpdate += RegisterTickUpdate;
+            component.RequestTickEnableToAddressBus += RegisterTickEnableToAddressBus;
+            component.RequestTickEnableToDataBus += RegisterTickEnableToDataBus;
+            component.RequestTickEnableToIOBus += RegisterTickEnableToIOBus;
+            component.RequestTickSetFromAddressBus += RegisterTickSetFromAddressBus;
+            component.RequestTickSetFromDataBus += RegisterTickSetFromDataBus;
+            component.RequestTickSetFromIOBus += RegisterTickSetFromIOBus;
+            component.OnRegisterTickLoad += RegisterTickLoad;
+            component.OnRegisterTickStore += RegisterTickStore;
+
+            compList[compNextIndex] = component;
+            ++compNextIndex;
         }
     }
 
@@ -330,8 +435,10 @@ namespace Maize {
             IOBus = new Bus<UInt64>();
             Cpu = new MaizeCpu(this);
             ConnectComponent(Cpu);
-
             MemoryModule = new MaizeMemoryModule(this);
+            PowerModule = new MaizePowerModule(this);
+
+            MaizeInstruction.WireUp(this);
         }
 
         public void PowerOff() {
@@ -350,24 +457,22 @@ namespace Maize {
             }
 
             if (isEnabled) {
-                Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssignDebug;
-                Cpu.Decoder.TickDecodeActions = Cpu.Decoder.TickDecodeDebug;
+                // Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssignDebug;
             }
             else {
-                Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssign;
-                Cpu.Decoder.TickDecodeActions = Cpu.Decoder.TickDecode;
+                // Cpu.Decoder.DecoderValueAssignActions = Cpu.Decoder.DecoderValueAssign;
             }
         }
 
-        public IDataBus<UInt64> DataBus { get; set; }
+        public IDataBus<UInt64> DataBus { get; protected set; }
         public IDataBus<UInt64> AddressBus { get; protected set; }
-        public IDataBus<UInt64> IOBus { get; set; }
+        public IDataBus<UInt64> IOBus { get; protected set; }
 
-        public IClock Clock { get; set; }
+        public Clock Clock { get; protected set; }
 
-        public MaizeCpu Cpu { get; set; }
-
-        public MaizeMemoryModule MemoryModule { get; set; }
+        public MaizeCpu Cpu;
+        public MaizeMemoryModule MemoryModule;
+        public MaizePowerModule PowerModule;
 
         public UInt32 MemorySize { get { return MemoryModule.MemorySize; } }
 
@@ -403,20 +508,20 @@ namespace Maize {
 
         public void EnablePortIO(UInt64 address) {
             IBusComponent component = deviceTable[address];
-            component?.Enable(BusTypes.IOBus);
+            component?.EnableToIOBus(SubRegister.W0);
         }
 
         public void SetPortAddress(UInt64 address) {
             IBusComponent component = deviceTable[address];
-            component?.Set(BusTypes.AddressBus);
+            component?.SetFromAddressBus(SubRegister.W0);
         }
 
         public void SetPortIO(UInt64 address) {
             IBusComponent component = deviceTable[address];
-            component?.Set(BusTypes.IOBus);
+            component?.SetFromIOBus(SubRegister.W0);
         }
 
-        protected System.Collections.Generic.Dictionary<UInt64, IBusComponent> deviceTable = new();
+        protected Dictionary<UInt64, IBusComponent> deviceTable = new();
 
         public void ConnectComponent(IBusComponent component) {
             Clock.ConnectComponent(component);
@@ -432,8 +537,26 @@ namespace Maize {
         }
     }
 
+    public class MaizePowerModule : MaizeRegister {
+        public MaizePowerModule(IMotherboard<UInt64> motherboard) {
+            MB = motherboard;
+            AddressBus = MB.AddressBus;
+            IOBus = MB.IOBus;
+            MB.ConnectDevice(this, 0x0001);
+        }
 
-    public class MaizeMemoryModule : BusComponent {
+        IMotherboard<UInt64> MB;
+
+        public override void OnTickSetFromIOBus(IBusComponent cpuFlags) {
+            switch (RegData.W0) {
+            case 0x0001:
+                MB.PowerOff();
+                break;
+            }
+        }
+    }
+
+    public class MaizeMemoryModule : MaizeRegister {
 
         public MaizeMemoryModule(IMotherboard<UInt64> motherboard) {
             AddressRegister.AddressBus = motherboard.AddressBus;
@@ -448,125 +571,99 @@ namespace Maize {
 
             motherboard.ConnectComponent(this);
 
-            CacheAddress.Value = 0xFFFFFFFF_FFFFFFFF;
+            CacheAddress.W0 = 0xFFFFFFFF_FFFFFFFF;
+            CacheBase = CacheAddress.W0 >> 8;
+
+            AddressRegister.RequestTickSetFromAddressBus += AddressRegisterSet;
+            AddressRegister.RequestTickSetFromDataBus += AddressRegisterSet;
+            AddressRegister.RequestTickSetFromIOBus += AddressRegisterSet;
+            DataRegister.RequestTickSetFromAddressBus += DataRegisterSet;
+            DataRegister.RequestTickSetFromDataBus += DataRegisterSet;
+            DataRegister.RequestTickSetFromIOBus += DataRegisterSet;
         }
 
-        public MaizeRegister AddressRegister { get; set; } = new MaizeRegister();
-        public MaizeRegister DataRegister { get; set; } = new MaizeRegister();
+        private void AddressRegisterSet(IBusComponent comp) {
+            RegisterTickLoad();
+        }
 
-        public override void OnTick(ClockState state, IBusComponent cpuFlags) {
-            switch (state) {
-            case ClockState.TickOn:
-                if (DataRegister.IsSet) {
-                    DataBusEnabled = true;
-                }
+        private void DataRegisterSet(IBusComponent comp) {
+            RegisterTickStore();
+        }
 
-                if (AddressRegister.IsSet) {
-                    DataBusSet = true;
-                }
+        public MaizeRegister AddressRegister = new MaizeRegister();
+        public MaizeRegister DataRegister = new MaizeRegister();
 
+        public override void OnTickStore(IBusComponent cpuFlags) {
+            switch (DataRegister.SetSubRegisterMask) {
+            case SubRegisterMask.B0:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B0);
                 break;
 
-            case ClockState.TickOff:
-                if (DataBusEnabled) {
-                    switch (DataRegister.SetSubRegisterMask) {
-                    case SubRegisters.B0:
-                        WriteByte(AddressRegister.Value, DataRegister.B0);
-                        break;
+            case SubRegisterMask.B1:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B1);
+                break;
 
-                    case SubRegisters.B1:
-                        WriteByte(AddressRegister.Value, DataRegister.B1);
-                        break;
+            case SubRegisterMask.B2:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B2);
+                break;
 
-                    case SubRegisters.B2:
-                        WriteByte(AddressRegister.Value, DataRegister.B2);
-                        break;
+            case SubRegisterMask.B3:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B3);
+                break;
 
-                    case SubRegisters.B3:
-                        WriteByte(AddressRegister.Value, DataRegister.B3);
-                        break;
+            case SubRegisterMask.B4:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B4);
+                break;
 
-                    case SubRegisters.B4:
-                        WriteByte(AddressRegister.Value, DataRegister.B4);
-                        break;
+            case SubRegisterMask.B5:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B5);
+                break;
 
-                    case SubRegisters.B5:
-                        WriteByte(AddressRegister.Value, DataRegister.B5);
-                        break;
+            case SubRegisterMask.B6:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B6);
+                break;
 
-                    case SubRegisters.B6:
-                        WriteByte(AddressRegister.Value, DataRegister.B6);
-                        break;
+            case SubRegisterMask.B7:
+                WriteByte(AddressRegister.RegData.W0, DataRegister.RegData.B7);
+                break;
 
-                    case SubRegisters.B7:
-                        WriteByte(AddressRegister.Value, DataRegister.B7);
-                        break;
+            case SubRegisterMask.Q0:
+                WriteQuarterWord(AddressRegister.RegData.W0, DataRegister.RegData.Q0);
+                break;
 
-                    case SubRegisters.Q0:
-                        WriteQuarterWord(AddressRegister.Value, DataRegister.Q0);
-                        break;
+            case SubRegisterMask.Q1:
+                WriteQuarterWord(AddressRegister.RegData.W0, DataRegister.RegData.Q1);
+                break;
 
-                    case SubRegisters.Q1:
-                        WriteQuarterWord(AddressRegister.Value, DataRegister.Q1);
-                        break;
+            case SubRegisterMask.Q2:
+                WriteQuarterWord(AddressRegister.RegData.W0, DataRegister.RegData.Q2);
+                break;
 
-                    case SubRegisters.Q2:
-                        WriteQuarterWord(AddressRegister.Value, DataRegister.Q2);
-                        break;
+            case SubRegisterMask.Q3:
+                WriteQuarterWord(AddressRegister.RegData.W0, DataRegister.RegData.Q3);
+                break;
 
-                    case SubRegisters.Q3:
-                        WriteQuarterWord(AddressRegister.Value, DataRegister.Q3);
-                        break;
+            case SubRegisterMask.H0:
+                WriteHalfWord(AddressRegister.RegData.W0, DataRegister.RegData.H0);
+                break;
 
-                    case SubRegisters.H0:
-                        WriteHalfWord(AddressRegister.Value, DataRegister.H0);
-                        break;
+            case SubRegisterMask.H1:
+                WriteHalfWord(AddressRegister.RegData.W0, DataRegister.RegData.H1);
+                break;
 
-                    case SubRegisters.H1:
-                        WriteHalfWord(AddressRegister.Value, DataRegister.H1);
-                        break;
-
-                    case SubRegisters.W0:
-                        WriteWord(AddressRegister.Value, DataRegister.Value);
-                        break;
-                    }
-
-                    DataBusEnabled = false;
-                }
-
-                if (DataBusSet) {
-                    DataRegister.Value = ReadWord(AddressRegister.Value);
-                    DataBusSet = false;
-                }
+            case SubRegisterMask.W0:
+                WriteWord(AddressRegister.RegData.W0, DataRegister.RegData.W0);
                 break;
             }
         }
 
-        protected byte[] Cache { get; set; }
-
-        protected Dictionary<UInt64, byte[]> MemoryMap { get; set; } = new Dictionary<ulong, byte[]>();
-
-        public UInt32 MemorySize { get { return 0x4000 * 0xFF; } }
-
-        protected RegValue CacheAddress;
-
-
-        void SetCacheAddress(UInt64 address) {
-            RegValue tmp = address;
-
-            if (tmp.Base != CacheAddress.Base) {
-                if (!MemoryMap.ContainsKey(tmp.Base)) {
-                    MemoryMap[tmp.Base] = new byte[0x100];
-                }
-
-                Cache = MemoryMap[tmp.Base];
-            }
-
-            CacheAddress.Value = address;
+        public override void OnTickLoad(IBusComponent cpuFlags) {
+            DataRegister.RegData.W0 = ReadWord(AddressRegister.RegData.W0);
         }
+
+        RegValue tmp = 0;
 
         public UInt64 ReadWord(UInt64 address) {
-            RegValue tmp = 0;
             tmp.B0 = ReadByte(address);
             tmp.B1 = ReadByte(++address);
             tmp.B2 = ReadByte(++address);
@@ -575,11 +672,11 @@ namespace Maize {
             tmp.B5 = ReadByte(++address);
             tmp.B6 = ReadByte(++address);
             tmp.B7 = ReadByte(++address);
-            return tmp.Value;
+            return tmp.W0;
         }
 
         public void WriteWord(UInt64 address, UInt64 value) {
-            RegValue tmp = value;
+            tmp.W0 = value;
             WriteByte(address, tmp.B0);
             WriteByte(++address, tmp.B1);
             WriteByte(++address, tmp.B2);
@@ -591,7 +688,6 @@ namespace Maize {
         }
 
         public UInt32 ReadHalfWord(UInt64 address) {
-            RegValue tmp = 0;
             tmp.B0 = ReadByte(address);
             tmp.B1 = ReadByte(++address);
             tmp.B2 = ReadByte(++address);
@@ -600,7 +696,7 @@ namespace Maize {
         }
 
         public void WriteHalfWord(UInt64 address, UInt32 value) {
-            RegValue tmp = value;
+            tmp.H0 = value;
             WriteByte(address, tmp.B0);
             WriteByte(++address, tmp.B1);
             WriteByte(++address, tmp.B2);
@@ -608,78 +704,49 @@ namespace Maize {
         }
 
         public UInt16 ReadQuarterWord(UInt64 address) {
-            RegValue tmp = 0;
             tmp.B0 = ReadByte(address);
             tmp.B1 = ReadByte(++address);
             return tmp.Q0;
         }
 
         public void WriteQuarterWord(UInt64 address, UInt16 value) {
-            RegValue tmp = value;
+            tmp.Q0 = value;
             WriteByte(address, tmp.B0);
             WriteByte(++address, tmp.B1);
         }
 
         public byte ReadByte(UInt64 address) {
             SetCacheAddress(address);
-            return Cache[CacheAddress.Offset];
+            return Cache[CacheAddress.B0];
         }
 
         public void WriteByte(UInt64 address, byte value) {
             SetCacheAddress(address);
-            Cache[CacheAddress.Offset] = value;
+            Cache[CacheAddress.B0] = value;
         }
-    }
 
-    public class MappedRegisterH0 : MaizeRegister {
-        public MaizeRegister MapReg { get; set; }
+        void SetCacheAddress(UInt64 address) {
+            var addressBase = address >> 8;
 
-        public override byte B0 { get => MapReg.B0; set => MapReg.B0 = value; }
-        public override byte B1 { get => MapReg.B1; set => MapReg.B1 = value; }
-        public override byte B2 { get => MapReg.B2; set => MapReg.B2 = value; }
-        public override byte B3 { get => MapReg.B3; set => MapReg.B3 = value; }
-        public override byte B4 { get => MapReg.B0; set => MapReg.B0 = value; }
-        public override byte B5 { get => MapReg.B1; set => MapReg.B1 = value; }
-        public override byte B6 { get => MapReg.B2; set => MapReg.B2 = value; }
-        public override byte B7 { get => MapReg.B3; set => MapReg.B3 = value; }
-        public override ushort Q0 { get => MapReg.Q0; set => MapReg.Q0 = value; }
-        public override ushort Q1 { get => MapReg.Q1; set => MapReg.Q1 = value; }
-        public override ushort Q2 { get => MapReg.Q0; set => MapReg.Q0 = value; }
-        public override ushort Q3 { get => MapReg.Q1; set => MapReg.Q1 = value; }
-        public override uint H0 { get => MapReg.H0; set => MapReg.H0 = value; }
-        public override uint H1 { get => MapReg.H0; set => MapReg.H0 = value; }
-        public override ulong W0 { get => Value; set => Value = value; }
+            if (addressBase != CacheBase) {
+                if (!MemoryMap.ContainsKey(addressBase)) {
+                    MemoryMap[addressBase] = new byte[0x100];
+                }
 
-        public override ulong Value {
-            get => MapReg.H0;
-            set => MapReg.H0 = (uint)value & 0b_11111111_11111111_11111111_11111111;
+                Cache = MemoryMap[addressBase];
+                CacheBase = addressBase;
+            }
+
+            CacheAddress.W0 = address;
         }
-    }
 
+        protected byte[] Cache = null;
+        protected Dictionary<UInt64, byte[]> MemoryMap = new();
 
-    public class MappedRegisterH1 : MaizeRegister {
-        public MaizeRegister MapReg { get; set; }
+        public UInt32 MemorySize => (UInt32)MemoryMap.Count() * 0x100;
 
-        public override byte B0 { get => MapReg.B4; set => MapReg.B4 = value; }
-        public override byte B1 { get => MapReg.B5; set => MapReg.B5 = value; }
-        public override byte B2 { get => MapReg.B6; set => MapReg.B6 = value; }
-        public override byte B3 { get => MapReg.B7; set => MapReg.B7 = value; }
-        public override byte B4 { get => MapReg.B4; set => MapReg.B4 = value; }
-        public override byte B5 { get => MapReg.B5; set => MapReg.B5 = value; }
-        public override byte B6 { get => MapReg.B6; set => MapReg.B6 = value; }
-        public override byte B7 { get => MapReg.B7; set => MapReg.B7 = value; }
-        public override ushort Q0 { get => MapReg.Q2; set => MapReg.Q2 = value; }
-        public override ushort Q1 { get => MapReg.Q3; set => MapReg.Q3 = value; }
-        public override ushort Q2 { get => MapReg.Q2; set => MapReg.Q2 = value; }
-        public override ushort Q3 { get => MapReg.Q3; set => MapReg.Q3 = value; }
-        public override uint H0 { get => MapReg.H1; set => MapReg.H1 = value; }
-        public override uint H1 { get => MapReg.H1; set => MapReg.H1 = value; }
-        public override ulong W0 { get => Value; set => Value = value; }
-
-        public override ulong Value { 
-            get => MapReg.H1; 
-            set => MapReg.H1 = (uint)value & 0b_11111111_11111111_11111111_11111111; 
-        }
+        protected RegValue CacheAddress;
+        protected UInt64 CacheBase;
     }
 
     [AttributeUsage(AttributeTargets.Method)]
@@ -699,219 +766,204 @@ namespace Maize {
 
 
     public class MaizeInstruction {
-
-        public static MaizeMotherboard MB { get; set; }
-
         public MaizeInstruction() {
-            if (MB == null) {
-                throw new Exception("MB static member not initialised");
-            }
         }
 
-        public MaizeCpu Cpu => MB.Cpu;
-        public MaizeDecoder Decoder => MB.Cpu.Decoder;
-        public MaizeRegister OperandRegister1 => Decoder.OperandRegister1;
-        public MaizeRegister OperandRegister2 => Decoder.OperandRegister2;
-        public MaizeRegister OperandRegister3 => Decoder.OperandRegister3;
-        public MaizeRegister OperandRegister4 => Decoder.OperandRegister4;
-        public MaizeRegister SrcReg {
-            get { return Decoder.SrcReg; }
-            set { Decoder.SrcReg = value; }
-        }
-        public MaizeRegister DestReg {
-            get { return Decoder.DestReg; }
-            set { Decoder.DestReg = value; }
-        }
-        public MaizeMemoryModule MemoryModule => MB.MemoryModule;
-        public MaizeMemoryModule MM => MB.MemoryModule;
-        public MaizeRegister A => MB.Cpu.A;
-        public MaizeRegister B => MB.Cpu.B;
-        public MaizeRegister C => MB.Cpu.C;
-        public MaizeRegister D => MB.Cpu.D;
-        public MaizeRegister E => MB.Cpu.E;
-        public MaizeRegister G => MB.Cpu.G;
-        public MaizeRegister H => MB.Cpu.H;
-        public MaizeRegister J => MB.Cpu.J;
-        public MaizeRegister K => MB.Cpu.K;
-        public MaizeRegister L => MB.Cpu.L;
-        public MaizeRegister M => MB.Cpu.M;
-        public MaizeRegister Z => MB.Cpu.Z;
-        public MaizeRegister F => MB.Cpu.F;
-        public MaizeRegister I => MB.Cpu.I;
-        public MaizeRegister P => MB.Cpu.P;
-        public MaizeRegister S => MB.Cpu.S;
+        public static MaizeMotherboard MB;
+        public static MaizeCpu Cpu;
+        public static MaizeDecoder Decoder;
+        public static MaizeRegister OperandRegister1;
+        public static MaizeRegister OperandRegister2;
+        public static MaizeRegister OperandRegister3;
+        public static MaizeRegister OperandRegister4;
+        public static MaizeMemoryModule MemoryModule;
+        public static MaizeRegister SrcReg;
+        public static MaizeRegister DestReg;
+        public static MaizeRegister F;
+        public static MaizeRegister I;
+        public static MaizeRegister P;
+        public static MaizeRegister S;
+        public static MaizeAlu Alu;
 
-        public MaizeRegister PC => MB.Cpu.PC;
-        public MaizeRegister CS => MB.Cpu.CS;
-        public MaizeRegister SP => MB.Cpu.SP;
-        public MaizeRegister BP => MB.Cpu.BP;
-        public MaizeAlu Alu => MB.Cpu.Alu;
-        public Tortilla.IClock Clock => MB.Clock;
+        // public static MaizeRegister A = Cpu.A;
+        // public static MaizeRegister B = Cpu.B;
+        // public static MaizeRegister C = Cpu.C;
+        // public static MaizeRegister D = Cpu.D;
+        // public static MaizeRegister E = Cpu.E;
+        // public static MaizeRegister G = Cpu.G;
+        // public static MaizeRegister H = Cpu.H;
+        // public static MaizeRegister J = Cpu.J;
+        // public static MaizeRegister K = Cpu.K;
+        // public static MaizeRegister L = Cpu.L;
+        // public static MaizeRegister M = Cpu.M;
+        // public static MaizeRegister Z = Cpu.Z;
+        // public static Tortilla.IClock Clock = MB.Clock;
 
-        protected virtual byte Step { 
-            get { return (byte)Decoder.Step; }
-            set { Decoder.Step = value; }
-        }
-
-        protected virtual byte Cycle => (byte)Decoder.Cycle;
-        protected virtual byte Opcode => Decoder.OperandRegister1.B0;
-        protected virtual byte Operand1 => Decoder.OperandRegister1.B1;
-        protected virtual byte Operand2 => Decoder.OperandRegister1.B2;
-        protected virtual byte SrcImmSizeFlag => (byte)(Decoder.OperandRegister1.B1 & OpFlag_ImmSize);
-        protected virtual int SrcImmSize => 1 << SrcImmSizeFlag;
-        protected virtual byte SrcRegisterFlag => (byte)(Decoder.OperandRegister1.B1 & OpFlag_Reg);
-        protected virtual byte SrcSubRegisterFlag => (byte)(Decoder.OperandRegister1.B1 & OpFlag_SubReg);
-        protected virtual byte DestImmSizeFlag => (byte)(Decoder.OperandRegister1.B2 & OpFlag_ImmSize);
-        protected virtual int DestImmSize => 1 << DestImmSizeFlag;
-        protected virtual byte DestRegisterFlag => (byte)(Decoder.OperandRegister1.B2 & OpFlag_Reg);
-        protected virtual byte DestSubRegisterFlag => (byte)(Decoder.OperandRegister1.B2 & OpFlag_SubReg);
-
-/*        protected virtual bool IsAddress(byte operand) {
-            return (operand & OpFlag_Addr) == OpFlag_Addr;
-        }
-*/
-        protected virtual bool IsSrcImmediate(byte opcode) {
-            return (opcode & OpcodeFlag_SrcImm) == OpcodeFlag_SrcImm;
+        internal static void WireUp(MaizeMotherboard motherboard) {
+            MB = motherboard;
+            MemoryModule = MB.MemoryModule;
+            Cpu = MB.Cpu;
+            F = Cpu.F;
+            I = Cpu.I;
+            P = Cpu.P;
+            S = Cpu.S;
+            Alu = Cpu.Alu;
+            Decoder = Cpu.Decoder;
+            SrcReg = null;
+            DestReg = null;
+            OperandRegister1 = Decoder.OperandRegister1;
+            OperandRegister2 = Decoder.OperandRegister2;
+            OperandRegister3 = Decoder.OperandRegister3;
+            OperandRegister4 = Decoder.OperandRegister4;
         }
 
-        protected virtual bool IsSrcRegister(byte operand) {
-            return !IsSrcImmediate(operand);
-        }
 
-        /*
-        protected virtual bool IsDestImmediate(byte opcode) {
-            return (opcode & OpcodeFlag_DestImm) == OpcodeFlag_DestImm;
-        }
+        protected byte SrcImmSizeFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_ImmSize);
+        protected int SrcImmSize => 1 << SrcImmSizeFlag;
+        protected byte SrcRegisterFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_Reg);
+        protected byte SrcSubRegisterFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_SubReg);
+        protected byte DestImmSizeFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_ImmSize);
+        protected int DestImmSize => 1 << DestImmSizeFlag;
+        protected byte DestRegisterFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_Reg);
+        protected byte DestSubRegisterFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_SubReg);
 
-        protected virtual bool IsDestRegister(byte operand) {
-            return !IsDestImmediate(operand);
-        }
-        */
+        public byte? Opcode = null;
+        public virtual string Mnemonic { get; } = string.Empty;
 
-        public const byte OpcodeFlag            = 0b_1100_0000;
-        public const byte OpcodeFlag_SrcImm     = 0b_0100_0000;
-        public const byte OpcodeFlag_SrcAddr    = 0b_1000_0000;
+        public const byte OpcodeFlag = 0b_1100_0000;
+        public const byte OpcodeFlag_SrcImm = 0b_0100_0000;
+        public const byte OpcodeFlag_SrcAddr = 0b_1000_0000;
 
-        // public const byte OpFlag_Addr    = 0b_1000_0000;
+        public const byte OpFlag_Reg = 0b_1111_0000;
+        public const byte OpFlag_RegA = 0b_0000_0000;
+        public const byte OpFlag_RegB = 0b_0001_0000;
+        public const byte OpFlag_RegC = 0b_0010_0000;
+        public const byte OpFlag_RegD = 0b_0011_0000;
+        public const byte OpFlag_RegE = 0b_0100_0000;
+        public const byte OpFlag_RegG = 0b_0101_0000;
+        public const byte OpFlag_RegH = 0b_0110_0000;
+        public const byte OpFlag_RegJ = 0b_0111_0000;
+        public const byte OpFlag_RegK = 0b_1000_0000;
+        public const byte OpFlag_RegL = 0b_1001_0000;
+        public const byte OpFlag_RegM = 0b_1010_0000;
+        public const byte OpFlag_RegZ = 0b_1011_0000;
+        public const byte OpFlag_RegF = 0b_1100_0000;
+        public const byte OpFlag_RegI = 0b_1101_0000;
+        public const byte OpFlag_RegP = 0b_1110_0000;
+        public const byte OpFlag_RegS = 0b_1111_0000;
 
-        public const byte OpFlag_Reg     = 0b_1111_0000;
-        public const byte OpFlag_RegA    = 0b_0000_0000;
-        public const byte OpFlag_RegB    = 0b_0001_0000;
-        public const byte OpFlag_RegC    = 0b_0010_0000;
-        public const byte OpFlag_RegD    = 0b_0011_0000;
-        public const byte OpFlag_RegE    = 0b_0100_0000;
-        public const byte OpFlag_RegG    = 0b_0101_0000;
-        public const byte OpFlag_RegH    = 0b_0110_0000;
-        public const byte OpFlag_RegJ    = 0b_0111_0000;
-        public const byte OpFlag_RegK    = 0b_1000_0000;
-        public const byte OpFlag_RegL    = 0b_1001_0000;
-        public const byte OpFlag_RegM    = 0b_1010_0000;
-        public const byte OpFlag_RegZ    = 0b_1011_0000;
-        public const byte OpFlag_RegF    = 0b_1100_0000;
-        public const byte OpFlag_RegI    = 0b_1101_0000;
-        public const byte OpFlag_RegP    = 0b_1110_0000;
-        public const byte OpFlag_RegS    = 0b_1111_0000;
+        public const byte OpFlag_RegSP = 0b_1111_1100; // S.H0 = stack pointer
+        public const byte OpFlag_RegBP = 0b_1111_1101; // S.H1 = base pointer
+        public const byte OpFlag_RegPC = 0b_1110_1100; // P.H0 = program counter
+        public const byte OpFlag_RegCS = 0b_1110_1101; // P.H1 = program segment
+        public const byte OpFlag_RegFL = 0b_1100_1100; // F.H0 = flags
 
-        public const byte OpFlag_RegSP   = 0b_1111_1100; // S.H0 = stack pointer
-        public const byte OpFlag_RegBP   = 0b_1111_1101; // S.H1 = base pointer
-        public const byte OpFlag_RegPC   = 0b_1110_1100; // P.H0 = program counter
-        public const byte OpFlag_RegCS   = 0b_1110_1101; // P.H1 = program segment
-        public const byte OpFlag_RegFL   = 0b_1100_1100; // F.H0 = flags
-
-        public const byte OpFlag_SubReg  = 0b_0000_1111;
-        public const byte OpFlag_RegB0   = 0b_0000_0000;
-        public const byte OpFlag_RegB1   = 0b_0000_0001;
-        public const byte OpFlag_RegB2   = 0b_0000_0010;
-        public const byte OpFlag_RegB3   = 0b_0000_0011;
-        public const byte OpFlag_RegB4   = 0b_0000_0100;
-        public const byte OpFlag_RegB5   = 0b_0000_0101;
-        public const byte OpFlag_RegB6   = 0b_0000_0110;
-        public const byte OpFlag_RegB7   = 0b_0000_0111;
-        public const byte OpFlag_RegQ0   = 0b_0000_1000;
-        public const byte OpFlag_RegQ1   = 0b_0000_1001;
-        public const byte OpFlag_RegQ2   = 0b_0000_1010;
-        public const byte OpFlag_RegQ3   = 0b_0000_1011;
-        public const byte OpFlag_RegH0   = 0b_0000_1100;
-        public const byte OpFlag_RegH1   = 0b_0000_1101;
-        public const byte OpFlag_RegW0   = 0b_0000_1110;
+        public const byte OpFlag_SubReg = 0b_0000_1111;
+        public const byte OpFlag_RegB0 = 0b_0000_0000;
+        public const byte OpFlag_RegB1 = 0b_0000_0001;
+        public const byte OpFlag_RegB2 = 0b_0000_0010;
+        public const byte OpFlag_RegB3 = 0b_0000_0011;
+        public const byte OpFlag_RegB4 = 0b_0000_0100;
+        public const byte OpFlag_RegB5 = 0b_0000_0101;
+        public const byte OpFlag_RegB6 = 0b_0000_0110;
+        public const byte OpFlag_RegB7 = 0b_0000_0111;
+        public const byte OpFlag_RegQ0 = 0b_0000_1000;
+        public const byte OpFlag_RegQ1 = 0b_0000_1001;
+        public const byte OpFlag_RegQ2 = 0b_0000_1010;
+        public const byte OpFlag_RegQ3 = 0b_0000_1011;
+        public const byte OpFlag_RegH0 = 0b_0000_1100;
+        public const byte OpFlag_RegH1 = 0b_0000_1101;
+        public const byte OpFlag_RegW0 = 0b_0000_1110;
 
         public const byte OpFlag_ImmSize = 0b_0000_0111;
-        public const byte OpFlag_Imm08b  = 0b_0000_0000;
-        public const byte OpFlag_Imm16b  = 0b_0000_0001;
-        public const byte OpFlag_Imm32b  = 0b_0000_0010;
-        public const byte OpFlag_Imm64b  = 0b_0000_0011;
+        public const byte OpFlag_Imm08b = 0b_0000_0000;
+        public const byte OpFlag_Imm16b = 0b_0000_0001;
+        public const byte OpFlag_Imm32b = 0b_0000_0010;
+        public const byte OpFlag_Imm64b = 0b_0000_0011;
 
         public const byte OpFlag_ImmRes01 = 0b_0100_0000;
         public const byte OpFlag_ImmRes02 = 0b_0101_0000;
         public const byte OpFlag_ImmRes03 = 0b_0110_0000;
         public const byte OpFlag_ImmRes04 = 0b_0111_0000;
 
-        protected static IDictionary<byte, SubRegisters> ImmSizeSubRegMap = new System.Collections.Generic.Dictionary<byte, SubRegisters> {
-            { OpFlag_Imm08b, SubRegisters.B0 },
-            { OpFlag_Imm16b, SubRegisters.Q0 },
-            { OpFlag_Imm32b, SubRegisters.H0 },
-            { OpFlag_Imm64b, SubRegisters.W0 }
+        protected static SubRegisterMask[] ImmSizeSubRegMaskMap = new SubRegisterMask[] {
+            SubRegisterMask.B0,
+            SubRegisterMask.Q0,
+            SubRegisterMask.H0,
+            SubRegisterMask.W0
         };
 
-        protected static IDictionary<byte, SubRegisters> SubRegisterMap = new System.Collections.Generic.Dictionary<byte, SubRegisters> {
-            { OpFlag_RegB0, SubRegisters.B0 },
-            { OpFlag_RegB1, SubRegisters.B1 },
-            { OpFlag_RegB2, SubRegisters.B2 },
-            { OpFlag_RegB3, SubRegisters.B3 },
-            { OpFlag_RegB4, SubRegisters.B4 },
-            { OpFlag_RegB5, SubRegisters.B5 },
-            { OpFlag_RegB6, SubRegisters.B6 },
-            { OpFlag_RegB7, SubRegisters.B7 },
-            { OpFlag_RegQ0, SubRegisters.Q0 },
-            { OpFlag_RegQ1, SubRegisters.Q1 },
-            { OpFlag_RegQ2, SubRegisters.Q2 },
-            { OpFlag_RegQ3, SubRegisters.Q3 },
-            { OpFlag_RegH0, SubRegisters.H0 },
-            { OpFlag_RegH1, SubRegisters.H1 },
-            { OpFlag_RegW0, SubRegisters.W0 }
+        protected static SubRegister[] ImmSizeSubRegMap = new SubRegister[] {
+            SubRegister.B0,
+            SubRegister.Q0,
+            SubRegister.H0,
+            SubRegister.W0
         };
 
-        protected static IDictionary<byte, int> SizeMap = new Dictionary<byte, int> {
-            { OpFlag_RegB0, 1 },
-            { OpFlag_RegB1, 1 },
-            { OpFlag_RegB2, 1 },
-            { OpFlag_RegB3, 1 },
-            { OpFlag_RegB4, 1 },
-            { OpFlag_RegB5, 1 },
-            { OpFlag_RegB6, 1 },
-            { OpFlag_RegB7, 1 },
-            { OpFlag_RegQ0, 2 },
-            { OpFlag_RegQ1, 2 },
-            { OpFlag_RegQ2, 2 },
-            { OpFlag_RegQ3, 2 },
-            { OpFlag_RegH0, 4 },
-            { OpFlag_RegH1, 4 },
-            { OpFlag_RegW0, 8 }
+        public static SubRegisterMask[] SubRegisterMaskMap = new SubRegisterMask[] {
+            SubRegisterMask.B0,
+            SubRegisterMask.B1,
+            SubRegisterMask.B2,
+            SubRegisterMask.B3,
+            SubRegisterMask.B4,
+            SubRegisterMask.B5,
+            SubRegisterMask.B6,
+            SubRegisterMask.B7,
+            SubRegisterMask.Q0,
+            SubRegisterMask.Q1,
+            SubRegisterMask.Q2,
+            SubRegisterMask.Q3,
+            SubRegisterMask.H0,
+            SubRegisterMask.H1,
+            SubRegisterMask.W0
         };
 
-
-        protected static IDictionary<byte, byte> AluOpSizeMap = new Dictionary<byte, byte> {
-            { OpFlag_RegB0, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB1, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB2, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB3, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB4, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB5, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB6, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegB7, MaizeAlu.OpSize_Byte },
-            { OpFlag_RegQ0, MaizeAlu.OpSize_QuarterWord },
-            { OpFlag_RegQ1, MaizeAlu.OpSize_QuarterWord },
-            { OpFlag_RegQ2, MaizeAlu.OpSize_QuarterWord },
-            { OpFlag_RegQ3, MaizeAlu.OpSize_QuarterWord },
-            { OpFlag_RegH0, MaizeAlu.OpSize_HalfWord },
-            { OpFlag_RegH1, MaizeAlu.OpSize_HalfWord },
-            { OpFlag_RegW0, MaizeAlu.OpSize_Word }
+        protected static int[] SizeMap = new int[] {
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            1,
+            2,
+            2,
+            2,
+            2,
+            4,
+            4,
+            8
         };
 
-        public Action[] Code { get; set; }
+        protected static byte[] AluOpSizeMap = new byte[] {
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_Byte,
+            MaizeAlu.OpSize_QuarterWord,
+            MaizeAlu.OpSize_QuarterWord,
+            MaizeAlu.OpSize_QuarterWord,
+            MaizeAlu.OpSize_QuarterWord,
+            MaizeAlu.OpSize_HalfWord,
+            MaizeAlu.OpSize_HalfWord,
+            MaizeAlu.OpSize_Word
+        };
+
+        public Action[] Code = null;
 
         public virtual void BuildMicrocode() {
             Code = new Action[] { };
+        }
+
+        public override string ToString() {
+            string paramBytes = "";
+            StringBuilder text = new StringBuilder($"${P.RegData.H0:X8}: {$"{Mnemonic}",-42} ; {Opcode:X2} {paramBytes}");
+            return text.ToString();
         }
     }
 
@@ -923,13 +975,13 @@ namespace Maize {
         protected InstructionBase() {
         }
 
-        public static T Instance => _instance.Value;
+        public static T Instance = _instance.Value;
 
         public static Action[] GetMicrocode() {
             return Instance.Code;
         }
 
-        public static Action[] Microcode => Instance.Code;
+        public static Action[] Microcode = Instance.Code;
 
         private static T CreateInstance() {
             T t = Activator.CreateInstance(typeof(T), true) as T;
@@ -939,17 +991,18 @@ namespace Maize {
     }
 
 
-    public class MaizeCpu : BusComponent, ICpu<UInt64> {
-        public const UInt64 Flag_CarryOut =   0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
-        public const UInt64 Flag_Negative =   0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010;
-        public const UInt64 Flag_Overflow =   0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000100;
-        public const UInt64 Flag_Parity =     0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000;
-        public const UInt64 Flag_Zero =       0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
-        public const UInt64 Flag_Sign =       0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100000;
-        public const UInt64 Flag_Reserved =   0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000000;
+    public class MaizeCpu : MaizeRegister, ICpu<UInt64> {
+        public const UInt64 Flag_CarryOut =         0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
+        public const UInt64 Flag_Negative =         0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010;
+        public const UInt64 Flag_Overflow =         0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000100;
+        public const UInt64 Flag_Parity =           0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000;
+        public const UInt64 Flag_Zero =             0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
+        public const UInt64 Flag_Sign =             0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00100000;
+        public const UInt64 Flag_Reserved =         0b_00000000_00000000_00000000_00000000_00000000_00000000_00000000_01000000;
 
-        public const UInt64 Flag_Privilege =  0b_00000000_00000000_00000000_00000001_00000000_00000000_00000000_00000000;
-        public const UInt64 Flag_Interrupt =  0b_00000000_00000000_00000000_00000010_00000000_00000000_00000000_00000000;
+        public const UInt64 Flag_Privilege =        0b_00000000_00000000_00000000_00000001_00000000_00000000_00000000_00000000;
+        public const UInt64 Flag_InterruptEnabled = 0b_00000000_00000000_00000000_00000010_00000000_00000000_00000000_00000000;
+        public const UInt64 Flag_InterruptSet =     0b_00000000_00000000_00000000_00000100_00000000_00000000_00000000_00000000;
 
         public MaizeCpu(MaizeMotherboard motherboard) {
             MB = motherboard;
@@ -1015,14 +1068,14 @@ namespace Maize {
             MB.ConnectComponent(Z);
 
             F.PrivilegeFlags = Flag_Privilege;
-            F.PrivilegeMask = (UInt64)SubRegisters.H1;
+            F.PrivilegeMask = (UInt64)SubRegisterMask.H1;
             F.DataBus = MB.DataBus;
             F.AddressBus = MB.AddressBus;
             F.IOBus = MB.IOBus;
             MB.ConnectComponent(F);
 
             P.PrivilegeFlags = Flag_Privilege;
-            P.PrivilegeMask = (UInt64)SubRegisters.H1;
+            P.PrivilegeMask = (UInt64)SubRegisterMask.H1;
             P.DataBus = MB.DataBus;
             P.AddressBus = MB.AddressBus;
             P.IOBus = MB.IOBus;
@@ -1033,61 +1086,39 @@ namespace Maize {
             S.IOBus = MB.IOBus;
             MB.ConnectComponent(S);
 
-            // Mapped to P.H0
-            PC.MapReg = P;
-            PC.DataBus = MB.DataBus;
-            PC.AddressBus = MB.AddressBus;
-            PC.IOBus = MB.IOBus;
-            MB.ConnectComponent(PC);
-
-            // Mapped to P.H1
-            CS.MapReg = P;
-            CS.DataBus = MB.DataBus;
-            CS.AddressBus = MB.AddressBus;
-            CS.IOBus = MB.IOBus;
-            MB.ConnectComponent(CS);
-
-            // Mapped to S.H0
-            SP.MapReg = S;
-            SP.DataBus = MB.DataBus;
-            SP.AddressBus = MB.AddressBus;
-            SP.IOBus = MB.IOBus;
-            MB.ConnectComponent(SP);
-
-            // Mapped to S.H1
-            BP.MapReg = S;
-            BP.DataBus = MB.DataBus;
-            BP.AddressBus = MB.AddressBus;
-            BP.IOBus = MB.IOBus;
-            MB.ConnectComponent(BP);
-
             Decoder = new MaizeDecoder(MB);
-            Decoder.InstructionRead += InstructionRegister_InstructionRead;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegA] = A;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegB] = B;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegC] = C;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegD] = D;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegE] = E;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegG] = G;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegH] = H;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegJ] = J;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegK] = K;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegL] = L;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegM] = M;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegZ] = Z;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegF] = F;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegI] = Decoder;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegP] = P;
-            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegS] = S;
+            // Decoder.InstructionRead += InstructionRegister_InstructionRead;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegA >> 4] = A;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegB >> 4] = B;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegC >> 4] = C;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegD >> 4] = D;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegE >> 4] = E;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegG >> 4] = G;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegH >> 4] = H;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegJ >> 4] = J;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegK >> 4] = K;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegL >> 4] = L;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegM >> 4] = M;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegZ >> 4] = Z;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegF >> 4] = F;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegI >> 4] = Decoder;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegP >> 4] = P;
+            Decoder.RegisterMap[MaizeInstruction.OpFlag_RegS >> 4] = S;
+
+            I = Decoder;
+
+            P.RegData.H0 = 0x0000_1000; // Start address
+            P.RegData.H1 = 0x0000_0000; // Start segment
 
             Alu = new MaizeAlu(MB, this);
 
             MB.ConnectComponent(this);
+            MB.ConnectDevice(this, 0x00);
         }
 
         public UInt64 Flags {
-            get { return F.W0; }
-            set { F.W0 = value; }
+            get { return F.RegData.W0; }
+            set { F.RegData.W0 = value; }
         }
 
         /*
@@ -1097,41 +1128,46 @@ namespace Maize {
         }
         */
 
-        public bool Negative {
-            get { return (Flags & Flag_Negative) == Flag_Negative; }
-            set { Flags = ((Flags & ~Flag_Negative) | (value ? Flag_Negative : 0)); }
+        public bool NegativeFlag {
+            get { return (F.RegData.W0 & Flag_Negative) == Flag_Negative; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_Negative) | (value ? Flag_Negative : 0)); }
         }
 
-        public bool Overflow {
-            get { return (Flags & Flag_Overflow) == Flag_Overflow; }
-            set { Flags = ((Flags & ~Flag_Overflow) | (value ? Flag_Overflow : 0)); }
+        public bool OverflowFlag {
+            get { return (F.RegData.W0 & Flag_Overflow) == Flag_Overflow; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_Overflow) | (value ? Flag_Overflow : 0)); }
         }
 
-        public bool Zero {
-            get { return (Flags & Flag_Zero) == Flag_Zero; }
-            set { Flags = ((Flags & ~Flag_Zero) | (value ? Flag_Zero : 0)); }
+        public bool ZeroFlag {
+            get { return (F.RegData.W0 & Flag_Zero) == Flag_Zero; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_Zero) | (value ? Flag_Zero : 0)); }
         }
 
-        public bool Carry {
-            get { return (Flags & Flag_CarryOut) == Flag_CarryOut; }
-            set { Flags = ((Flags & ~Flag_CarryOut) | (value ? Flag_CarryOut : 0)); }
+        public bool CarryFlag {
+            get { return (F.RegData.W0 & Flag_CarryOut) == Flag_CarryOut; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_CarryOut) | (value ? Flag_CarryOut : 0)); }
         }
 
-        public bool Interrupt {
-            get { return (Flags & Flag_Interrupt) == Flag_Interrupt; }
-            set { Flags = ((Flags & ~Flag_Interrupt) | (value ? Flag_Interrupt : 0)); }
+        public bool InterruptEnabledFlag {
+            get { return (F.RegData.W0 & Flag_InterruptEnabled) == Flag_InterruptEnabled; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_InterruptEnabled) | (value ? Flag_InterruptEnabled : 0)); }
         }
 
-        public bool Privilege {
-            get { return (Flags & Flag_Privilege) == Flag_Privilege; }
-            set { Flags = ((Flags & ~Flag_Privilege) | (value ? Flag_Privilege : 0)); }
+        public bool InterruptSetFlag {
+            get { return (F.RegData.W0 & Flag_InterruptSet) == Flag_InterruptSet; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_InterruptSet) | (value ? Flag_InterruptSet : 0)); }
+        }
+
+        public bool PrivilegeFlag {
+            get { return (F.RegData.W0 & Flag_Privilege) == Flag_Privilege; }
+            set { F.RegData.W0 = ((F.RegData.W0 & ~Flag_Privilege) | (value ? Flag_Privilege : 0)); }
         }
 
         private void InstructionRegister_InstructionRead(object sender, Tuple<UInt64, UInt64> e) {
             DecodeInstruction?.Invoke(sender, e);
         }
 
-        MaizeMotherboard MB { get; set; }
+        MaizeMotherboard MB = null;
 
         public bool SingleStep { get; set; }
 
@@ -1148,33 +1184,25 @@ namespace Maize {
 
         public bool IsPowerOn { get; set; }
 
-        public bool IsHalted { get; set; }
+        public MaizeAlu Alu;
+        public MaizeDecoder Decoder;
 
-        public MaizeAlu Alu { get; protected set; }
-
-
-        public MaizeDecoder Decoder { get; protected set; }
-
-        public MaizeRegister A { get; protected set; } = new MaizeRegister();
-        public MaizeRegister B { get; protected set; } = new MaizeRegister();
-        public MaizeRegister C { get; protected set; } = new MaizeRegister();
-        public MaizeRegister D { get; protected set; } = new MaizeRegister();
-        public MaizeRegister E { get; protected set; } = new MaizeRegister();
-        public MaizeRegister G { get; protected set; } = new MaizeRegister();
-        public MaizeRegister H { get; protected set; } = new MaizeRegister();
-        public MaizeRegister J { get; protected set; } = new MaizeRegister();
-        public MaizeRegister K { get; protected set; } = new MaizeRegister();
-        public MaizeRegister L { get; protected set; } = new MaizeRegister();
-        public MaizeRegister M { get; protected set; } = new MaizeRegister();
-        public MaizeRegister Z { get; protected set; } = new MaizeRegister();
-        public MaizeRegister F { get; protected set; } = new MaizeRegister();
-        public MaizeRegister I => Decoder; 
-        public MaizeRegister P { get; protected set; } = new MaizeRegister();
-        public MaizeRegister S { get; protected set; } = new MaizeRegister();
-        public MappedRegisterH0 PC { get; protected set; } = new MappedRegisterH0();
-        public MappedRegisterH1 CS { get; protected set; } = new MappedRegisterH1();
-        public MappedRegisterH0 SP { get; protected set; } = new MappedRegisterH0();
-        public MappedRegisterH1 BP { get; protected set; } = new MappedRegisterH1();
+        public MaizeRegister A = new MaizeRegister();
+        public MaizeRegister B = new MaizeRegister();
+        public MaizeRegister C = new MaizeRegister();
+        public MaizeRegister D = new MaizeRegister();
+        public MaizeRegister E = new MaizeRegister();
+        public MaizeRegister G = new MaizeRegister();
+        public MaizeRegister H = new MaizeRegister();
+        public MaizeRegister J = new MaizeRegister();
+        public MaizeRegister K = new MaizeRegister();
+        public MaizeRegister L = new MaizeRegister();
+        public MaizeRegister M = new MaizeRegister();
+        public MaizeRegister Z = new MaizeRegister();
+        public MaizeRegister F = new MaizeRegister();
+        public MaizeRegister I = null; 
+        public MaizeRegister P = new MaizeRegister();
+        public MaizeRegister S = new MaizeRegister();
      
         public event EventHandler<Tuple<UInt64, UInt64>> DecodeInstruction;
 
@@ -1183,52 +1211,62 @@ namespace Maize {
             SingleStep = true;
         }
 
+        AutoResetEvent ClockStopEvent { get; } = new(false);
+        AutoResetEvent ClockEvent { get; } = new(false);
+
         public void Run() {
             IsPowerOn = true;
 
-            if (SingleStep) {
-                MB.Clock.Stop();
-                MB.Clock.Tick(F);
-            }
-            else {
-                MB.Clock.Start();
-
-                while (MB.Clock.IsRunning) {
+            while (IsPowerOn) {
+                if (SingleStep) {
+                    MB.Clock.Stop();
+                    MB.Clock.RegisterTickExecute(MB.Cpu.Decoder);
                     MB.Clock.Tick(F);
+                }
+                else {
+                    MB.Clock.Start();
+
+                    while (MB.Clock.IsRunning) {
+                        MB.Clock.RegisterTickExecute(MB.Cpu.Decoder);
+                        MB.Clock.Tick(F);
+                    }
+                }
+
+                if (IsPowerOn) {
+                    ClockEvent.WaitOne();
                 }
             }
         }
 
         public void PowerOff() {
             IsPowerOn = false;
+            MB.Clock.Stop();
+            ClockEvent.Set();
         }
 
         public void PowerOn() {
             IsPowerOn = true;
-            Privilege = true;
-            // Continue();
-        }
-
-        public UInt64 InterruptID { get; set; }
-
-        public void RaiseInterrupt(UInt64 id) {
-            // Set interrupt flag
-            Interrupt = true;
-            InterruptID = id;
+            PrivilegeFlag = true;
+            InterruptEnabledFlag = true;
             Run();
         }
 
-        public void Reset() {
-            PC.Value = 0;
-            Decoder.Value = 0;
-            IsHalted = false;
+        public Queue<UInt64> InterruptQueue = new();
+
+        public void RaiseInterrupt(UInt64 id) {
+            // Set interrupt flag
+            InterruptQueue.Enqueue(id);
+            InterruptSetFlag = true;
+            
+            if (!MB.Clock.IsRunning) {
+                MB.Clock.Start();
+                ClockEvent.Set();
+            }
         }
 
-        public override void OnTick(ClockState state, IBusComponent cpuFlags) {
-            switch (state) {
-            case ClockState.TickOff:
-                break;
-            }
+        public void Reset() {
+            P.RegData.H0 = 0;
+            Decoder.RegData.W0 = 0;
         }
     }
 
@@ -1263,649 +1301,394 @@ namespace Maize {
             MB.ConnectComponent(this);
 
             BuildMicrocode();
-
-            // TickDecodeActions = TickDecode;
-            TickDecodeActions = TickDecodeDebug;
-
-            // DecoderValueAssignActions = DecoderValueAssign;
-            DecoderValueAssignActions = DecoderValueAssignDebug;
         }
 
-        public void JumpTo(Action[] microcode) {
-            ActiveMicrocode = microcode;
+        public void JumpTo(MaizeInstruction instruction) {
+            ActiveInstruction = instruction;
             Step = 0;
-            microcodeAction = ActiveMicrocode[Step];
-            microcodeAction();
+            ActiveInstruction.Code[Step]();
         }
 
-        protected Dictionary<byte, Action[]> MicrocodeMap;
-        protected Action[][] MicrocodeArray;
-        protected Action[] ActiveMicrocode;
 
-        public event EventHandler<Tuple<UInt64, UInt64>> InstructionRead;
+        // public event EventHandler<Tuple<UInt64, UInt64>> InstructionRead;
 
-        public override ulong Value { 
-            get => base.Value;
-            set {
-                base.Value = value;
-                DecoderValueAssignActions[0]();
-            }
-        }
-
-        public MaizeRegister OperandRegister1 { get; set; } = new MaizeRegister();
-        public MaizeRegister OperandRegister2 { get; set; } = new MaizeRegister();
-        public MaizeRegister OperandRegister3 { get; set; } = new MaizeRegister();
-        public MaizeRegister OperandRegister4 { get; set; } = new MaizeRegister();
+        public MaizeRegister OperandRegister1 = new MaizeRegister();
+        public MaizeRegister OperandRegister2 = new MaizeRegister();
+        public MaizeRegister OperandRegister3 = new MaizeRegister();
+        public MaizeRegister OperandRegister4 = new MaizeRegister();
         public MaizeRegister SrcReg = null;
         public MaizeRegister DestReg = null;
 
-        MaizeMotherboard MB { get; set; }
+        MaizeMotherboard MB = null;
         public Tortilla.IClock Clock => MB.Clock;
 
-        public int Step { get; set; }
-        public int Cycle { get; protected set; }
-        Action microcodeAction = null;
+        public int Step = 0;
+        public int Cycle = 0;
 
-        public IDictionary<byte, MaizeRegister> RegisterMap = new System.Collections.Generic.Dictionary<byte, MaizeRegister>();
+        public MaizeRegister[] RegisterMap = new MaizeRegister[0x16];
 
-        // this will point at one of the below, depending on whether debugging is on
-        public Action[] TickDecodeActions; 
-        public Action[] TickDecode;
-        public Action[] TickDecodeDebug;
-
-        // this will point at one of the below, depending on whether debugging is on
+        public MaizeInstruction[] InstructionArray;
+        protected MaizeInstruction ActiveInstruction;
         public Action[] DecoderValueAssignActions; 
-        public Action[] DecoderValueAssign;
-        public Action[] DecoderValueAssignDebug;
 
-        public Action[] ReadOpcodeAndDispatch;
-        public Action[] ReadImmediate1Byte;
-        public Action[] ReadImmediate2Byte;
-        public Action[] ReadImmediate4Byte;
-        public Action[] ReadImmediate8Byte;
+        public override void OnTickExecute(IBusComponent cpuFlags) {
+            if (Cycle == 0) {
+                Step = 0;
+                ActiveInstruction = Core.ReadOpcodeAndDispatch.Instance;
 
-        public override void OnTick(ClockState state, IBusComponent cpuFlags) {
-            base.OnTick(state, cpuFlags);
+                if (   (MB.Cpu.F.RegData.W0 & MaizeCpu.Flag_InterruptSet) == MaizeCpu.Flag_InterruptSet
+                    && (MB.Cpu.F.RegData.W0 & MaizeCpu.Flag_InterruptEnabled) == MaizeCpu.Flag_InterruptEnabled)
+                {
+                    MB.Cpu.InterruptSetFlag = false;
+                    var interruptID = MB.Cpu.InterruptQueue.Dequeue();
 
-            switch (state) {
-            case ClockState.TickDecode:
-                switch (Cycle) {
-                case 0:
-                    TickDecodeActions[0]();
-                    break;
+                    if (interruptID != 0) {
+                        MB.Cpu.S.RegData.H0 -= 8;
+                        MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.F.RegData.W0);
+                        MB.Cpu.S.RegData.H0 -= 8;
+                        MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.P.RegData.W0);
+                    }
 
-                default:
-                    TickDecodeActions[1]();
-                    break;
+                    // Vector to interrupt handler for interrupt ID
+                    UInt32 intAddress = (UInt32)(interruptID * 4);
+                    UInt32 startAddress = MB.MemoryModule.ReadHalfWord(intAddress);
+                    MB.Cpu.P.RegData.H0 = startAddress;
                 }
-
-                break;
             }
+
+            ActiveInstruction.Code[Step]();
+            ++Step;
+
+            if (Step >= ActiveInstruction.Code.Length) {
+                Cycle = 0;
+                return;
+            }
+
+            ++Cycle;
         }
 
-        protected Stack<Action[]> MicrocodeStack = new Stack<Action[]>();
-        protected Stack<int> StepStack = new Stack<int>();
-
-        public void LoadImmediate(int size) {
+        public void ReadAndEnableImmediate(int size) {
             PushMicrocodeStack();
 
             switch (size) {
             case 1:
-                ActiveMicrocode = ReadImmediate1Byte;
+                ActiveInstruction = Core.ReadImmediate1Byte.Instance;
                 break;
             case 2:
-                ActiveMicrocode = ReadImmediate2Byte;
+                ActiveInstruction = Core.ReadImmediate2Byte.Instance;
                 break;
             case 4:
-                ActiveMicrocode = ReadImmediate4Byte;
+                ActiveInstruction = Core.ReadImmediate4Byte.Instance;
                 break;
             case 8:
-                ActiveMicrocode = ReadImmediate8Byte;
+                ActiveInstruction = Core.ReadImmediate8Byte.Instance;
                 break;
             }
 
-            microcodeAction = ActiveMicrocode[0];
-            microcodeAction();
+            ActiveInstruction.Code[Step]();
         }
 
-        public void ExitInstruction() {
-            ActiveMicrocode = new Action[] {
-                () => { }
-            };
+        int stackIndex = 0;
 
-            Step = 0xFF;
-        }
+        // TODO: Get rid of the ugly magic number (0x0F) in the next two arrays
+        MaizeInstruction[] MicrocodeStack = new MaizeInstruction[0x0F];
+        int[] StepStack = new int[0x0F];
 
-        protected void PushMicrocodeStack() {
-            MicrocodeStack.Push(ActiveMicrocode);
-            StepStack.Push(Step);
+        public void PushMicrocodeStack() {
+            MicrocodeStack[stackIndex] = ActiveInstruction;
+            StepStack[stackIndex] = Step;
+            ++stackIndex;
             Step = 0;
         }
 
-        protected void PopMicrocodeStack() {
-            ActiveMicrocode = MicrocodeStack.Pop();
-            Step = StepStack.Pop();
+        public void PopMicrocodeStack() {
+            --stackIndex;
+            ActiveInstruction = MicrocodeStack[stackIndex];
+            Step = StepStack[stackIndex];
             ++Step;
-            microcodeAction = ActiveMicrocode[Step];
-            microcodeAction();
+            // TODO: This is a problem if there isn't another step to execute! I'm making a big assumption here.
+            ActiveInstruction.Code[Step]();
         }
 
         protected void BuildMicrocode() {
-            MaizeInstruction.MB = MB;
 
-            TickDecode = new Action[] {
-                () => {
-                    Step = 0;
-                    ActiveMicrocode = ReadOpcodeAndDispatch;
+            ActiveInstruction = Core.ReadOpcodeAndDispatch.Instance;
+            DecoderValueAssignActions = Core.DecoderValueAssign.Microcode;
+            // DecoderValueAssignActions = Instructions.DecoderValueAssignDebug.Microcode;
 
-                    if (MB.Cpu.Interrupt) {
-                        MB.Cpu.Interrupt = false;
+            InstructionArray = new MaizeInstruction[] {
+                /* 0x00 */ Instructions.HALT.Instance,
+                /* 0x01 */ Instructions.LD_RegVal_Reg.Instance,
+                /* 0x02 */ Instructions.STIM.Instance,
+                /* 0x03 */ Instructions.ADD_RegVal_Reg.Instance,
+                /* 0x04 */ Instructions.SUB_RegVal_Reg.Instance,
+                /* 0x05 */ Instructions.MUL_RegVal_Reg.Instance,
+                /* 0x06 */ Instructions.DIV_RegVal_Reg.Instance,
+                /* 0x07 */ Instructions.MOD_RegVal_Reg.Instance,
+                /* 0x08 */ Instructions.AND_RegVal_Reg.Instance,
+                /* 0x09 */ Instructions.OR_RegVal_Reg.Instance,
+                /* 0x0A */ Instructions.NOR_RegVal_Reg.Instance,
+                /* 0x0B */ Instructions.NAND_RegVal_Reg.Instance,
+                /* 0x0C */ Instructions.XOR_RegVal_Reg.Instance,
+                /* 0x0D */ Instructions.SHL_RegVal_Reg.Instance,
+                /* 0x0E */ Instructions.SHR_RegVal_Reg.Instance,
+                /* 0x0F */ Instructions.CMP_RegVal_Reg.Instance,
+                /* 0x10 */ Instructions.TEST_RegVal_Reg.Instance,
+                /* 0x11 */ Exceptions.BadOpcode.Instance,
+                /* 0x12 */ Instructions.INT_RegVal.Instance,
+                /* 0x13 */ Instructions.ST.Instance,
+                /* 0x14 */ Instructions.OUTR_RegVal_Reg.Instance,
+                /* 0x15 */ Exceptions.BadOpcode.Instance,
+                /* 0x16 */ Instructions.JMP_RegVal.Instance,
+                /* 0x17 */ Instructions.JZ_RegVal.Instance,
+                /* 0x18 */ Instructions.JNZ_RegVal.Instance,
+                /* 0x19 */ Exceptions.BadOpcode.Instance,
+                /* 0x1A */ Exceptions.BadOpcode.Instance,
+                /* 0x1B */ Exceptions.BadOpcode.Instance,
+                /* 0x1C */ Exceptions.BadOpcode.Instance,
+                /* 0x1D */ Instructions.CALL_RegVal.Instance,
+                /* 0x1E */ Instructions.OUT_RegVal_Imm.Instance,
+                /* 0x1F */ Instructions.IN_RegVal_Reg.Instance,
+                /* 0x20 */ Instructions.PUSH_RegVal.Instance,
+                /* 0x21 */ Instructions.PUSH_ImmVal.Instance,
+                /* 0x22 */ Instructions.CLR.Instance,
+                /* 0x23 */ Instructions.INC.Instance,
+                /* 0x24 */ Instructions.DEC.Instance,
+                /* 0x25 */ Exceptions.BadOpcode.Instance,
+                /* 0x26 */ Instructions.POP_RegVal.Instance,
+                /* 0x27 */ Instructions.RET.Instance,
+                /* 0x28 */ Instructions.IRET.Instance,
+                /* 0x29 */ Instructions.STI.Instance,
+                /* 0x2A */ Instructions.CLI.Instance,
+                /* 0x2B */ Exceptions.BadOpcode.Instance,
+                /* 0x2C */ Exceptions.BadOpcode.Instance,
+                /* 0x2D */ Exceptions.BadOpcode.Instance,
+                /* 0x2E */ Exceptions.BadOpcode.Instance,
+                /* 0x2F */ Exceptions.BadOpcode.Instance,
+                /* 0x30 */ Exceptions.BadOpcode.Instance,
+                /* 0x29 */ Instructions.STC.Instance,
+                /* 0x2A */ Instructions.CLC.Instance,
+                /* 0x33 */ Exceptions.BadOpcode.Instance,
+                /* 0x34 */ Exceptions.BadOpcode.Instance,
+                /* 0x35 */ Exceptions.BadOpcode.Instance,
+                /* 0x36 */ Exceptions.BadOpcode.Instance,
+                /* 0x37 */ Exceptions.BadOpcode.Instance,
+                /* 0x38 */ Exceptions.BadOpcode.Instance,
+                /* 0x39 */ Exceptions.BadOpcode.Instance,
+                /* 0x3A */ Exceptions.BadOpcode.Instance,
+                /* 0x3B */ Exceptions.BadOpcode.Instance,
+                /* 0x3C */ Exceptions.BadOpcode.Instance,
+                /* 0x3D */ Exceptions.BadOpcode.Instance,
+                /* 0x3E */ Exceptions.BadOpcode.Instance,
+                /* 0x3F */ Exceptions.BadOpcode.Instance,
+                /* 0x40 */ Exceptions.BadOpcode.Instance,
+                /* 0x41 */ Instructions.LD_ImmVal_Reg.Instance,
+                /* 0x42 */ Exceptions.BadOpcode.Instance,
+                /* 0x43 */ Instructions.ADD_ImmVal_Reg.Instance,
+                /* 0x44 */ Instructions.SUB_ImmVal_Reg.Instance,
+                /* 0x45 */ Instructions.MUL_ImmVal_Reg.Instance,
+                /* 0x46 */ Instructions.DIV_ImmVal_Reg.Instance,
+                /* 0x47 */ Instructions.MOD_ImmVal_Reg.Instance,
+                /* 0x48 */ Instructions.AND_ImmVal_Reg.Instance,
+                /* 0x49 */ Instructions.OR_ImmVal_Reg.Instance,
+                /* 0x4A */ Instructions.NOR_ImmVal_Reg.Instance,
+                /* 0x4B */ Instructions.NAND_ImmVal_Reg.Instance,
+                /* 0x4C */ Instructions.XOR_ImmVal_Reg.Instance,
+                /* 0x4D */ Instructions.SHL_ImmVal_Reg.Instance,
+                /* 0x4E */ Instructions.SHR_ImmVal_Reg.Instance,
+                /* 0x4F */ Instructions.CMP_ImmVal_Reg.Instance,
+                /* 0x50 */ Instructions.TEST_ImmVal_Reg.Instance,
+                /* 0x51 */ Exceptions.BadOpcode.Instance,
+                /* 0x52 */ Instructions.INT_ImmVal.Instance,
+                /* 0x53 */ Exceptions.BadOpcode.Instance,
+                /* 0x54 */ Instructions.OUTR_ImmVal_Reg.Instance,
+                /* 0x55 */ Exceptions.BadOpcode.Instance,
+                /* 0x56 */ Instructions.JMP_ImmVal.Instance,
+                /* 0x57 */ Instructions.JZ_ImmVal.Instance,
+                /* 0x58 */ Instructions.JNZ_ImmVal.Instance,
+                /* 0x59 */ Exceptions.BadOpcode.Instance,
+                /* 0x5A */ Exceptions.BadOpcode.Instance,
+                /* 0x5B */ Exceptions.BadOpcode.Instance,
+                /* 0x5C */ Exceptions.BadOpcode.Instance,
+                /* 0x5D */ Instructions.CALL_ImmVal.Instance,
+                /* 0x5E */ Exceptions.BadOpcode.Instance,
+                /* 0x5F */ Instructions.IN_ImmVal_Reg.Instance,
+                /* 0x60 */ Exceptions.BadOpcode.Instance,
+                /* 0x61 */ Exceptions.BadOpcode.Instance,
+                /* 0x62 */ Exceptions.BadOpcode.Instance,
+                /* 0x63 */ Exceptions.BadOpcode.Instance,
+                /* 0x64 */ Exceptions.BadOpcode.Instance,
+                /* 0x65 */ Exceptions.BadOpcode.Instance,
+                /* 0x66 */ Exceptions.BadOpcode.Instance,
+                /* 0x67 */ Exceptions.BadOpcode.Instance,
+                /* 0x68 */ Exceptions.BadOpcode.Instance,
+                /* 0x69 */ Exceptions.BadOpcode.Instance,
+                /* 0x6A */ Exceptions.BadOpcode.Instance,
+                /* 0x6B */ Exceptions.BadOpcode.Instance,
+                /* 0x6C */ Exceptions.BadOpcode.Instance,
+                /* 0x6D */ Exceptions.BadOpcode.Instance,
+                /* 0x6E */ Exceptions.BadOpcode.Instance,
+                /* 0x6F */ Exceptions.BadOpcode.Instance,
+                /* 0x70 */ Exceptions.BadOpcode.Instance,
+                /* 0x71 */ Exceptions.BadOpcode.Instance,
+                /* 0x72 */ Exceptions.BadOpcode.Instance,
+                /* 0x73 */ Exceptions.BadOpcode.Instance,
+                /* 0x74 */ Exceptions.BadOpcode.Instance,
+                /* 0x75 */ Exceptions.BadOpcode.Instance,
+                /* 0x76 */ Exceptions.BadOpcode.Instance,
+                /* 0x77 */ Exceptions.BadOpcode.Instance,
+                /* 0x78 */ Exceptions.BadOpcode.Instance,
+                /* 0x79 */ Exceptions.BadOpcode.Instance,
+                /* 0x7A */ Exceptions.BadOpcode.Instance,
+                /* 0x7B */ Exceptions.BadOpcode.Instance,
+                /* 0x7C */ Exceptions.BadOpcode.Instance,
+                /* 0x7D */ Exceptions.BadOpcode.Instance,
+                /* 0x7E */ Exceptions.BadOpcode.Instance,
+                /* 0x7F */ Exceptions.BadOpcode.Instance,
+                /* 0x80 */ Exceptions.BadOpcode.Instance,
+                /* 0x81 */ Instructions.LD_RegAddr_Reg.Instance,
+                /* 0x82 */ Exceptions.BadOpcode.Instance,
+                /* 0x83 */ Instructions.ADD_RegAddr_Reg.Instance,
+                /* 0x84 */ Instructions.SUB_RegAddr_Reg.Instance,
+                /* 0x85 */ Instructions.MUL_RegAddr_Reg.Instance,
+                /* 0x86 */ Instructions.DIV_RegAddr_Reg.Instance,
+                /* 0x87 */ Instructions.MOD_RegAddr_Reg.Instance,
+                /* 0x88 */ Instructions.AND_RegAddr_Reg.Instance,
+                /* 0x89 */ Instructions.OR_RegAddr_Reg.Instance,
+                /* 0x8A */ Instructions.NOR_RegAddr_Reg.Instance,
+                /* 0x8B */ Instructions.NAND_RegAddr_Reg.Instance,
+                /* 0x8C */ Instructions.XOR_RegAddr_Reg.Instance,
+                /* 0x8D */ Instructions.SHL_RegAddr_Reg.Instance,
+                /* 0x8E */ Instructions.SHR_RegAddr_Reg.Instance,
+                /* 0x8F */ Instructions.CMP_RegAddr_Reg.Instance,
+                /* 0x90 */ Instructions.TEST_RegAddr_Reg.Instance,
+                /* 0x91 */ Exceptions.BadOpcode.Instance,
+                /* 0x92 */ Exceptions.BadOpcode.Instance,
+                /* 0x93 */ Exceptions.BadOpcode.Instance,
+                /* 0x94 */ Exceptions.BadOpcode.Instance,
+                /* 0x95 */ Exceptions.BadOpcode.Instance,
+                /* 0x96 */ Instructions.JMP_RegAddr.Instance,
+                /* 0x97 */ Instructions.JZ_RegAddr.Instance,
+                /* 0x98 */ Instructions.JNZ_RegAddr.Instance,
+                /* 0x99 */ Exceptions.BadOpcode.Instance,
+                /* 0x9A */ Exceptions.BadOpcode.Instance,
+                /* 0x9B */ Exceptions.BadOpcode.Instance,
+                /* 0x9C */ Exceptions.BadOpcode.Instance,
+                /* 0x9D */ Instructions.CALL_RegAddr.Instance,
+                /* 0x9E */ Exceptions.BadOpcode.Instance,
+                /* 0x9F */ Exceptions.BadOpcode.Instance,
+                /* 0xA0 */ Exceptions.BadOpcode.Instance,
+                /* 0xA1 */ Exceptions.BadOpcode.Instance,
+                /* 0xA2 */ Exceptions.BadOpcode.Instance,
+                /* 0xA3 */ Exceptions.BadOpcode.Instance,
+                /* 0xA4 */ Exceptions.BadOpcode.Instance,
+                /* 0xA5 */ Exceptions.BadOpcode.Instance,
+                /* 0xA6 */ Exceptions.BadOpcode.Instance,
+                /* 0xA7 */ Exceptions.BadOpcode.Instance,
+                /* 0xA8 */ Exceptions.BadOpcode.Instance,
+                /* 0xA9 */ Exceptions.BadOpcode.Instance,
+                /* 0xAA */ Instructions.NOP.Instance,
+                /* 0xAB */ Exceptions.BadOpcode.Instance,
+                /* 0xAC */ Exceptions.BadOpcode.Instance,
+                /* 0xAD */ Exceptions.BadOpcode.Instance,
+                /* 0xAE */ Exceptions.BadOpcode.Instance,
+                /* 0xAF */ Exceptions.BadOpcode.Instance,
+                /* 0xB0 */ Exceptions.BadOpcode.Instance,
+                /* 0xB1 */ Exceptions.BadOpcode.Instance,
+                /* 0xB2 */ Exceptions.BadOpcode.Instance,
+                /* 0xB3 */ Exceptions.BadOpcode.Instance,
+                /* 0xB4 */ Exceptions.BadOpcode.Instance,
+                /* 0xB5 */ Exceptions.BadOpcode.Instance,
+                /* 0xB6 */ Exceptions.BadOpcode.Instance,
+                /* 0xB7 */ Exceptions.BadOpcode.Instance,
+                /* 0xB8 */ Exceptions.BadOpcode.Instance,
+                /* 0xB9 */ Exceptions.BadOpcode.Instance,
+                /* 0xBA */ Exceptions.BadOpcode.Instance,
+                /* 0xBB */ Exceptions.BadOpcode.Instance,
+                /* 0xBC */ Exceptions.BadOpcode.Instance,
+                /* 0xBD */ Exceptions.BadOpcode.Instance,
+                /* 0xBE */ Exceptions.BadOpcode.Instance,
+                /* 0xBF */ Exceptions.BadOpcode.Instance,
+                /* 0xC0 */ Exceptions.BadOpcode.Instance,
+                /* 0xC1 */ Instructions.LD_ImmAddr_Reg.Instance,
+                /* 0xC2 */ Exceptions.BadOpcode.Instance,
+                /* 0xC3 */ Instructions.ADD_ImmAddr_Reg.Instance,
+                /* 0xC4 */ Instructions.SUB_ImmAddr_Reg.Instance,
+                /* 0xC5 */ Instructions.MUL_ImmAddr_Reg.Instance,
+                /* 0xC6 */ Instructions.DIV_ImmAddr_Reg.Instance,
+                /* 0xC7 */ Instructions.MOD_ImmAddr_Reg.Instance,
+                /* 0xC8 */ Instructions.AND_ImmAddr_Reg.Instance,
+                /* 0xC9 */ Instructions.OR_ImmAddr_Reg.Instance,
+                /* 0xCA */ Instructions.NOR_ImmAddr_Reg.Instance,
+                /* 0xCB */ Instructions.NAND_ImmAddr_Reg.Instance,
+                /* 0xCC */ Instructions.XOR_ImmAddr_Reg.Instance,
+                /* 0xCD */ Instructions.SHL_ImmAddr_Reg.Instance,
+                /* 0xCE */ Instructions.SHR_ImmAddr_Reg.Instance,
+                /* 0xCF */ Instructions.CMP_ImmAddr_Reg.Instance,
+                /* 0xD0 */ Instructions.TEST_ImmAddr_Reg.Instance,
+                /* 0xD1 */ Exceptions.BadOpcode.Instance,
+                /* 0xD2 */ Exceptions.BadOpcode.Instance,
+                /* 0xD3 */ Exceptions.BadOpcode.Instance,
+                /* 0xD4 */ Exceptions.BadOpcode.Instance,
+                /* 0xD5 */ Exceptions.BadOpcode.Instance,
+                /* 0xD6 */ Instructions.JMP_ImmAddr.Instance,
+                /* 0xD7 */ Instructions.JZ_ImmAddr.Instance,
+                /* 0xD8 */ Instructions.JNZ_ImmAddr.Instance,
+                /* 0xD9 */ Exceptions.BadOpcode.Instance,
+                /* 0xDA */ Exceptions.BadOpcode.Instance,
+                /* 0xDB */ Exceptions.BadOpcode.Instance,
+                /* 0xDC */ Exceptions.BadOpcode.Instance,
+                /* 0xDD */ Exceptions.BadOpcode.Instance,
+                /* 0xDE */ Exceptions.BadOpcode.Instance,
+                /* 0xDF */ Exceptions.BadOpcode.Instance,
+                /* 0xE0 */ Exceptions.BadOpcode.Instance,
+                /* 0xE1 */ Exceptions.BadOpcode.Instance,
+                /* 0xE2 */ Exceptions.BadOpcode.Instance,
+                /* 0xE3 */ Exceptions.BadOpcode.Instance,
+                /* 0xE4 */ Exceptions.BadOpcode.Instance,
+                /* 0xE5 */ Exceptions.BadOpcode.Instance,
+                /* 0xE6 */ Exceptions.BadOpcode.Instance,
+                /* 0xE7 */ Exceptions.BadOpcode.Instance,
+                /* 0xE8 */ Exceptions.BadOpcode.Instance,
+                /* 0xE9 */ Exceptions.BadOpcode.Instance,
+                /* 0xEA */ Exceptions.BadOpcode.Instance,
+                /* 0xEB */ Exceptions.BadOpcode.Instance,
+                /* 0xEC */ Exceptions.BadOpcode.Instance,
+                /* 0xED */ Exceptions.BadOpcode.Instance,
+                /* 0xEE */ Exceptions.BadOpcode.Instance,
+                /* 0xEF */ Exceptions.BadOpcode.Instance,
+                /* 0xF0 */ Exceptions.BadOpcode.Instance,
+                /* 0xF1 */ Exceptions.BadOpcode.Instance,
+                /* 0xF2 */ Exceptions.BadOpcode.Instance,
+                /* 0xF3 */ Exceptions.BadOpcode.Instance,
+                /* 0xF4 */ Exceptions.BadOpcode.Instance,
+                /* 0xF5 */ Exceptions.BadOpcode.Instance,
+                /* 0xF6 */ Exceptions.BadOpcode.Instance,
+                /* 0xF7 */ Exceptions.BadOpcode.Instance,
+                /* 0xF8 */ Exceptions.BadOpcode.Instance,
+                /* 0xF9 */ Exceptions.BadOpcode.Instance,
+                /* 0xFA */ Exceptions.BadOpcode.Instance,
+                /* 0xFB */ Exceptions.BadOpcode.Instance,
+                /* 0xFC */ Exceptions.BadOpcode.Instance,
+                /* 0xFD */ Exceptions.BadOpcode.Instance,
+                /* 0xFE */ Exceptions.BadOpcode.Instance,
+                /* 0xFF */ Exceptions.BadOpcode.Instance
+            };
 
-                        if (MB.Cpu.InterruptID != 0) {
-                            MB.Cpu.S.Value -= 8;
-                            MB.MemoryModule.WriteHalfWord(MB.Cpu.S.H0, MB.Cpu.PC.H0);
-                        }
+            for (int i = 0; i < InstructionArray.Length; ++i) {
+                var instruction = InstructionArray[i];
 
-                        // Vector to interrupt handler for MB.Cpu.InterruptID
-                        UInt32 intAddress = (UInt32)(MB.Cpu.InterruptID * 4);
-                        UInt32 startAddress = MB.MemoryModule.ReadHalfWord(intAddress);
-                        MB.Cpu.PC.Value = startAddress;
+                if (instruction is not null) {
+                    if (instruction.Opcode is null) {
+                        instruction.Opcode = (byte)i;
                     }
-
-                    ++Cycle;
-                },
-                () => {
-                    microcodeAction = ActiveMicrocode[Step];
-                    microcodeAction();
-                    ++Cycle;
-                    ++Step;
-
-                    if (Step >= ActiveMicrocode.Length) {
-                        Cycle = 0;
+                    else if (instruction != Exceptions.BadOpcode.Instance) {
+                        throw new Exception($"Instruction already assigned to opcode {instruction.Opcode}");
                     }
                 }
-            };
+            }
 
-            TickDecodeDebug = new Action[] {
-                TickDecode[0],
-                () => {
-                    /* DEBUG */
-                    MB.OnDebug();
-                    TickDecode[1]();
-                }
-            };
 
-            DecoderValueAssign = new Action[] {
-                () => {
-                    /* Nothing here yet */
-                }
-            };
-
-            DecoderValueAssignDebug = new Action[] {
-                () => {
-                    DecoderValueAssign[0]();
-                    /* DEBUG */
-                    InstructionRead?.Invoke(this, Tuple.Create(this.Value, MB.Cpu.PC.Value - 1));
-                }
-            };
-
-            ReadOpcodeAndDispatch = new Action[] {
-                () => {
-                    MB.Cpu.PC.Enable(BusTypes.AddressBus);
-                    MB.MemoryModule.AddressRegister.Set(BusTypes.AddressBus);
-                },
-                () => {
-                    MB.MemoryModule.DataRegister.Enable(BusTypes.DataBus);
-                    this.Set(BusTypes.DataBus);
-                    this.OperandRegister1.Set(BusTypes.DataBus);
-                    MB.Cpu.PC.Increment(1);
-                },
-                () => {
-                    var opcode = this.B0;
-                    JumpTo(MicrocodeArray[opcode]);
-                },
-            };
-
-            ReadImmediate1Byte = new Action[] {
-                () => {
-                    MB.Cpu.PC.Enable(BusTypes.AddressBus);
-                    MB.MemoryModule.AddressRegister.Set(BusTypes.AddressBus);
-                },
-                () => {
-                    MB.Cpu.PC.Increment(1);
-                    MB.MemoryModule.DataRegister.Enable(BusTypes.DataBus, SubRegisters.B0);
-                    this.Set(BusTypes.DataBus);
-                    PopMicrocodeStack();
-                }
-            };
-
-            ReadImmediate2Byte = new Action[] {
-                () => {
-                    MB.Cpu.PC.Enable(BusTypes.AddressBus);
-                    MB.MemoryModule.AddressRegister.Set(BusTypes.AddressBus);
-                },
-                () => {
-                    MB.Cpu.PC.Increment(2);
-                    MB.MemoryModule.DataRegister.Enable(BusTypes.DataBus, SubRegisters.Q0);
-                    this.Set(BusTypes.DataBus);
-                    PopMicrocodeStack();
-                }
-            };
-
-            ReadImmediate4Byte = new Action[] {
-                () => {
-                    MB.Cpu.PC.Enable(BusTypes.AddressBus);
-                    MB.MemoryModule.AddressRegister.Set(BusTypes.AddressBus);
-                },
-                () => {
-                    MB.Cpu.PC.Increment(4);
-                    MB.MemoryModule.DataRegister.Enable(BusTypes.DataBus, SubRegisters.H0);
-                    this.Set(BusTypes.DataBus);
-                    PopMicrocodeStack();
-                }
-            };
-
-            ReadImmediate8Byte = new Action[] {
-                () => {
-                    MB.Cpu.PC.Enable(BusTypes.AddressBus);
-                    MB.MemoryModule.AddressRegister.Set(BusTypes.AddressBus);
-                },
-                () => {
-                    MB.Cpu.PC.Increment(8);
-                    MB.MemoryModule.DataRegister.Enable(BusTypes.DataBus, SubRegisters.W0);
-                    this.Set(BusTypes.DataBus);
-                    PopMicrocodeStack();
-                }
-            };
-
-            ActiveMicrocode = ReadOpcodeAndDispatch;
-
-            MicrocodeArray = new Action[][] {
-                /* 0x00 */ Instructions.HALT.Microcode,
-                /* 0x01 */ Instructions.LD_RegVal_Reg.Microcode,
-                /* 0x02 */ Instructions.ST.Microcode,
-                /* 0x03 */ Instructions.ADD_RegVal_Reg.Microcode,
-                /* 0x04 */ Instructions.SUB_RegVal_Reg.Microcode,
-                /* 0x05 */ Instructions.MUL_RegVal_Reg.Microcode,
-                /* 0x06 */ Instructions.DIV_RegVal_Reg.Microcode,
-                /* 0x07 */ Instructions.MOD_RegVal_Reg.Microcode,
-                /* 0x08 */ Instructions.AND_RegVal_Reg.Microcode,
-                /* 0x09 */ Instructions.OR_RegVal_Reg.Microcode,
-                /* 0x0A */ Instructions.NOR_RegVal_Reg.Microcode,
-                /* 0x0B */ Instructions.NAND_RegVal_Reg.Microcode,
-                /* 0x0C */ Instructions.XOR_RegVal_Reg.Microcode,
-                /* 0x0D */ Instructions.SHL_RegVal_Reg.Microcode,
-                /* 0x0E */ Instructions.SHR_RegVal_Reg.Microcode,
-                /* 0x0F */ Instructions.CMP_RegVal_Reg.Microcode,
-                /* 0x10 */ Instructions.TEST_RegVal_Reg.Microcode,
-                /* 0x11 */ Exceptions.BadOpcode.Microcode,
-                /* 0x12 */ Instructions.INT_RegVal.Microcode,
-                /* 0x13 */ Instructions.STIN.Microcode,
-                /* 0x14 */ Instructions.OUTR_RegVal_Reg.Microcode,
-                /* 0x15 */ Exceptions.BadOpcode.Microcode,
-                /* 0x16 */ Instructions.JMP_RegVal.Microcode,
-                /* 0x17 */ Instructions.JZ_RegVal.Microcode,
-                /* 0x18 */ Instructions.JNZ_RegVal.Microcode,
-                /* 0x19 */ Exceptions.BadOpcode.Microcode,
-                /* 0x1A */ Exceptions.BadOpcode.Microcode,
-                /* 0x1B */ Exceptions.BadOpcode.Microcode,
-                /* 0x1C */ Exceptions.BadOpcode.Microcode,
-                /* 0x1D */ Instructions.CALL_RegVal.Microcode,
-                /* 0x1E */ Instructions.OUT_RegVal_Imm.Microcode,
-                /* 0x1F */ Instructions.IN_RegVal_Reg.Microcode,
-                /* 0x20 */ Instructions.PUSH_RegVal.Microcode,
-                /* 0x21 */ Instructions.PUSH_ImmVal.Microcode,
-                /* 0x22 */ Instructions.CLR.Microcode,
-                /* 0x23 */ Instructions.INC.Microcode,
-                /* 0x24 */ Instructions.DEC.Microcode,
-                /* 0x25 */ Exceptions.BadOpcode.Microcode,
-                /* 0x26 */ Instructions.POP_RegVal.Microcode,
-                /* 0x27 */ Instructions.RET.Microcode,
-                /* 0x28 */ Exceptions.BadOpcode.Microcode,
-                /* 0x29 */ Exceptions.BadOpcode.Microcode,
-                /* 0x2A */ Exceptions.BadOpcode.Microcode,
-                /* 0x2B */ Exceptions.BadOpcode.Microcode,
-                /* 0x2C */ Exceptions.BadOpcode.Microcode,
-                /* 0x2D */ Exceptions.BadOpcode.Microcode,
-                /* 0x2E */ Exceptions.BadOpcode.Microcode,
-                /* 0x2F */ Exceptions.BadOpcode.Microcode,
-                /* 0x30 */ Exceptions.BadOpcode.Microcode,
-                /* 0x31 */ Exceptions.BadOpcode.Microcode,
-                /* 0x32 */ Exceptions.BadOpcode.Microcode,
-                /* 0x33 */ Exceptions.BadOpcode.Microcode,
-                /* 0x34 */ Exceptions.BadOpcode.Microcode,
-                /* 0x35 */ Exceptions.BadOpcode.Microcode,
-                /* 0x36 */ Exceptions.BadOpcode.Microcode,
-                /* 0x37 */ Exceptions.BadOpcode.Microcode,
-                /* 0x38 */ Exceptions.BadOpcode.Microcode,
-                /* 0x39 */ Exceptions.BadOpcode.Microcode,
-                /* 0x3A */ Exceptions.BadOpcode.Microcode,
-                /* 0x3B */ Exceptions.BadOpcode.Microcode,
-                /* 0x3C */ Exceptions.BadOpcode.Microcode,
-                /* 0x3D */ Exceptions.BadOpcode.Microcode,
-                /* 0x3E */ Exceptions.BadOpcode.Microcode,
-                /* 0x3F */ Exceptions.BadOpcode.Microcode,
-                /* 0x40 */ Exceptions.BadOpcode.Microcode,
-                /* 0x41 */ Instructions.LD_ImmVal_Reg.Microcode,
-                /* 0x42 */ Exceptions.BadOpcode.Microcode,
-                /* 0x43 */ Instructions.ADD_ImmVal_Reg.Microcode,
-                /* 0x44 */ Instructions.SUB_ImmVal_Reg.Microcode,
-                /* 0x45 */ Instructions.MUL_ImmVal_Reg.Microcode,
-                /* 0x46 */ Instructions.DIV_ImmVal_Reg.Microcode,
-                /* 0x47 */ Instructions.MOD_ImmVal_Reg.Microcode,
-                /* 0x48 */ Instructions.AND_ImmVal_Reg.Microcode,
-                /* 0x49 */ Instructions.OR_ImmVal_Reg.Microcode,
-                /* 0x4A */ Instructions.NOR_ImmVal_Reg.Microcode,
-                /* 0x4B */ Instructions.NAND_ImmVal_Reg.Microcode,
-                /* 0x4C */ Instructions.XOR_ImmVal_Reg.Microcode,
-                /* 0x4D */ Instructions.SHL_ImmVal_Reg.Microcode,
-                /* 0x4E */ Instructions.SHR_ImmVal_Reg.Microcode,
-                /* 0x4F */ Instructions.CMP_ImmVal_Reg.Microcode,
-                /* 0x50 */ Instructions.TEST_ImmVal_Reg.Microcode,
-                /* 0x51 */ Exceptions.BadOpcode.Microcode,
-                /* 0x52 */ Instructions.INT_ImmVal.Microcode,
-                /* 0x53 */ Exceptions.BadOpcode.Microcode,
-                /* 0x54 */ Instructions.OUTR_ImmVal_Reg.Microcode,
-                /* 0x55 */ Exceptions.BadOpcode.Microcode,
-                /* 0x56 */ Instructions.JMP_ImmVal.Microcode,
-                /* 0x57 */ Instructions.JZ_ImmVal.Microcode,
-                /* 0x58 */ Instructions.JNZ_ImmVal.Microcode,
-                /* 0x59 */ Exceptions.BadOpcode.Microcode,
-                /* 0x5A */ Exceptions.BadOpcode.Microcode,
-                /* 0x5B */ Exceptions.BadOpcode.Microcode,
-                /* 0x5C */ Exceptions.BadOpcode.Microcode,
-                /* 0x5D */ Instructions.CALL_ImmVal.Microcode,
-                /* 0x5E */ Exceptions.BadOpcode.Microcode,
-                /* 0x5F */ Instructions.IN_ImmVal_Reg.Microcode,
-                /* 0x60 */ Exceptions.BadOpcode.Microcode,
-                /* 0x61 */ Exceptions.BadOpcode.Microcode,
-                /* 0x62 */ Exceptions.BadOpcode.Microcode,
-                /* 0x63 */ Exceptions.BadOpcode.Microcode,
-                /* 0x64 */ Exceptions.BadOpcode.Microcode,
-                /* 0x65 */ Exceptions.BadOpcode.Microcode,
-                /* 0x66 */ Exceptions.BadOpcode.Microcode,
-                /* 0x67 */ Exceptions.BadOpcode.Microcode,
-                /* 0x68 */ Exceptions.BadOpcode.Microcode,
-                /* 0x69 */ Exceptions.BadOpcode.Microcode,
-                /* 0x6A */ Exceptions.BadOpcode.Microcode,
-                /* 0x6B */ Exceptions.BadOpcode.Microcode,
-                /* 0x6C */ Exceptions.BadOpcode.Microcode,
-                /* 0x6D */ Exceptions.BadOpcode.Microcode,
-                /* 0x6E */ Exceptions.BadOpcode.Microcode,
-                /* 0x6F */ Exceptions.BadOpcode.Microcode,
-                /* 0x70 */ Exceptions.BadOpcode.Microcode,
-                /* 0x71 */ Exceptions.BadOpcode.Microcode,
-                /* 0x72 */ Exceptions.BadOpcode.Microcode,
-                /* 0x73 */ Exceptions.BadOpcode.Microcode,
-                /* 0x74 */ Exceptions.BadOpcode.Microcode,
-                /* 0x75 */ Exceptions.BadOpcode.Microcode,
-                /* 0x76 */ Exceptions.BadOpcode.Microcode,
-                /* 0x77 */ Exceptions.BadOpcode.Microcode,
-                /* 0x78 */ Exceptions.BadOpcode.Microcode,
-                /* 0x79 */ Exceptions.BadOpcode.Microcode,
-                /* 0x7A */ Exceptions.BadOpcode.Microcode,
-                /* 0x7B */ Exceptions.BadOpcode.Microcode,
-                /* 0x7C */ Exceptions.BadOpcode.Microcode,
-                /* 0x7D */ Exceptions.BadOpcode.Microcode,
-                /* 0x7E */ Exceptions.BadOpcode.Microcode,
-                /* 0x7F */ Exceptions.BadOpcode.Microcode,
-                /* 0x80 */ Exceptions.BadOpcode.Microcode,
-                /* 0x81 */ Instructions.LD_RegAddr_Reg.Microcode,
-                /* 0x82 */ Exceptions.BadOpcode.Microcode,
-                /* 0x83 */ Instructions.ADD_RegAddr_Reg.Microcode,
-                /* 0x84 */ Instructions.SUB_RegAddr_Reg.Microcode,
-                /* 0x85 */ Instructions.MUL_RegAddr_Reg.Microcode,
-                /* 0x86 */ Instructions.DIV_RegAddr_Reg.Microcode,
-                /* 0x87 */ Instructions.MOD_RegAddr_Reg.Microcode,
-                /* 0x88 */ Instructions.AND_RegAddr_Reg.Microcode,
-                /* 0x89 */ Instructions.OR_RegAddr_Reg.Microcode,
-                /* 0x8A */ Instructions.NOR_RegAddr_Reg.Microcode,
-                /* 0x8B */ Instructions.NAND_RegAddr_Reg.Microcode,
-                /* 0x8C */ Instructions.XOR_RegAddr_Reg.Microcode,
-                /* 0x8D */ Instructions.SHL_RegAddr_Reg.Microcode,
-                /* 0x8E */ Instructions.SHR_RegAddr_Reg.Microcode,
-                /* 0x8F */ Instructions.CMP_RegAddr_Reg.Microcode,
-                /* 0x90 */ Instructions.TEST_RegAddr_Reg.Microcode,
-                /* 0x91 */ Exceptions.BadOpcode.Microcode,
-                /* 0x92 */ Exceptions.BadOpcode.Microcode,
-                /* 0x93 */ Exceptions.BadOpcode.Microcode,
-                /* 0x94 */ Exceptions.BadOpcode.Microcode,
-                /* 0x95 */ Exceptions.BadOpcode.Microcode,
-                /* 0x96 */ Instructions.JMP_RegAddr.Microcode,
-                /* 0x97 */ Instructions.JZ_RegAddr.Microcode,
-                /* 0x98 */ Instructions.JNZ_RegAddr.Microcode,
-                /* 0x99 */ Exceptions.BadOpcode.Microcode,
-                /* 0x9A */ Exceptions.BadOpcode.Microcode,
-                /* 0x9B */ Exceptions.BadOpcode.Microcode,
-                /* 0x9C */ Exceptions.BadOpcode.Microcode,
-                /* 0x9D */ Instructions.CALL_RegAddr.Microcode,
-                /* 0x9E */ Exceptions.BadOpcode.Microcode,
-                /* 0x9F */ Exceptions.BadOpcode.Microcode,
-                /* 0xA0 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA1 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA3 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA4 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA5 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA6 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA7 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA8 */ Exceptions.BadOpcode.Microcode,
-                /* 0xA9 */ Exceptions.BadOpcode.Microcode,
-                /* 0xAA */ Instructions.NOP.Microcode,
-                /* 0xAB */ Exceptions.BadOpcode.Microcode,
-                /* 0xAC */ Exceptions.BadOpcode.Microcode,
-                /* 0xAD */ Exceptions.BadOpcode.Microcode,
-                /* 0xAE */ Exceptions.BadOpcode.Microcode,
-                /* 0xAF */ Exceptions.BadOpcode.Microcode,
-                /* 0xB0 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB1 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB3 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB4 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB5 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB6 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB7 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB8 */ Exceptions.BadOpcode.Microcode,
-                /* 0xB9 */ Exceptions.BadOpcode.Microcode,
-                /* 0xBA */ Exceptions.BadOpcode.Microcode,
-                /* 0xBB */ Exceptions.BadOpcode.Microcode,
-                /* 0xBC */ Exceptions.BadOpcode.Microcode,
-                /* 0xBD */ Exceptions.BadOpcode.Microcode,
-                /* 0xBE */ Exceptions.BadOpcode.Microcode,
-                /* 0xBF */ Exceptions.BadOpcode.Microcode,
-                /* 0xC0 */ Exceptions.BadOpcode.Microcode,
-                /* 0xC1 */ Instructions.LD_ImmAddr_Reg.Microcode,
-                /* 0xC2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xC3 */ Instructions.ADD_ImmAddr_Reg.Microcode,
-                /* 0xC4 */ Instructions.SUB_ImmAddr_Reg.Microcode,
-                /* 0xC5 */ Instructions.MUL_ImmAddr_Reg.Microcode,
-                /* 0xC6 */ Instructions.DIV_ImmAddr_Reg.Microcode,
-                /* 0xC7 */ Instructions.MOD_ImmAddr_Reg.Microcode,
-                /* 0xC8 */ Instructions.AND_ImmAddr_Reg.Microcode,
-                /* 0xC9 */ Instructions.OR_ImmAddr_Reg.Microcode,
-                /* 0xCA */ Instructions.NOR_ImmAddr_Reg.Microcode,
-                /* 0xCB */ Instructions.NAND_ImmAddr_Reg.Microcode,
-                /* 0xCC */ Instructions.XOR_ImmAddr_Reg.Microcode,
-                /* 0xCD */ Instructions.SHL_ImmAddr_Reg.Microcode,
-                /* 0xCE */ Instructions.SHR_ImmAddr_Reg.Microcode,
-                /* 0xCF */ Instructions.CMP_ImmAddr_Reg.Microcode,
-                /* 0xD0 */ Instructions.TEST_ImmAddr_Reg.Microcode,
-                /* 0xD1 */ Exceptions.BadOpcode.Microcode,
-                /* 0xD2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xD3 */ Exceptions.BadOpcode.Microcode,
-                /* 0xD4 */ Exceptions.BadOpcode.Microcode,
-                /* 0xD5 */ Exceptions.BadOpcode.Microcode,
-                /* 0xD6 */ Instructions.JMP_ImmAddr.Microcode,
-                /* 0xD7 */ Instructions.JZ_ImmAddr.Microcode,
-                /* 0xD8 */ Instructions.JNZ_ImmAddr.Microcode,
-                /* 0xD9 */ Exceptions.BadOpcode.Microcode,
-                /* 0xDA */ Exceptions.BadOpcode.Microcode,
-                /* 0xDB */ Exceptions.BadOpcode.Microcode,
-                /* 0xDC */ Exceptions.BadOpcode.Microcode,
-                /* 0xDD */ Exceptions.BadOpcode.Microcode,
-                /* 0xDE */ Exceptions.BadOpcode.Microcode,
-                /* 0xDF */ Exceptions.BadOpcode.Microcode,
-                /* 0xE0 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE1 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE3 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE4 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE5 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE6 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE7 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE8 */ Exceptions.BadOpcode.Microcode,
-                /* 0xE9 */ Exceptions.BadOpcode.Microcode,
-                /* 0xEA */ Exceptions.BadOpcode.Microcode,
-                /* 0xEB */ Exceptions.BadOpcode.Microcode,
-                /* 0xEC */ Exceptions.BadOpcode.Microcode,
-                /* 0xED */ Exceptions.BadOpcode.Microcode,
-                /* 0xEE */ Exceptions.BadOpcode.Microcode,
-                /* 0xEF */ Exceptions.BadOpcode.Microcode,
-                /* 0xF0 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF1 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF2 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF3 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF4 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF5 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF6 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF7 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF8 */ Exceptions.BadOpcode.Microcode,
-                /* 0xF9 */ Exceptions.BadOpcode.Microcode,
-                /* 0xFA */ Exceptions.BadOpcode.Microcode,
-                /* 0xFB */ Exceptions.BadOpcode.Microcode,
-                /* 0xFC */ Exceptions.BadOpcode.Microcode,
-                /* 0xFD */ Exceptions.BadOpcode.Microcode,
-                /* 0xFE */ Exceptions.BadOpcode.Microcode,
-                /* 0xFF */ Exceptions.BadOpcode.Microcode
-            };
-
-            MicrocodeMap = new Dictionary<byte, Action[]> {
-                { 0x00, Instructions.HALT.Microcode },
-
-                { 0x01, Instructions.LD_RegVal_Reg.Microcode },
-                { 0x41, Instructions.LD_ImmVal_Reg.Microcode },
-                { 0x81, Instructions.LD_RegAddr_Reg.Microcode },
-                { 0xC1, Instructions.LD_ImmAddr_Reg.Microcode },
-
-                { 0x02, Instructions.ST.Microcode },
-
-                { 0x03, Instructions.ADD_RegVal_Reg.Microcode },
-                { 0x43, Instructions.ADD_ImmVal_Reg.Microcode },
-                { 0x83, Instructions.ADD_RegAddr_Reg.Microcode },
-                { 0xC3, Instructions.ADD_ImmAddr_Reg.Microcode },
-
-                { 0x04, Instructions.SUB_RegVal_Reg.Microcode },
-                { 0x44, Instructions.SUB_ImmVal_Reg.Microcode },
-                { 0x84, Instructions.SUB_RegAddr_Reg.Microcode },
-                { 0xC4, Instructions.SUB_ImmAddr_Reg.Microcode },
-
-                { 0x05, Instructions.MUL_RegVal_Reg.Microcode },
-                { 0x45, Instructions.MUL_ImmVal_Reg.Microcode },
-                { 0x85, Instructions.MUL_RegAddr_Reg.Microcode },
-                { 0xC5, Instructions.MUL_ImmAddr_Reg.Microcode },
-
-                { 0x06, Instructions.DIV_RegVal_Reg.Microcode },
-                { 0x46, Instructions.DIV_ImmVal_Reg.Microcode },
-                { 0x86, Instructions.DIV_RegAddr_Reg.Microcode },
-                { 0xC6, Instructions.DIV_ImmAddr_Reg.Microcode },
-
-                { 0x07, Instructions.MOD_RegVal_Reg.Microcode },
-                { 0x47, Instructions.MOD_ImmVal_Reg.Microcode },
-                { 0x87, Instructions.MOD_RegAddr_Reg.Microcode },
-                { 0xC7, Instructions.MOD_ImmAddr_Reg.Microcode },
-
-                { 0x08, Instructions.AND_RegVal_Reg.Microcode },
-                { 0x48, Instructions.AND_ImmVal_Reg.Microcode },
-                { 0x88, Instructions.AND_RegAddr_Reg.Microcode },
-                { 0xC8, Instructions.AND_ImmAddr_Reg.Microcode },
-
-                { 0x09, Instructions.OR_RegVal_Reg.Microcode },
-                { 0x49, Instructions.OR_ImmVal_Reg.Microcode },
-                { 0x89, Instructions.OR_RegAddr_Reg.Microcode },
-                { 0xC9, Instructions.OR_ImmAddr_Reg.Microcode },
-
-                { 0x0A, Instructions.NOR_RegVal_Reg.Microcode },
-                { 0x4A, Instructions.NOR_ImmVal_Reg.Microcode },
-                { 0x8A, Instructions.NOR_RegAddr_Reg.Microcode },
-                { 0xCA, Instructions.NOR_ImmAddr_Reg.Microcode },
-
-                { 0x0B, Instructions.NAND_RegVal_Reg.Microcode },
-                { 0x4B, Instructions.NAND_ImmVal_Reg.Microcode },
-                { 0x8B, Instructions.NAND_RegAddr_Reg.Microcode },
-                { 0xCB, Instructions.NAND_ImmAddr_Reg.Microcode },
-
-                { 0x0C, Instructions.XOR_RegVal_Reg.Microcode },
-                { 0x4C, Instructions.XOR_ImmVal_Reg.Microcode },
-                { 0x8C, Instructions.XOR_RegAddr_Reg.Microcode },
-                { 0xCC, Instructions.XOR_ImmAddr_Reg.Microcode },
-
-                { 0x0D, Instructions.SHL_RegVal_Reg.Microcode },
-                { 0x4D, Instructions.SHL_ImmVal_Reg.Microcode },
-                { 0x8D, Instructions.SHL_RegAddr_Reg.Microcode },
-                { 0xCD, Instructions.SHL_ImmAddr_Reg.Microcode },
-
-                { 0x0E, Instructions.SHR_RegVal_Reg.Microcode },
-                { 0x4E, Instructions.SHR_ImmVal_Reg.Microcode },
-                { 0x8E, Instructions.SHR_RegAddr_Reg.Microcode },
-                { 0xCE, Instructions.SHR_ImmAddr_Reg.Microcode },
-
-                { 0x0F, Instructions.CMP_RegVal_Reg.Microcode },
-                { 0x4F, Instructions.CMP_ImmVal_Reg.Microcode },
-                { 0x8F, Instructions.CMP_RegAddr_Reg.Microcode },
-                { 0xCF, Instructions.CMP_ImmAddr_Reg.Microcode },
-
-                { 0x10, Instructions.TEST_RegVal_Reg.Microcode },
-                { 0x50, Instructions.TEST_ImmVal_Reg.Microcode },
-                { 0x90, Instructions.TEST_RegAddr_Reg.Microcode },
-                { 0xD0, Instructions.TEST_ImmAddr_Reg.Microcode },
-
-                { 0x12, Instructions.INT_RegVal.Microcode },
-                { 0x52, Instructions.INT_ImmVal.Microcode },
-
-                { 0x13, Instructions.STIN.Microcode },
-
-                { 0x14, Instructions.OUTR_RegVal_Reg.Microcode },
-                { 0x54, Instructions.OUTR_ImmVal_Reg.Microcode },
-
-                { 0x16, Instructions.JMP_RegVal.Microcode },
-                { 0x56, Instructions.JMP_ImmVal.Microcode },
-                { 0x96, Instructions.JMP_RegAddr.Microcode },
-                { 0xD6, Instructions.JMP_ImmAddr.Microcode },
-
-                { 0x17, Instructions.JZ_RegVal.Microcode },
-                { 0x57, Instructions.JZ_ImmVal.Microcode },
-                { 0x97, Instructions.JZ_RegAddr.Microcode },
-                { 0xD7, Instructions.JZ_ImmAddr.Microcode },
-
-                { 0x18, Instructions.JNZ_RegVal.Microcode },
-                { 0x58, Instructions.JNZ_ImmVal.Microcode },
-                { 0x98, Instructions.JNZ_RegAddr.Microcode },
-                { 0xD8, Instructions.JNZ_ImmAddr.Microcode },
-
-                { 0x1D, Instructions.CALL_RegVal.Microcode },
-                { 0x5D, Instructions.CALL_ImmVal.Microcode },
-                { 0x9D, Instructions.CALL_RegAddr.Microcode },
-
-                { 0x1E, Instructions.OUT_RegVal_Imm.Microcode },
-
-                { 0x1F, Instructions.IN_RegVal_Reg.Microcode },
-                { 0x5F, Instructions.IN_ImmVal_Reg.Microcode },
-
-                { 0x20, Instructions.PUSH_RegVal.Microcode },
-                { 0x21, Instructions.PUSH_ImmVal.Microcode },
-
-                { 0x22, Instructions.CLR.Microcode },
-
-                { 0x23, Instructions.INC.Microcode },
-
-                { 0x24, Instructions.DEC.Microcode },
-
-                { 0x26, Instructions.POP_RegVal.Microcode },
-
-                { 0x27, Instructions.RET.Microcode },
-
-                { 0xAA, Instructions.NOP.Microcode }
-            };
         }
     }
 

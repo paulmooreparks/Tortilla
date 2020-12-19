@@ -44,36 +44,22 @@ namespace TortillaUI {
             base.OnLoad(e);
             InitEnvironment();
 
-            // RangeDelegates.AddInterval(startAddressView, viewSizeView, UpdateMemoryWindow);
-
             startAddress.Text = $"{startAddressView:X8}";
             viewSize.Text = $"{viewSizeView:X8}";
 
             startAddress.TextChanged += new System.EventHandler(startAddress_TextChanged);
             viewSize.TextChanged += new System.EventHandler(viewSize_TextChanged);
-
-            // UpdateMemoryWindow(startAddressView);
         }
 
         protected override void OnClosing(CancelEventArgs e) {
-            base.OnClosing(e);
+            PowerOff();
             tConsole.Close();
             FreeConsole();
-            PowerOff();
+            base.OnClosing(e);
         }
 
-        protected delegate void AddressRangeDelegate(UInt64 address);
-
-        protected delegate void PortOutHandlerDelegate(UInt16 address, UInt16 value);
-        protected Dictionary<UInt16, PortOutHandlerDelegate> PortOutHandlerMap { get; } = new Dictionary<ushort, PortOutHandlerDelegate>();
-
-        protected delegate UInt16 PortInHandlerDelegate(UInt16 address);
-        protected Dictionary<UInt16, PortInHandlerDelegate> PortInHandlerMap { get; } = new Dictionary<ushort, PortInHandlerDelegate>();
-
-        public UInt16[] ports = new UInt16[0x10000];
-
-        UInt32 startAddressView = 0x80; // 0xb8000;
-        UInt32 viewSizeView = 0x120; // 0xb8060;
+        UInt32 startAddressView = 0x1FD0; // 0xb8000;
+        UInt32 viewSizeView = 0x200; // 0xb8060;
         UInt32 maxAddressRange = 0x4008;
 
         bool StartEndRangeValid() {
@@ -210,15 +196,11 @@ namespace TortillaUI {
         }
 
         private void Cpu_DecodeInstruction(object sender, Tuple<UInt64, UInt64> e) {
-            if (traceCheckBox.Checked) {
-                Decode(e.Item1, e.Item2);
-            }
+            Decode(e.Item1, e.Item2);
         }
 
         private void Hardware_Debug(object sender, string e) {
-            if (traceCheckBox.Checked) {
-                Debug(e, sender);
-            }
+            Debug(e, sender);
         }
 
         public void ResetCPU() {
@@ -236,8 +218,14 @@ namespace TortillaUI {
             Motherboard.Cpu.SingleStep = stepCheckBox.Checked;
             Motherboard.EnableDebug(traceCheckBox.Checked);
             Motherboard.Cpu.DecodeInstruction += Cpu_DecodeInstruction;
-            Motherboard.PowerOn();
-            Motherboard.RaiseInterrupt(0);
+
+            // var cpuThread = new Thread(() => {
+                Motherboard.PowerOn();
+            // });
+
+            // cpuThread.Start();
+
+            // Motherboard.RaiseInterrupt(0);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) {

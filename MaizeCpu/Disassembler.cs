@@ -13,8 +13,8 @@ namespace Maize {
                 { 0x41, ("LD"  , SrcImmReg_DestReg) },
                 { 0x81, ("LD"  , SrcImmReg_DestReg) },
                 { 0xC1, ("LD"  , SrcImmReg_DestReg) },
-                { 0x02, ("ST"  , SrcImmReg_DestImmAddr) },
-                { 0x42, ("ST"  , SrcImmReg_DestImmAddr) },
+                { 0x02, ("STIM"  , SrcImmReg_DestImmAddr) },
+                { 0x42, ("STIM"  , SrcImmReg_DestImmAddr) },
                 { 0x03, ("ADD" , SrcImmReg_DestReg) },
                 { 0x43, ("ADD" , SrcImmReg_DestReg) },
                 { 0x83, ("ADD" , SrcImmReg_DestReg) },
@@ -75,8 +75,8 @@ namespace Maize {
                 { 0x51, ("PUSH", SrcImmReg_DestReg) },
                 { 0x12, ("INT" , UnaryReg) },
                 { 0x52, ("INT" , UnaryImm) },
-                { 0x13, ("STIN" , SrcImmReg_DestReg) },
-                { 0x53, ("STIN" , SrcImmReg_DestReg) },
+                { 0x13, ("ST" , SrcImmReg_DestReg) },
+                { 0x53, ("ST" , SrcImmReg_DestReg) },
                 { 0x14, ("OUTR" , SrcImmReg_DestReg) },
                 { 0x54, ("OUTR" , SrcImmReg_DestReg) },
                 { 0x16, ("JMP" , UnaryReg) },
@@ -127,6 +127,11 @@ namespace Maize {
                 { 0x25, ("NOT" , UnaryReg) },
                 { 0x26, ("POP" , UnaryReg) },
                 { 0x27, ("RET" , NoParams) },
+                { 0x28, ("IRET" , NoParams) },
+                { 0x29, ("STI" , NoParams) },
+                { 0x30, ("CLI" , NoParams) },
+                { 0x31, ("STC" , NoParams) },
+                { 0x32, ("CLC" , NoParams) },
                 { 0xAA, ("NOP" , NoParams) },
                 { 0xFF, ("BRK" , NoParams) }
             };
@@ -179,14 +184,24 @@ namespace Maize {
                 opcode = input.B0;
                 operand1 = input.B1;
                 operand2 = input.B2;
-                // flags = (byte)(opcode & 0b_1110_0000);
-                handler = OpCodes[opcode].Item2;
 
-                if (handler != null) {
-                    LastResult = handler(out retval);
+                if (OpCodes.ContainsKey(opcode)) {
+                    handler = OpCodes[opcode].Item2;
+
+                    if (handler != null) {
+                        LastResult = handler(out retval);
+                        text = retval;
+                    }
+                    else {
+                        text = $"${address.H0:X8}: {"unknown",-42} ; {opcode:X2}";
+                        return (int)DecodeResult.Complete;
+                    }
+                }
+                else {
+                    text = $"${address.H0:X8}: {"unknown",-42} ; {opcode:X2}";
+                    return (int)DecodeResult.Complete;
                 }
 
-                text = retval;
                 return (int)LastResult;
 
             case DecodeResult.ReadBytes1:

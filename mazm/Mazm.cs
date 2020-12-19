@@ -54,7 +54,7 @@ namespace mazm {
             Opcodes = new Dictionary<string, (KeywordParser, KeywordCompiler, byte)> {
                 { "HALT", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x00) },
                 { "LD",   (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x01) },
-                { "ST",   (Opcode_2Param_Tokenizer, RegImm_ImmAddr_Compiler, 0x02) },
+                { "STIM",   (Opcode_2Param_Tokenizer, RegImm_ImmAddr_Compiler, 0x02) },
                 { "ADD",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x03) },
                 { "SUB",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x04) },
                 { "MUL",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x05) },
@@ -70,7 +70,7 @@ namespace mazm {
                 { "CMP",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x0F) },
                 { "TEST", (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x10) },
                 { "INT",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x12) },
-                { "STIN", (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x13) },
+                { "ST", (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x13) },
                 { "OUTR", (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x14) },
                 { "JMP",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x16) },
                 { "JZ",   (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x17) },
@@ -89,6 +89,11 @@ namespace mazm {
                 { "NOT",  (Opcode_1Param_Tokenizer, Reg_Compiler, 0x25) },
                 { "POP",  (Opcode_1Param_Tokenizer, Reg_Compiler, 0x26) },
                 { "RET",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x27) },
+                { "IRET", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x28) },
+                { "STI", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x29) },
+                { "CLI", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x30) },
+                { "STC", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x31) },
+                { "CLC", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x32) },
                 { "NOP",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0xAA) },
                 { "BRK",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0xFF) }
             };
@@ -633,7 +638,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, value.H0);
                 }
                 else if ((typeByte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, value.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, value.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, value.B0);
@@ -696,7 +701,7 @@ namespace mazm {
                         CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                     }
                     else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                        CurrentAddress = WriteWord(CurrentAddress, operand1Literal.Value);
+                        CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                     }
                     else {
                         CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
@@ -747,7 +752,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
                 else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
@@ -819,7 +824,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
                 else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
@@ -840,7 +845,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand2Literal.H0);
                 }
                 else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand2Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand2Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand2Literal.B0);
@@ -899,7 +904,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
                 else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
@@ -920,7 +925,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand2Literal.H0);
                 }
                 else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand2Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand2Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand2Literal.B0);
@@ -980,7 +985,7 @@ namespace mazm {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
                 else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
-                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.Value);
+                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
                     CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
@@ -1024,17 +1029,19 @@ namespace mazm {
         }
 
         void SetCacheAddress(UInt64 address) {
-            RegValue tmp = address;
+            // RegValue tmp = address;
+            var addressBase = address >> 8;
+            var cacheBase = CacheAddress.W0 >> 8;
 
-            if (Cache == null || tmp.Base != CacheAddress.Base) {
-                if (!MemoryMap.ContainsKey(tmp.Base)) {
-                    MemoryMap[tmp.Base] = new byte[0x100];
+            if (Cache == null || addressBase != cacheBase) {
+                if (!MemoryMap.ContainsKey(addressBase)) {
+                    MemoryMap[addressBase] = new byte[0x100];
                 }
 
-                Cache = MemoryMap[tmp.Base];
+                Cache = MemoryMap[addressBase];
             }
 
-            CacheAddress.Value = address;
+            CacheAddress.W0 = address;
         }
 
         public UInt64 ReadWord(UInt32 address) {
@@ -1047,7 +1054,7 @@ namespace mazm {
             tmp.B5 = ReadByte(address++);
             tmp.B6 = ReadByte(address++);
             tmp.B7 = ReadByte(address++);
-            return tmp.Value;
+            return tmp.W0;
         }
 
         public UInt32 WriteWord(UInt32 address, UInt64 value) {
@@ -1098,7 +1105,7 @@ namespace mazm {
         public byte ReadByte(UInt32 address) {
             if (IsCached(address)) {
                 SetCacheAddress(address);
-                return Cache[CacheAddress.Offset];
+                return Cache[CacheAddress.B0];
             }
 
             return 0;
@@ -1106,7 +1113,7 @@ namespace mazm {
 
         public UInt32 WriteByte(UInt32 address, byte value) {
             SetCacheAddress(address++);
-            Cache[CacheAddress.Offset] = value;
+            Cache[CacheAddress.B0] = value;
             return address;
         }
 
