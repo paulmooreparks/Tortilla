@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 using Tortilla;
 
 namespace Tortilla {
-    public class TortillaCharacterConsole : MaizeRegister, ITortillaConsole {
+    public class TortillaCharacterConsole : Maize.Register, IConsole {
 
         public TortillaCharacterConsole() {
         }
@@ -23,7 +23,7 @@ namespace Tortilla {
             ConsoleColor.DarkGray, ConsoleColor.Blue,     ConsoleColor.Green,     ConsoleColor.Cyan,     ConsoleColor.Red,     ConsoleColor.Magenta,     ConsoleColor.Yellow, ConsoleColor.White
         };
 
-        MaizeRegister DataRegister { get; } = new();
+        Maize.Register DataRegister { get; } = new();
 
         IMotherboard<UInt64> MB { get; set; }
         UInt64 KbdInterruptID { get; set; }
@@ -115,7 +115,7 @@ namespace Tortilla {
         }
 
 
-        // ITortillaConsole interface
+        // IConsole interface
         public void Connect(IMotherboard<UInt64> _motherboard) {
             MB = _motherboard;
             AddressBus = MB.AddressBus;

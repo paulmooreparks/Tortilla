@@ -14,7 +14,7 @@ using System.Runtime.InteropServices;
 using System.Drawing.Imaging;
 
 namespace TortillaUI {
-    public partial class TortillaGraphicalConsole : Form, Tortilla.IBusComponent, Tortilla.ITortillaConsole {
+    public partial class TortillaGraphicalConsole : Form, Tortilla.IBusComponent, Tortilla.IConsole {
         UserSettings us = new UserSettings();
 
         private const UInt32 StdOutputHandle = 0xFFFFFFF5;
@@ -751,7 +751,7 @@ namespace TortillaUI {
         public void OnTickExecute(IBusComponent cpuFlags) {
         }
 
-        MaizeRegister BusData { get; set; } = new MaizeRegister();
+        Maize.Register BusData { get; set; } = new Maize.Register();
 
         private void SetCursorLocation(RegValue busValue) {
             CursorLocation = busValue.H1;

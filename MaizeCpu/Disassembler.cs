@@ -237,40 +237,40 @@ namespace Maize {
         }
 
         protected Dictionary<int, string> RegName = new Dictionary<int, string> {
-            { MaizeInstruction.OpFlag_RegA, "A" },
-            { MaizeInstruction.OpFlag_RegB, "B" },
-            { MaizeInstruction.OpFlag_RegC, "C" },
-            { MaizeInstruction.OpFlag_RegD, "D" },
-            { MaizeInstruction.OpFlag_RegE, "E" },
-            { MaizeInstruction.OpFlag_RegG, "G" },
-            { MaizeInstruction.OpFlag_RegH, "H" },
-            { MaizeInstruction.OpFlag_RegJ, "J" },
-            { MaizeInstruction.OpFlag_RegK, "K" },
-            { MaizeInstruction.OpFlag_RegL, "L" },
-            { MaizeInstruction.OpFlag_RegM, "M" },
-            { MaizeInstruction.OpFlag_RegZ, "Z" },
-            { MaizeInstruction.OpFlag_RegF, "F" },
-            { MaizeInstruction.OpFlag_RegI, "I" },
-            { MaizeInstruction.OpFlag_RegP, "P" },
-            { MaizeInstruction.OpFlag_RegS, "S" }
+            { Instruction.OpFlag_RegA, "A" },
+            { Instruction.OpFlag_RegB, "B" },
+            { Instruction.OpFlag_RegC, "C" },
+            { Instruction.OpFlag_RegD, "D" },
+            { Instruction.OpFlag_RegE, "E" },
+            { Instruction.OpFlag_RegG, "G" },
+            { Instruction.OpFlag_RegH, "H" },
+            { Instruction.OpFlag_RegJ, "J" },
+            { Instruction.OpFlag_RegK, "K" },
+            { Instruction.OpFlag_RegL, "L" },
+            { Instruction.OpFlag_RegM, "M" },
+            { Instruction.OpFlag_RegZ, "Z" },
+            { Instruction.OpFlag_RegF, "F" },
+            { Instruction.OpFlag_RegI, "I" },
+            { Instruction.OpFlag_RegP, "P" },
+            { Instruction.OpFlag_RegS, "S" }
         };
 
         protected Dictionary<int, string> SubRegName = new Dictionary<int, string> {
-            { MaizeInstruction.OpFlag_RegB0, ".B0" },
-            { MaizeInstruction.OpFlag_RegB1, ".B1" },
-            { MaizeInstruction.OpFlag_RegB2, ".B2" },
-            { MaizeInstruction.OpFlag_RegB3, ".B3" },
-            { MaizeInstruction.OpFlag_RegB4, ".B4" },
-            { MaizeInstruction.OpFlag_RegB5, ".B5" },
-            { MaizeInstruction.OpFlag_RegB6, ".B6" },
-            { MaizeInstruction.OpFlag_RegB7, ".B7" },
-            { MaizeInstruction.OpFlag_RegQ0, ".Q0" },
-            { MaizeInstruction.OpFlag_RegQ1, ".Q1" },
-            { MaizeInstruction.OpFlag_RegQ2, ".Q2" },
-            { MaizeInstruction.OpFlag_RegQ3, ".Q3" },
-            { MaizeInstruction.OpFlag_RegH0, ".H0" },
-            { MaizeInstruction.OpFlag_RegH1, ".H1" },
-            { MaizeInstruction.OpFlag_RegW0, "" }
+            { Instruction.OpFlag_RegB0, ".B0" },
+            { Instruction.OpFlag_RegB1, ".B1" },
+            { Instruction.OpFlag_RegB2, ".B2" },
+            { Instruction.OpFlag_RegB3, ".B3" },
+            { Instruction.OpFlag_RegB4, ".B4" },
+            { Instruction.OpFlag_RegB5, ".B5" },
+            { Instruction.OpFlag_RegB6, ".B6" },
+            { Instruction.OpFlag_RegB7, ".B7" },
+            { Instruction.OpFlag_RegQ0, ".Q0" },
+            { Instruction.OpFlag_RegQ1, ".Q1" },
+            { Instruction.OpFlag_RegQ2, ".Q2" },
+            { Instruction.OpFlag_RegQ3, ".Q3" },
+            { Instruction.OpFlag_RegH0, ".H0" },
+            { Instruction.OpFlag_RegH1, ".H1" },
+            { Instruction.OpFlag_RegW0, "" }
         };
 
         protected Dictionary<int, (string, OpCodeDelegate)> OpCodes;
@@ -297,9 +297,9 @@ namespace Maize {
                 return DecodeResult.Partial;
             }
 
-            bool srcIsAddress = ((opcode & MaizeInstruction.OpcodeFlag_SrcAddr) == MaizeInstruction.OpcodeFlag_SrcAddr);
+            bool srcIsAddress = ((opcode & Instruction.OpcodeFlag_SrcAddr) == Instruction.OpcodeFlag_SrcAddr);
             // bool destIsAddress = ((operand2?.B0 & MaizeInstruction.OpFlag_Addr) == MaizeInstruction.OpFlag_Addr);
-            bool srcIsImmediate = ((opcode & MaizeInstruction.OpcodeFlag_SrcImm) == MaizeInstruction.OpcodeFlag_SrcImm);
+            bool srcIsImmediate = ((opcode & Instruction.OpcodeFlag_SrcImm) == Instruction.OpcodeFlag_SrcImm);
 
             if (srcIsImmediate && operand3 == null) {
                 return DecodeResult.Partial;
@@ -315,23 +315,23 @@ namespace Maize {
             string destImm = "";
 
             if (srcIsImmediate) {
-                switch (operand1?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-                case MaizeInstruction.OpFlag_Imm08b:
+                switch (operand1?.B0 & Instruction.OpFlag_ImmSize) {
+                case Instruction.OpFlag_Imm08b:
                     srcImmBytes = $"{operand3?.B0:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm16b:
+                case Instruction.OpFlag_Imm16b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm32b:
+                case Instruction.OpFlag_Imm32b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm64b:
+                case Instruction.OpFlag_Imm64b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
@@ -340,14 +340,14 @@ namespace Maize {
             }
             else {
                 // Source operand is register
-                int srcRegNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_Reg);
-                int srcSubregNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_SubReg);
+                int srcRegNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_Reg);
+                int srcSubregNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_SubReg);
 
                 srcReg = $"{(srcIsAddress ? "@" : "")}{RegName[srcRegNameFlag]}{SubRegName[srcSubregNameFlag]}";
             }
 
-            int destRegNameFlag = (int)(operand2?.B0 & MaizeInstruction.OpFlag_Reg);
-            int destSubregNameFlag = (int)(operand2?.B0 & MaizeInstruction.OpFlag_SubReg);
+            int destRegNameFlag = (int)(operand2?.B0 & Instruction.OpFlag_Reg);
+            int destSubregNameFlag = (int)(operand2?.B0 & Instruction.OpFlag_SubReg);
             destReg = $"{RegName[destRegNameFlag]}{SubRegName[destSubregNameFlag]}";
 
             text = FormatOutput(address, opcode, 
@@ -373,8 +373,8 @@ namespace Maize {
                 return DecodeResult.Partial;
             }
 
-            bool srcIsAddress = ((opcode & MaizeInstruction.OpcodeFlag_SrcImm) == MaizeInstruction.OpcodeFlag_SrcImm);
-            bool srcIsImmediate = ((opcode & MaizeInstruction.OpcodeFlag_SrcImm) == MaizeInstruction.OpcodeFlag_SrcImm);
+            bool srcIsAddress = ((opcode & Instruction.OpcodeFlag_SrcImm) == Instruction.OpcodeFlag_SrcImm);
+            bool srcIsImmediate = ((opcode & Instruction.OpcodeFlag_SrcImm) == Instruction.OpcodeFlag_SrcImm);
 
             string srcImmBytes = "";
             string destImmBytes = "";
@@ -386,23 +386,23 @@ namespace Maize {
             string destImm = "";
 
             if (srcIsImmediate) {
-                switch (operand1?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-                case MaizeInstruction.OpFlag_Imm08b:
+                switch (operand1?.B0 & Instruction.OpFlag_ImmSize) {
+                case Instruction.OpFlag_Imm08b:
                     srcImmBytes = $"{operand3?.B0:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm16b:
+                case Instruction.OpFlag_Imm16b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm32b:
+                case Instruction.OpFlag_Imm32b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm64b:
+                case Instruction.OpFlag_Imm64b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
@@ -411,29 +411,29 @@ namespace Maize {
             }
             else {
                 // Source operand is register
-                int srcRegNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_Reg);
-                int srcSubregNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_SubReg);
+                int srcRegNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_Reg);
+                int srcSubregNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_SubReg);
 
                 srcReg = $"{(srcIsAddress ? "@" : "")}{RegName[srcRegNameFlag]}{SubRegName[srcSubregNameFlag]}";
             }
 
-            switch (operand2?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-            case MaizeInstruction.OpFlag_Imm08b:
+            switch (operand2?.B0 & Instruction.OpFlag_ImmSize) {
+            case Instruction.OpFlag_Imm08b:
                 destImmBytes = $"{operand3?.B0:X2} ";
                 destImm = $"${operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm16b:
+            case Instruction.OpFlag_Imm16b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                 destImm = $"${operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm32b:
+            case Instruction.OpFlag_Imm32b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                 destImm = $"${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm64b:
+            case Instruction.OpFlag_Imm64b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                 destImm = $"${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
@@ -462,8 +462,8 @@ namespace Maize {
                 return DecodeResult.Partial;
             }
 
-            bool srcIsAddress = ((opcode & MaizeInstruction.OpcodeFlag_SrcImm) == MaizeInstruction.OpcodeFlag_SrcImm);
-            bool srcIsImmediate = ((opcode & MaizeInstruction.OpcodeFlag_SrcImm) == MaizeInstruction.OpcodeFlag_SrcImm);
+            bool srcIsAddress = ((opcode & Instruction.OpcodeFlag_SrcImm) == Instruction.OpcodeFlag_SrcImm);
+            bool srcIsImmediate = ((opcode & Instruction.OpcodeFlag_SrcImm) == Instruction.OpcodeFlag_SrcImm);
 
             string srcImmBytes = "";
             string destImmBytes = "";
@@ -475,23 +475,23 @@ namespace Maize {
             string destImm = "";
 
             if (srcIsImmediate) {
-                switch (operand1?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-                case MaizeInstruction.OpFlag_Imm08b:
+                switch (operand1?.B0 & Instruction.OpFlag_ImmSize) {
+                case Instruction.OpFlag_Imm08b:
                     srcImmBytes = $"{operand3?.B0:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm16b:
+                case Instruction.OpFlag_Imm16b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm32b:
+                case Instruction.OpFlag_Imm32b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
 
-                case MaizeInstruction.OpFlag_Imm64b:
+                case Instruction.OpFlag_Imm64b:
                     srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                     srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                     break;
@@ -500,29 +500,29 @@ namespace Maize {
             }
             else {
                 // Source operand is register
-                int srcRegNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_Reg);
-                int srcSubregNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_SubReg);
+                int srcRegNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_Reg);
+                int srcSubregNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_SubReg);
 
                 srcReg = $"{(srcIsAddress ? "@" : "")}{RegName[srcRegNameFlag]}{SubRegName[srcSubregNameFlag]}";
             }
 
-            switch (operand2?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-            case MaizeInstruction.OpFlag_Imm08b:
+            switch (operand2?.B0 & Instruction.OpFlag_ImmSize) {
+            case Instruction.OpFlag_Imm08b:
                 destImmBytes = $"{operand3?.B0:X2} ";
                 destImm = $"@${operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm16b:
+            case Instruction.OpFlag_Imm16b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                 destImm = $"@${operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm32b:
+            case Instruction.OpFlag_Imm32b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                 destImm = $"@${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm64b:
+            case Instruction.OpFlag_Imm64b:
                 destImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                 destImm = $"@${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
@@ -543,9 +543,9 @@ namespace Maize {
                 return DecodeResult.ReadBytes1;
             }
 
-            bool isAddress = ((opcode & MaizeInstruction.OpcodeFlag_SrcAddr) == MaizeInstruction.OpcodeFlag_SrcAddr);
-            int destRegNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_Reg);
-            int destSubregNameFlag = (int)(operand1?.B0 & MaizeInstruction.OpFlag_SubReg);
+            bool isAddress = ((opcode & Instruction.OpcodeFlag_SrcAddr) == Instruction.OpcodeFlag_SrcAddr);
+            int destRegNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_Reg);
+            int destSubregNameFlag = (int)(operand1?.B0 & Instruction.OpFlag_SubReg);
             string destReg = $"{(isAddress ? "@" : "")}{RegName[destRegNameFlag]}{SubRegName[destSubregNameFlag]}";
 
             text = FormatOutput(address, opcode,
@@ -563,42 +563,42 @@ namespace Maize {
             }
 
             if (operand3 == null) {
-                switch (operand1?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-                case MaizeInstruction.OpFlag_Imm08b:
+                switch (operand1?.B0 & Instruction.OpFlag_ImmSize) {
+                case Instruction.OpFlag_Imm08b:
                     return DecodeResult.ReadBytes1;
 
-                case MaizeInstruction.OpFlag_Imm16b:
+                case Instruction.OpFlag_Imm16b:
                     return DecodeResult.ReadBytes2;
 
-                case MaizeInstruction.OpFlag_Imm32b:
+                case Instruction.OpFlag_Imm32b:
                     return DecodeResult.ReadBytes4;
 
-                case MaizeInstruction.OpFlag_Imm64b:
+                case Instruction.OpFlag_Imm64b:
                     return DecodeResult.ReadBytes8;
                 }
             }
 
-            bool srcIsAddress = ((opcode & MaizeInstruction.OpcodeFlag_SrcAddr) == MaizeInstruction.OpcodeFlag_SrcAddr);
+            bool srcIsAddress = ((opcode & Instruction.OpcodeFlag_SrcAddr) == Instruction.OpcodeFlag_SrcAddr);
             string srcImm = "";
             string srcImmBytes = "";
 
-            switch (operand1?.B0 & MaizeInstruction.OpFlag_ImmSize) {
-            case MaizeInstruction.OpFlag_Imm08b:
+            switch (operand1?.B0 & Instruction.OpFlag_ImmSize) {
+            case Instruction.OpFlag_Imm08b:
                 srcImmBytes = $"{operand3?.B0:X2} ";
                 srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm16b:
+            case Instruction.OpFlag_Imm16b:
                 srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} ";
                 srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm32b:
+            case Instruction.OpFlag_Imm32b:
                 srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} ";
                 srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
 
-            case MaizeInstruction.OpFlag_Imm64b:
+            case Instruction.OpFlag_Imm64b:
                 srcImmBytes = $"{operand3?.B0:X2} {operand3?.B1:X2} {operand3?.B2:X2} {operand3?.B3:X2} {operand3?.B4:X2} {operand3?.B5:X2} {operand3?.B6:X2} {operand3?.B7:X2} ";
                 srcImm = $"{(srcIsAddress ? "@" : "")}${operand3?.B7:X2}{operand3?.B6:X2}{operand3?.B5:X2}{operand3?.B4:X2}{operand3?.B3:X2}{operand3?.B2:X2}{operand3?.B1:X2}{operand3?.B0:X2}";
                 break;
@@ -643,5 +643,21 @@ namespace Maize {
             return text.ToString();
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method)]
+    sealed public class OpCodeAttribute : System.Attribute {
+        public byte[] OpCodes { get; set; }
+
+        public OpCodeAttribute(byte opCode) {
+            OpCodes = (byte[])Array.CreateInstance(typeof(byte), 1);
+            OpCodes[0] = opCode;
+        }
+
+        public OpCodeAttribute(params byte[] opCodes) {
+            OpCodes = (byte[])Array.CreateInstance(typeof(byte), opCodes.Length);
+            Array.Copy(opCodes, OpCodes, opCodes.Length);
+        }
+    }
+
 }
 

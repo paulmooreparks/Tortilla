@@ -128,7 +128,7 @@ namespace TortillaUI {
         AutoResetEvent powerOffEvent = new AutoResetEvent(false);
 
         // TortillaGraphicalConsole tConsole = new TortillaGraphicalConsole();
-        Tortilla.ITortillaConsole tConsole = new TortillaCharacterConsole();
+        Tortilla.IConsole tConsole = new TortillaCharacterConsole();
 
         private string BiosPath { get; set; }
 
@@ -187,7 +187,7 @@ namespace TortillaUI {
         IMotherboard<UInt64> Motherboard { get; set; }
 
         public void InitEnvironment() {
-            Motherboard = new Maize.MaizeMotherboard();
+            Motherboard = new Maize.Motherboard();
             Motherboard.Debug += Hardware_Debug;
 
             AllocConsole();

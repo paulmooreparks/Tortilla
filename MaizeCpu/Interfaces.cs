@@ -157,4 +157,11 @@ namespace Tortilla {
     public interface IDissasember<DataType, AddressType> {
         int Decode(DataType value, AddressType address, out string text);
     }
+
+    public interface IConsole {
+        void Connect(IMotherboard<UInt64> _motherboard);
+        void Show();
+        void Close();
+        void Clear();
+    }
 }

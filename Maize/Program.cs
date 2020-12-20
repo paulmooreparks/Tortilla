@@ -13,7 +13,7 @@ namespace Maize {
     public class Program {
 
         Program() {
-            Motherboard = new Maize.MaizeMotherboard();
+            Motherboard = new Maize.Motherboard();
         }
 
         public Program(string[] args) : this() {
@@ -35,7 +35,7 @@ namespace Maize {
         string BiosPath { get; set; } = String.Empty;
         bool IsBiosLoaded { get; set; } = false;
 
-        Tortilla.ITortillaConsole tConsole = new TortillaCharacterConsole();
+        Tortilla.IConsole tConsole = new TortillaCharacterConsole();
         IMotherboard<UInt64> Motherboard { get; init; }
 
         ManualResetEvent cpuStop = new(false);
@@ -51,8 +51,6 @@ namespace Maize {
                     break;
                 }
             }
-
-            // Environment.Exit(0);
         }
 
         public int Run() {

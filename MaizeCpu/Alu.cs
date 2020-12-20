@@ -3,8 +3,8 @@ using System.Numerics;
 using Tortilla;
 
 namespace Maize {
-    public class MaizeAlu : MaizeRegister {
-        public MaizeAlu(MaizeMotherboard _motherboard, MaizeCpu _cpu) {
+    public class Alu : Register {
+        public Alu(Motherboard _motherboard, Cpu _cpu) {
             Motherboard = _motherboard;
             Cpu = _cpu;
 
@@ -30,11 +30,11 @@ namespace Maize {
             RegisterTickExecute();
         }
 
-        MaizeMotherboard Motherboard { get; set; }
-        MaizeCpu Cpu { get; set; }
+        Motherboard Motherboard { get; set; }
+        Cpu Cpu { get; set; }
 
-        public MaizeRegister DestReg { get; set; } = new MaizeRegister();
-        public MaizeRegister SrcReg { get; set; } = new MaizeRegister();
+        public Register DestReg { get; set; } = new Register();
+        public Register SrcReg { get; set; } = new Register();
 
         public const byte OpCode_ADD  = 0b_0000_0000;
         public const byte OpCode_SUB  = 0b_0000_0001;

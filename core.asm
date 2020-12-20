@@ -2,6 +2,27 @@ LABEL core_os_start                 AUTO
 LABEL core_os_core                  AUTO
 LABEL core_os_core_jump_table       AUTO
 LABEL core_os_key_input             AUTO
+LABEL core_os_print_reg             AUTO
+LABEL core_os_print_reg_label       AUTO
+LABEL core_os_print_newline         AUTO
+LABEL core_os_label_reg_a           AUTO
+LABEL core_os_label_reg_b           AUTO
+LABEL core_os_label_reg_c           AUTO
+LABEL core_os_label_reg_d           AUTO
+LABEL core_os_label_reg_e           AUTO
+LABEL core_os_label_reg_g           AUTO
+LABEL core_os_label_reg_h           AUTO
+LABEL core_os_label_reg_j           AUTO
+LABEL core_os_label_reg_k           AUTO
+LABEL core_os_label_reg_l           AUTO
+LABEL core_os_label_reg_m           AUTO
+LABEL core_os_label_reg_z           AUTO
+LABEL core_os_label_reg_f           AUTO
+LABEL core_os_label_reg_i           AUTO
+LABEL core_os_label_reg_p           AUTO
+LABEL core_os_label_reg_s           AUTO
+LABEL core_os_label_newline         AUTO
+
 
 LABEL core_bios_10                  AUTO
 LABEL core_bios_10_jump_table       AUTO
@@ -10,6 +31,25 @@ LABEL core_bios_16_jump_table       AUTO
 
 LABEL core_syscall                  AUTO
 LABEL core_syscall_jump_table       AUTO
+
+LABEL os_hex_print_b0          AUTO
+LABEL os_hex_print_b1          AUTO
+LABEL os_hex_print_b2          AUTO
+LABEL os_hex_print_b3          AUTO
+LABEL os_hex_print_b4          AUTO
+LABEL os_hex_print_b5          AUTO
+LABEL os_hex_print_b6          AUTO
+LABEL os_hex_print_b7          AUTO
+LABEL os_hex_print_q0          AUTO
+LABEL os_hex_print_q1          AUTO
+LABEL os_hex_print_q2          AUTO
+LABEL os_hex_print_q3          AUTO
+LABEL os_hex_print_h0          AUTO
+LABEL os_hex_print_h1          AUTO
+LABEL os_hex_print_w0          AUTO
+LABEL os_hex_print_low_nybble  AUTO
+LABEL os_hex_string            AUTO
+
 
 $00000000:
 ADDRESS $0000`0000                  ; INT 00 
@@ -296,14 +336,18 @@ core_bios_16_set_rate_delay:
 RET
 
 
-LABEL core_os_shut_down          AUTO
-LABEL core_os_idle               AUTO
-LABEL core_os_put_string         AUTO
+LABEL core_os_shut_down             AUTO
+LABEL core_os_idle                  AUTO
+LABEL core_os_put_string            AUTO
+LABEL core_os_strlen                AUTO
+LABEL core_os_dump_registers        AUTO
 
 core_os_core_jump_table:
-ADDRESS core_os_shut_down    ; A.Q0 = $0000
-ADDRESS core_os_idle         ; A.Q1 = $0001
-ADDRESS core_os_put_string   ; A.Q0 = $0002
+ADDRESS core_os_shut_down           ; A.Q0 = $0000
+ADDRESS core_os_idle                ; A.Q1 = $0001
+ADDRESS core_os_put_string          ; A.Q0 = $0002
+ADDRESS core_os_strlen              ; A.Q0 = $0003
+ADDRESS core_os_dump_registers      ; A.Q0 = $0004
 
 core_os_core:
 PUSH B
@@ -695,4 +739,332 @@ JNZ core_sys_reboot_exit
 CALL core_os_shut_down
 core_sys_reboot_exit:
 RET
+
+
+os_hex_print_w0:
+CALL os_hex_print_b7
+CALL os_hex_print_b6
+CALL os_hex_print_b5
+CALL os_hex_print_b4
+CALL os_hex_print_b3
+CALL os_hex_print_b2
+CALL os_hex_print_b1
+CALL os_hex_print_b0
+RET
+
+os_hex_print_h1:
+CALL os_hex_print_b7
+CALL os_hex_print_b6
+CALL os_hex_print_b5
+CALL os_hex_print_b4
+RET
+
+os_hex_print_h0:
+CALL os_hex_print_b3
+CALL os_hex_print_b2
+CALL os_hex_print_b1
+CALL os_hex_print_b0
+RET
+
+os_hex_print_q3:
+CALL os_hex_print_b7
+CALL os_hex_print_b6
+RET
+
+os_hex_print_q2:
+CALL os_hex_print_b5
+CALL os_hex_print_b4
+RET
+
+os_hex_print_q1:
+CALL os_hex_print_b3
+CALL os_hex_print_b2
+RET
+
+os_hex_print_q0:
+CALL os_hex_print_b1
+CALL os_hex_print_b0
+RET
+
+os_hex_print_b7:
+PUSH G.B0
+LD G.B7 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b6:
+PUSH G.B0
+LD G.B6 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b5:
+PUSH G.B0
+LD G.B5 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b4:
+PUSH G.B0
+LD G.B4 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b3:
+PUSH G.B0
+LD G.B3 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b2:
+PUSH G.B0
+LD G.B2 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+os_hex_print_b1:
+PUSH G.B0
+LD G.B1 G.B0
+CALL os_hex_print_b0
+POP G.B0
+RET
+
+; Convert byte
+os_hex_print_b0:
+PUSH G.B0
+SHR $04 G.B0
+CALL os_hex_print_low_nybble
+POP G.B0
+AND $0F G.B0
+CALL os_hex_print_low_nybble
+RET
+
+os_hex_print_low_nybble:
+PUSH G
+PUSH B
+LD G.B0 B.B0
+AND $0F B.B0
+
+LD $01 A                ; Load syscall opcode $01 (write) into A register
+LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
+
+LD os_hex_string H.H0      ; Load the pointer to the string into H.H0 register
+ADD B.B0 H.H0
+
+LD $0001 J              ; Length of 1
+INT $80                 ; Call interrupt $80 to execute write syscall
+POP B
+POP G
+RET
+
+; The output functions index into this string to perform the output
+os_hex_string: 
+STRING "0123456789ABCDEF"
+
+core_os_strlen:
+LABEL core_os_strlen_loop AUTO
+LABEL core_os_strlen_done AUTO
+
+PUSH G.H0
+PUSH Z.B0
+CLR A
+core_os_strlen_loop:
+LD @G.H0 Z.B0
+CMP $00 Z.B0
+JZ core_os_strlen_done
+INC A.H0
+INC G.H0
+JMP core_os_strlen_loop
+core_os_strlen_done:
+POP Z.B0
+POP G.H0
+RET
+
+core_os_dump_registers:
+PUSH P
+PUSH S
+PUSH I
+PUSH F
+PUSH Z
+PUSH M
+PUSH L
+PUSH K
+PUSH J
+PUSH H
+PUSH G
+PUSH E
+PUSH D
+PUSH C
+PUSH B
+PUSH A
+
+LD core_os_label_reg_a G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_b G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_c G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_d G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_e G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_g G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_h G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_j G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_k G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_l G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_m G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_z G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_f G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_i G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_s G
+POP H
+CALL core_os_print_reg
+
+LD core_os_label_reg_p G
+POP H
+CALL core_os_print_reg
+
+RET
+
+core_os_print_reg:
+PUSH G
+PUSH H
+CALL core_os_print_reg_label
+LD H G
+CALL os_hex_print_w0
+CALL core_os_print_newline
+POP H
+POP G
+RET
+
+core_os_print_reg_label:
+PUSH G
+PUSH H
+PUSH J
+CALL core_os_strlen
+LD G H
+LD A J 
+
+LD $01 A                ; Load syscall opcode $01 (write) into A register
+LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
+INT $80                 ; Call interrupt $80 to execute write syscall
+POP J
+POP H
+POP G
+RET
+
+core_os_print_newline:
+PUSH A
+PUSH G
+PUSH H
+PUSH J
+CLR H.H1
+LD core_os_label_newline H.H0
+LD H G
+CALL core_os_strlen
+LD A J 
+
+LD $01 A                ; Load syscall opcode $01 (write) into A register
+LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
+INT $80                 ; Call interrupt $80 to execute write syscall
+POP J
+POP H
+POP G
+POP A
+RET
+
+core_os_label_reg_a:
+STRING "A: $\0"
+
+core_os_label_reg_b:
+STRING "B: $\0"
+
+core_os_label_reg_c:
+STRING "C: $\0"
+
+core_os_label_reg_d:
+STRING "D: $\0"
+
+core_os_label_reg_e:
+STRING "E: $\0"
+
+core_os_label_reg_g:
+STRING "G: $\0"
+
+core_os_label_reg_h:
+STRING "H: $\0"
+
+core_os_label_reg_j:
+STRING "J: $\0"
+
+core_os_label_reg_k:
+STRING "K: $\0"
+
+core_os_label_reg_l:
+STRING "L: $\0"
+
+core_os_label_reg_m:
+STRING "M: $\0"
+
+core_os_label_reg_z:
+STRING "Z: $\0"
+
+core_os_label_reg_f:
+STRING "F: $\0"
+
+core_os_label_reg_i:
+STRING "I: $\0"
+
+core_os_label_reg_p:
+STRING "P: $\0"
+
+core_os_label_reg_s:
+STRING "S: $\0"
+
+core_os_label_newline:
+STRING "\n\0"
 

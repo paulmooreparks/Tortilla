@@ -320,25 +320,25 @@ namespace mazm {
 
         protected byte CompileLabel(string label, out RegValue value) {
             value = Labels[label];
-            return MaizeInstruction.OpFlag_Imm32b;
+            return Instruction.OpFlag_Imm32b;
         }
 
         protected byte CompileHexLiteral(string literal, out RegValue value) {
             var len = literal.Length;
             value = Convert.ToUInt64(literal, 16);
-            byte typeByte = MaizeInstruction.OpFlag_Imm08b;
+            byte typeByte = Instruction.OpFlag_Imm08b;
 
             if (len <= 2) {
-                typeByte = MaizeInstruction.OpFlag_Imm08b;
+                typeByte = Instruction.OpFlag_Imm08b;
             }
             else if (len <= 4) {
-                typeByte = MaizeInstruction.OpFlag_Imm16b;
+                typeByte = Instruction.OpFlag_Imm16b;
             }
             else if (len <= 8) {
-                typeByte = MaizeInstruction.OpFlag_Imm32b;
+                typeByte = Instruction.OpFlag_Imm32b;
             }
             else if (len <= 16) {
-                typeByte = MaizeInstruction.OpFlag_Imm64b;
+                typeByte = Instruction.OpFlag_Imm64b;
             }
             else {
                 throw new Exception("Invalid literal format");
@@ -353,67 +353,67 @@ namespace mazm {
 
             switch (reg) {
             case 'A':
-                regByte = MaizeInstruction.OpFlag_RegA;
+                regByte = Instruction.OpFlag_RegA;
                 break;
 
             case 'B':
-                regByte = MaizeInstruction.OpFlag_RegB;
+                regByte = Instruction.OpFlag_RegB;
                 break;
 
             case 'C':
-                regByte = MaizeInstruction.OpFlag_RegC;
+                regByte = Instruction.OpFlag_RegC;
                 break;
 
             case 'D':
-                regByte = MaizeInstruction.OpFlag_RegD;
+                regByte = Instruction.OpFlag_RegD;
                 break;
 
             case 'E':
-                regByte = MaizeInstruction.OpFlag_RegE;
+                regByte = Instruction.OpFlag_RegE;
                 break;
 
             case 'G':
-                regByte = MaizeInstruction.OpFlag_RegG;
+                regByte = Instruction.OpFlag_RegG;
                 break;
 
             case 'H':
-                regByte = MaizeInstruction.OpFlag_RegH;
+                regByte = Instruction.OpFlag_RegH;
                 break;
 
             case 'J':
-                regByte = MaizeInstruction.OpFlag_RegJ;
+                regByte = Instruction.OpFlag_RegJ;
                 break;
 
             case 'K':
-                regByte = MaizeInstruction.OpFlag_RegK;
+                regByte = Instruction.OpFlag_RegK;
                 break;
 
             case 'L':
-                regByte = MaizeInstruction.OpFlag_RegL;
+                regByte = Instruction.OpFlag_RegL;
                 break;
 
             case 'M':
-                regByte = MaizeInstruction.OpFlag_RegM;
+                regByte = Instruction.OpFlag_RegM;
                 break;
 
             case 'Z':
-                regByte = MaizeInstruction.OpFlag_RegZ;
+                regByte = Instruction.OpFlag_RegZ;
                 break;
 
             case 'F':
-                regByte = MaizeInstruction.OpFlag_RegF;
+                regByte = Instruction.OpFlag_RegF;
                 break;
 
             case 'I':
-                regByte = MaizeInstruction.OpFlag_RegI;
+                regByte = Instruction.OpFlag_RegI;
                 break;
 
             case 'P':
-                regByte = MaizeInstruction.OpFlag_RegP;
+                regByte = Instruction.OpFlag_RegP;
                 break;
 
             case 'S':
-                regByte = MaizeInstruction.OpFlag_RegS;
+                regByte = Instruction.OpFlag_RegS;
                 break;
 
             default:
@@ -426,71 +426,71 @@ namespace mazm {
 
                     switch (subReg) {
                     case "B0":
-                        regByte |= MaizeInstruction.OpFlag_RegB0;
+                        regByte |= Instruction.OpFlag_RegB0;
                         break;
 
                     case "B1":
-                        regByte |= MaizeInstruction.OpFlag_RegB1;
+                        regByte |= Instruction.OpFlag_RegB1;
                         break;
 
                     case "B2":
-                        regByte |= MaizeInstruction.OpFlag_RegB2;
+                        regByte |= Instruction.OpFlag_RegB2;
                         break;
 
                     case "B3":
-                        regByte |= MaizeInstruction.OpFlag_RegB3;
+                        regByte |= Instruction.OpFlag_RegB3;
                         break;
 
                     case "B4":
-                        regByte |= MaizeInstruction.OpFlag_RegB4;
+                        regByte |= Instruction.OpFlag_RegB4;
                         break;
 
                     case "B5":
-                        regByte |= MaizeInstruction.OpFlag_RegB5;
+                        regByte |= Instruction.OpFlag_RegB5;
                         break;
 
                     case "B6":
-                        regByte |= MaizeInstruction.OpFlag_RegB6;
+                        regByte |= Instruction.OpFlag_RegB6;
                         break;
 
                     case "B7":
-                        regByte |= MaizeInstruction.OpFlag_RegB7;
+                        regByte |= Instruction.OpFlag_RegB7;
                         break;
 
                     case "Q0":
-                        regByte |= MaizeInstruction.OpFlag_RegQ0;
+                        regByte |= Instruction.OpFlag_RegQ0;
                         break;
 
                     case "Q1":
-                        regByte |= MaizeInstruction.OpFlag_RegQ1;
+                        regByte |= Instruction.OpFlag_RegQ1;
                         break;
 
                     case "Q2":
-                        regByte |= MaizeInstruction.OpFlag_RegQ2;
+                        regByte |= Instruction.OpFlag_RegQ2;
                         break;
 
                     case "Q3":
-                        regByte |= MaizeInstruction.OpFlag_RegQ3;
+                        regByte |= Instruction.OpFlag_RegQ3;
                         break;
 
                     case "H0":
-                        regByte |= MaizeInstruction.OpFlag_RegH0;
+                        regByte |= Instruction.OpFlag_RegH0;
                         break;
 
                     case "H1":
-                        regByte |= MaizeInstruction.OpFlag_RegH1;
+                        regByte |= Instruction.OpFlag_RegH1;
                         break;
 
                     case "W":
                     case "W0":
-                        regByte |= MaizeInstruction.OpFlag_RegW0;
+                        regByte |= Instruction.OpFlag_RegW0;
                         break;
 
                     }
                 }
             }
             else {
-                regByte |= MaizeInstruction.OpFlag_RegW0;
+                regByte |= Instruction.OpFlag_RegW0;
             }
 
             return regByte;
@@ -631,13 +631,13 @@ namespace mazm {
                 var literal = tree.Value[i].Key;
                 var typeByte = CompileLiteral(literal, out value);
 
-                if ((typeByte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((typeByte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, value.Q0);
                 }
-                else if ((typeByte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((typeByte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, value.H0);
                 }
-                else if ((typeByte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((typeByte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, value.W0);
                 }
                 else {
@@ -663,20 +663,20 @@ namespace mazm {
             RegValue operand1Literal = 0;
 
             if (operand1[0] == (char)SpecialChars.Address) {
-                opcode |= MaizeInstruction.OpcodeFlag_SrcAddr;
+                opcode |= Instruction.OpcodeFlag_SrcAddr;
                 operand1 = operand1.Substring(1);
                 // operand1Byte = MaizeInstruction.OpFlag_Addr;
             }
 
             if (IsLiteral(operand1)) {
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLiteral(operand1, out operand1Literal);
             }
             else if (IsLabel(operand1)) {
                 isLabel = true;
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLabel(operand1, out operand1Literal);
             }
             else {
@@ -694,13 +694,13 @@ namespace mazm {
                     CurrentAddress = WriteLabel(CurrentAddress, operand1, operand1Literal);
                 }
                 else {
-                    if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                    if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                         CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
                     }
-                    else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                    else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                         CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                     }
-                    else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                    else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                         CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                     }
                     else {
@@ -722,19 +722,19 @@ namespace mazm {
             RegValue operand1Literal = 0;
 
             if (operand1[0] == (char)SpecialChars.Address) {
-                opcode |= MaizeInstruction.OpcodeFlag_SrcAddr;
+                opcode |= Instruction.OpcodeFlag_SrcAddr;
                 operand1 = operand1.Substring(1);
                 // operand1Byte = MaizeInstruction.OpFlag_Addr;
             }
 
             if (IsLiteral(operand1)) {
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLiteral(operand1, out operand1Literal);
             }
             else if (IsLabel(operand1)) {
                 isLabel = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLabel(operand1, out operand1Literal);
             }
             else {
@@ -745,13 +745,13 @@ namespace mazm {
             CurrentAddress = WriteByte(CurrentAddress, operand1Byte);
 
             if (isImmediate) {
-                if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
@@ -792,12 +792,12 @@ namespace mazm {
 
             if (IsLiteral(operand1)) {
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLiteral(operand1, out operand1Literal);
             }
             else if (IsLabel(operand1)) {
                 isLabel = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLabel(operand1, out operand1Literal);
             }
             else {
@@ -817,13 +817,13 @@ namespace mazm {
             CurrentAddress = WriteByte(CurrentAddress, operand2Byte);
 
             if (isImmediate) {
-                if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
@@ -838,13 +838,13 @@ namespace mazm {
                 CurrentAddress = WriteLabel(CurrentAddress, operand2, operand2Literal);
             }
             else {
-                if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand2Literal.Q0);
                 }
-                else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand2Literal.H0);
                 }
-                else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand2Literal.W0);
                 }
                 else {
@@ -872,12 +872,12 @@ namespace mazm {
 
             if (IsLiteral(operand1)) {
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLiteral(operand1, out operand1Literal);
             }
             else if (IsLabel(operand1)) {
                 isLabel = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLabel(operand1, out operand1Literal);
             }
             else {
@@ -897,13 +897,13 @@ namespace mazm {
             CurrentAddress = WriteByte(CurrentAddress, operand2Byte);
 
             if (isImmediate) {
-                if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {
@@ -918,13 +918,13 @@ namespace mazm {
                 CurrentAddress = WriteLabel(CurrentAddress, operand2, operand2Literal);
             }
             else {
-                if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand2Literal.Q0);
                 }
-                else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand2Literal.H0);
                 }
-                else if ((operand2Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand2Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand2Literal.W0);
                 }
                 else {
@@ -952,12 +952,12 @@ namespace mazm {
 
             if (IsLiteral(operand1)) {
                 isImmediate = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLiteral(operand1, out operand1Literal);
             }
             else if (IsLabel(operand1)) {
                 isLabel = true;
-                opcode |= MaizeInstruction.OpcodeFlag_SrcImm;
+                opcode |= Instruction.OpcodeFlag_SrcImm;
                 operand1Byte |= CompileLabel(operand1, out operand1Literal);
             }
             else {
@@ -978,13 +978,13 @@ namespace mazm {
             CurrentAddress = WriteByte(CurrentAddress, operand2Byte);
 
             if (isImmediate) {
-                if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm16b) {
+                if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
                     CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm32b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
                     CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
                 }
-                else if ((operand1Byte & MaizeInstruction.OpFlag_ImmSize) == MaizeInstruction.OpFlag_Imm64b) {
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
                     CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
                 }
                 else {

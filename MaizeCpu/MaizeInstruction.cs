@@ -44,26 +44,6 @@ namespace Maize {
             }
         }
 
-        public class DecoderValueAssign : InstructionBase<DecoderValueAssign> {
-            public override void BuildMicrocode() {
-                Code = new Action[] {
-                    () => {
-                        // Nothing to do here yet
-                    }
-                };
-            }
-        }
-
-        public class DecoderValueAssignDebug : InstructionBase<DecoderValueAssign> {
-            public override void BuildMicrocode() {
-                Code = new Action[] {
-                    () => {
-                        // InstructionRead?.Invoke(this, Tuple.Create(this.Value, MB.Cpu.PC.Value - 1));
-                    }
-                };
-            }
-        }
-
         public class ReadImmediate1Byte : InstructionBase<ReadImmediate1Byte> {
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -250,7 +230,7 @@ namespace Maize {
         }
 
         // TODO: This is an experiment in on-the-fly disassembly.
-        public class ImmVal_Reg : MaizeInstruction {
+        public class ImmVal_Reg : Instruction {
             public override string ToString() {
                 StringBuilder text = new StringBuilder($"${P.RegData.H0:X8}: {$"{Mnemonic}",-42} ; {Opcode:X2} {OperandRegister1.RegData.B1:X2} {OperandRegister1.RegData.B2:X2}");
                 return text.ToString();
@@ -365,15 +345,15 @@ namespace Maize {
             }
         }
 
-        public class MathOperation : MaizeInstruction {
-            protected virtual byte Operation => MaizeAlu.OpCode_ADD;
+        public class MathOperation : Instruction {
+            protected virtual byte Operation => Alu.OpCode_ADD;
         }
 
         public class BinaryMathOperation : MathOperation {
         }
 
         public class UnaryMathOperation : MathOperation {
-            protected override byte Operation => MaizeAlu.OpCode_INC;
+            protected override byte Operation => Alu.OpCode_INC;
         }
 
         public class UnaryMathOperation_Reg : UnaryMathOperation {
@@ -524,7 +504,7 @@ namespace Maize {
 
         public class INC_Operation : UnaryMathOperation_Reg {
             public override string Mnemonic => "INC";
-            protected override byte Operation => MaizeAlu.OpCode_INC;
+            protected override byte Operation => Alu.OpCode_INC;
         }
 
         public class INC : InstructionBase<INC_Operation> { 
@@ -532,7 +512,7 @@ namespace Maize {
 
         public class DEC_Operation : UnaryMathOperation_Reg {
             public override string Mnemonic => "DEC";
-            protected override byte Operation => MaizeAlu.OpCode_DEC;
+            protected override byte Operation => Alu.OpCode_DEC;
         }
 
         public class DEC : InstructionBase<DEC_Operation> {
@@ -540,7 +520,7 @@ namespace Maize {
 
         public class ADD_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "ADD";
-            protected override byte Operation => MaizeAlu.OpCode_ADD;
+            protected override byte Operation => Alu.OpCode_ADD;
         }
 
         public class ADD_ImmAddr_Reg : InstructionBase<ADD_ImmAddr_Reg_Operation> {
@@ -548,7 +528,7 @@ namespace Maize {
 
         public class ADD_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "ADD";
-            protected override byte Operation => MaizeAlu.OpCode_ADD;
+            protected override byte Operation => Alu.OpCode_ADD;
         }
 
         public class ADD_ImmVal_Reg : InstructionBase<ADD_ImmVal_Reg_Operation> {
@@ -556,7 +536,7 @@ namespace Maize {
 
         public class ADD_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "ADD";
-            protected override byte Operation => MaizeAlu.OpCode_ADD;
+            protected override byte Operation => Alu.OpCode_ADD;
         }
 
         public class ADD_RegAddr_Reg : InstructionBase<ADD_RegAddr_Reg_Operation> {
@@ -564,7 +544,7 @@ namespace Maize {
 
         public class ADD_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "ADD";
-            protected override byte Operation => MaizeAlu.OpCode_ADD;
+            protected override byte Operation => Alu.OpCode_ADD;
         }
 
         public class ADD_RegVal_Reg : InstructionBase<ADD_RegVal_Reg_Operation> {
@@ -573,7 +553,7 @@ namespace Maize {
 
         public class SUB_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "SUB";
-            protected override byte Operation => MaizeAlu.OpCode_SUB;
+            protected override byte Operation => Alu.OpCode_SUB;
         }
 
         public class SUB_ImmAddr_Reg : InstructionBase<SUB_ImmAddr_Reg_Operation> {
@@ -581,7 +561,7 @@ namespace Maize {
 
         public class SUB_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "SUB";
-            protected override byte Operation => MaizeAlu.OpCode_SUB;
+            protected override byte Operation => Alu.OpCode_SUB;
         }
 
         public class SUB_ImmVal_Reg : InstructionBase<SUB_ImmVal_Reg_Operation> {
@@ -589,7 +569,7 @@ namespace Maize {
 
         public class SUB_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "SUB";
-            protected override byte Operation => MaizeAlu.OpCode_SUB;
+            protected override byte Operation => Alu.OpCode_SUB;
         }
 
         public class SUB_RegAddr_Reg : InstructionBase<SUB_RegAddr_Reg_Operation> {
@@ -597,7 +577,7 @@ namespace Maize {
 
         public class SUB_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "SUB";
-            protected override byte Operation => MaizeAlu.OpCode_SUB;
+            protected override byte Operation => Alu.OpCode_SUB;
         }
 
         public class SUB_RegVal_Reg : InstructionBase<SUB_RegVal_Reg_Operation> {
@@ -605,7 +585,7 @@ namespace Maize {
 
         public class MUL_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "MUL";
-            protected override byte Operation => MaizeAlu.OpCode_MUL;
+            protected override byte Operation => Alu.OpCode_MUL;
         }
 
         public class MUL_ImmAddr_Reg : InstructionBase<MUL_ImmAddr_Reg_Operation> {
@@ -613,7 +593,7 @@ namespace Maize {
 
         public class MUL_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "MUL";
-            protected override byte Operation => MaizeAlu.OpCode_MUL;
+            protected override byte Operation => Alu.OpCode_MUL;
         }
 
         public class MUL_ImmVal_Reg : InstructionBase<MUL_ImmVal_Reg_Operation> {
@@ -621,7 +601,7 @@ namespace Maize {
 
         public class MUL_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "MUL";
-            protected override byte Operation => MaizeAlu.OpCode_MUL;
+            protected override byte Operation => Alu.OpCode_MUL;
         }
 
         public class MUL_RegAddr_Reg : InstructionBase<MUL_RegAddr_Reg_Operation> {
@@ -629,7 +609,7 @@ namespace Maize {
 
         public class MUL_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "MUL";
-            protected override byte Operation => MaizeAlu.OpCode_MUL;
+            protected override byte Operation => Alu.OpCode_MUL;
         }
 
         public class MUL_RegVal_Reg : InstructionBase<MUL_RegVal_Reg_Operation> {
@@ -638,7 +618,7 @@ namespace Maize {
 
         public class DIV_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "DIV";
-            protected override byte Operation => MaizeAlu.OpCode_DIV;
+            protected override byte Operation => Alu.OpCode_DIV;
         }
 
         public class DIV_ImmAddr_Reg : InstructionBase<DIV_ImmAddr_Reg_Operation> {
@@ -646,7 +626,7 @@ namespace Maize {
 
         public class DIV_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "DIV";
-            protected override byte Operation => MaizeAlu.OpCode_DIV;
+            protected override byte Operation => Alu.OpCode_DIV;
         }
 
         public class DIV_ImmVal_Reg : InstructionBase<DIV_ImmVal_Reg_Operation> {
@@ -654,7 +634,7 @@ namespace Maize {
 
         public class DIV_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "DIV";
-            protected override byte Operation => MaizeAlu.OpCode_DIV;
+            protected override byte Operation => Alu.OpCode_DIV;
         }
 
         public class DIV_RegAddr_Reg : InstructionBase<DIV_RegAddr_Reg_Operation> {
@@ -662,7 +642,7 @@ namespace Maize {
 
         public class DIV_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "DIV";
-            protected override byte Operation => MaizeAlu.OpCode_DIV;
+            protected override byte Operation => Alu.OpCode_DIV;
         }
 
         public class DIV_RegVal_Reg : InstructionBase<DIV_RegVal_Reg_Operation> {
@@ -671,7 +651,7 @@ namespace Maize {
 
         public class MOD_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "MOD";
-            protected override byte Operation => MaizeAlu.OpCode_MOD;
+            protected override byte Operation => Alu.OpCode_MOD;
         }
 
         public class MOD_ImmAddr_Reg : InstructionBase<MOD_ImmAddr_Reg_Operation> {
@@ -679,7 +659,7 @@ namespace Maize {
 
         public class MOD_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "MOD";
-            protected override byte Operation => MaizeAlu.OpCode_MOD;
+            protected override byte Operation => Alu.OpCode_MOD;
         }
 
         public class MOD_ImmVal_Reg : InstructionBase<MOD_ImmVal_Reg_Operation> {
@@ -687,7 +667,7 @@ namespace Maize {
 
         public class MOD_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "MOD";
-            protected override byte Operation => MaizeAlu.OpCode_MOD;
+            protected override byte Operation => Alu.OpCode_MOD;
         }
 
         public class MOD_RegAddr_Reg : InstructionBase<MOD_RegAddr_Reg_Operation> {
@@ -695,7 +675,7 @@ namespace Maize {
 
         public class MOD_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "MOD";
-            protected override byte Operation => MaizeAlu.OpCode_MOD;
+            protected override byte Operation => Alu.OpCode_MOD;
         }
 
         public class MOD_RegVal_Reg : InstructionBase<MOD_RegVal_Reg_Operation> {
@@ -706,7 +686,7 @@ namespace Maize {
 
         public class AND_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "AND";
-            protected override byte Operation => MaizeAlu.OpCode_AND;
+            protected override byte Operation => Alu.OpCode_AND;
         }
 
         public class AND_ImmAddr_Reg : InstructionBase<AND_ImmAddr_Reg_Operation> {
@@ -714,7 +694,7 @@ namespace Maize {
 
         public class AND_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "AND";
-            protected override byte Operation => MaizeAlu.OpCode_AND;
+            protected override byte Operation => Alu.OpCode_AND;
         }
 
         public class AND_ImmVal_Reg : InstructionBase<AND_ImmVal_Reg_Operation> {
@@ -722,7 +702,7 @@ namespace Maize {
 
         public class AND_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "AND";
-            protected override byte Operation => MaizeAlu.OpCode_AND;
+            protected override byte Operation => Alu.OpCode_AND;
         }
 
         public class AND_RegAddr_Reg : InstructionBase<AND_RegAddr_Reg_Operation> {
@@ -730,7 +710,7 @@ namespace Maize {
 
         public class AND_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "AND";
-            protected override byte Operation => MaizeAlu.OpCode_AND;
+            protected override byte Operation => Alu.OpCode_AND;
         }
 
         public class AND_RegVal_Reg : InstructionBase<AND_RegVal_Reg_Operation> {
@@ -741,7 +721,7 @@ namespace Maize {
 
         public class OR_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "OR";
-            protected override byte Operation => MaizeAlu.OpCode_OR;
+            protected override byte Operation => Alu.OpCode_OR;
         }
 
         public class OR_ImmAddr_Reg : InstructionBase<OR_ImmAddr_Reg_Operation> {
@@ -749,7 +729,7 @@ namespace Maize {
 
         public class OR_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "OR";
-            protected override byte Operation => MaizeAlu.OpCode_OR;
+            protected override byte Operation => Alu.OpCode_OR;
         }
 
         public class OR_ImmVal_Reg : InstructionBase<OR_ImmVal_Reg_Operation> {
@@ -757,7 +737,7 @@ namespace Maize {
 
         public class OR_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "OR";
-            protected override byte Operation => MaizeAlu.OpCode_OR;
+            protected override byte Operation => Alu.OpCode_OR;
         }
 
         public class OR_RegAddr_Reg : InstructionBase<OR_RegAddr_Reg_Operation> {
@@ -765,7 +745,7 @@ namespace Maize {
 
         public class OR_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "OR";
-            protected override byte Operation => MaizeAlu.OpCode_OR;
+            protected override byte Operation => Alu.OpCode_OR;
         }
 
         public class OR_RegVal_Reg : InstructionBase<OR_RegVal_Reg_Operation> {
@@ -776,7 +756,7 @@ namespace Maize {
 
         public class NOR_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "NOR";
-            protected override byte Operation => MaizeAlu.OpCode_NOR;
+            protected override byte Operation => Alu.OpCode_NOR;
         }
 
         public class NOR_ImmAddr_Reg : InstructionBase<NOR_ImmAddr_Reg_Operation> {
@@ -784,7 +764,7 @@ namespace Maize {
 
         public class NOR_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "NOR";
-            protected override byte Operation => MaizeAlu.OpCode_NOR;
+            protected override byte Operation => Alu.OpCode_NOR;
         }
 
         public class NOR_ImmVal_Reg : InstructionBase<NOR_ImmVal_Reg_Operation> {
@@ -792,7 +772,7 @@ namespace Maize {
 
         public class NOR_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "NOR";
-            protected override byte Operation => MaizeAlu.OpCode_NOR;
+            protected override byte Operation => Alu.OpCode_NOR;
         }
 
         public class NOR_RegAddr_Reg : InstructionBase<NOR_RegAddr_Reg_Operation> {
@@ -800,7 +780,7 @@ namespace Maize {
 
         public class NOR_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "NOR";
-            protected override byte Operation => MaizeAlu.OpCode_NOR;
+            protected override byte Operation => Alu.OpCode_NOR;
         }
 
         public class NOR_RegVal_Reg : InstructionBase<NOR_RegVal_Reg_Operation> {
@@ -811,7 +791,7 @@ namespace Maize {
 
         public class NAND_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "NAND";
-            protected override byte Operation => MaizeAlu.OpCode_NAND;
+            protected override byte Operation => Alu.OpCode_NAND;
         }
 
         public class NAND_ImmAddr_Reg : InstructionBase<NAND_ImmAddr_Reg_Operation> {
@@ -819,7 +799,7 @@ namespace Maize {
 
         public class NAND_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "NAND";
-            protected override byte Operation => MaizeAlu.OpCode_NAND;
+            protected override byte Operation => Alu.OpCode_NAND;
         }
 
         public class NAND_ImmVal_Reg : InstructionBase<NAND_ImmVal_Reg_Operation> {
@@ -827,7 +807,7 @@ namespace Maize {
 
         public class NAND_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "NAND";
-            protected override byte Operation => MaizeAlu.OpCode_NAND;
+            protected override byte Operation => Alu.OpCode_NAND;
         }
 
         public class NAND_RegAddr_Reg : InstructionBase<NAND_RegAddr_Reg_Operation> {
@@ -835,7 +815,7 @@ namespace Maize {
 
         public class NAND_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "NAND";
-            protected override byte Operation => MaizeAlu.OpCode_NAND;
+            protected override byte Operation => Alu.OpCode_NAND;
         }
 
         public class NAND_RegVal_Reg : InstructionBase<NAND_RegVal_Reg_Operation> {
@@ -846,7 +826,7 @@ namespace Maize {
 
         public class XOR_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "XOR";
-            protected override byte Operation => MaizeAlu.OpCode_XOR;
+            protected override byte Operation => Alu.OpCode_XOR;
         }
 
         public class XOR_ImmAddr_Reg : InstructionBase<XOR_ImmAddr_Reg_Operation> {
@@ -854,7 +834,7 @@ namespace Maize {
 
         public class XOR_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "XOR";
-            protected override byte Operation => MaizeAlu.OpCode_XOR;
+            protected override byte Operation => Alu.OpCode_XOR;
         }
 
         public class XOR_ImmVal_Reg : InstructionBase<XOR_ImmVal_Reg_Operation> {
@@ -862,7 +842,7 @@ namespace Maize {
 
         public class XOR_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "XOR";
-            protected override byte Operation => MaizeAlu.OpCode_XOR;
+            protected override byte Operation => Alu.OpCode_XOR;
         }
 
         public class XOR_RegAddr_Reg : InstructionBase<XOR_RegAddr_Reg_Operation> {
@@ -870,7 +850,7 @@ namespace Maize {
 
         public class XOR_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "";
-            protected override byte Operation => MaizeAlu.OpCode_XOR;
+            protected override byte Operation => Alu.OpCode_XOR;
         }
 
         public class XOR_RegVal_Reg : InstructionBase<XOR_RegVal_Reg_Operation> {
@@ -881,7 +861,7 @@ namespace Maize {
 
         public class SHL_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "SHL";
-            protected override byte Operation => MaizeAlu.OpCode_SHL;
+            protected override byte Operation => Alu.OpCode_SHL;
         }
 
         public class SHL_ImmAddr_Reg : InstructionBase<SHL_ImmAddr_Reg_Operation> {
@@ -889,7 +869,7 @@ namespace Maize {
 
         public class SHL_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "SHL";
-            protected override byte Operation => MaizeAlu.OpCode_SHL;
+            protected override byte Operation => Alu.OpCode_SHL;
         }
 
         public class SHL_ImmVal_Reg : InstructionBase<SHL_ImmVal_Reg_Operation> {
@@ -897,7 +877,7 @@ namespace Maize {
 
         public class SHL_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "SHL";
-            protected override byte Operation => MaizeAlu.OpCode_SHL;
+            protected override byte Operation => Alu.OpCode_SHL;
         }
 
         public class SHL_RegAddr_Reg : InstructionBase<SHL_RegAddr_Reg_Operation> {
@@ -905,7 +885,7 @@ namespace Maize {
 
         public class SHL_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "SHL";
-            protected override byte Operation => MaizeAlu.OpCode_SHL;
+            protected override byte Operation => Alu.OpCode_SHL;
         }
 
         public class SHL_RegVal_Reg : InstructionBase<SHL_RegVal_Reg_Operation> {
@@ -916,7 +896,7 @@ namespace Maize {
 
         public class SHR_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "SHR";
-            protected override byte Operation => MaizeAlu.OpCode_SHR;
+            protected override byte Operation => Alu.OpCode_SHR;
         }
 
         public class SHR_ImmAddr_Reg : InstructionBase<SHR_ImmAddr_Reg_Operation> {
@@ -924,7 +904,7 @@ namespace Maize {
 
         public class SHR_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "SHR";
-            protected override byte Operation => MaizeAlu.OpCode_SHR;
+            protected override byte Operation => Alu.OpCode_SHR;
         }
 
         public class SHR_ImmVal_Reg : InstructionBase<SHR_ImmVal_Reg_Operation> {
@@ -932,7 +912,7 @@ namespace Maize {
 
         public class SHR_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "SHR";
-            protected override byte Operation => MaizeAlu.OpCode_SHR;
+            protected override byte Operation => Alu.OpCode_SHR;
         }
 
         public class SHR_RegAddr_Reg : InstructionBase<SHR_RegAddr_Reg_Operation> {
@@ -940,7 +920,7 @@ namespace Maize {
 
         public class SHR_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "SHR";
-            protected override byte Operation => MaizeAlu.OpCode_SHR;
+            protected override byte Operation => Alu.OpCode_SHR;
         }
 
         public class SHR_RegVal_Reg : InstructionBase<SHR_RegVal_Reg_Operation> {
@@ -951,7 +931,7 @@ namespace Maize {
 
         public class CMP_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "CMP";
-            protected override byte Operation => MaizeAlu.OpCode_CMP;
+            protected override byte Operation => Alu.OpCode_CMP;
         }
 
         public class CMP_ImmAddr_Reg : InstructionBase<CMP_ImmAddr_Reg_Operation> {
@@ -959,7 +939,7 @@ namespace Maize {
 
         public class CMP_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "CMP";
-            protected override byte Operation => MaizeAlu.OpCode_CMP;
+            protected override byte Operation => Alu.OpCode_CMP;
         }
 
         public class CMP_ImmVal_Reg : InstructionBase<CMP_ImmVal_Reg_Operation> {
@@ -967,7 +947,7 @@ namespace Maize {
 
         public class CMP_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "CMP";
-            protected override byte Operation => MaizeAlu.OpCode_CMP;
+            protected override byte Operation => Alu.OpCode_CMP;
         }
 
         public class CMP_RegAddr_Reg : InstructionBase<CMP_RegAddr_Reg_Operation> {
@@ -975,7 +955,7 @@ namespace Maize {
 
         public class CMP_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "CMP";
-            protected override byte Operation => MaizeAlu.OpCode_CMP;
+            protected override byte Operation => Alu.OpCode_CMP;
         }
 
         public class CMP_RegVal_Reg : InstructionBase<CMP_RegVal_Reg_Operation> {
@@ -986,7 +966,7 @@ namespace Maize {
 
         public class TEST_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "TEST";
-            protected override byte Operation => MaizeAlu.OpCode_TEST;
+            protected override byte Operation => Alu.OpCode_TEST;
         }
 
         public class TEST_ImmAddr_Reg : InstructionBase<TEST_ImmAddr_Reg_Operation> {
@@ -994,7 +974,7 @@ namespace Maize {
 
         public class TEST_ImmVal_Reg_Operation : BinaryMathOperation_ImmVal_Reg {
             public override string Mnemonic => "TEST";
-            protected override byte Operation => MaizeAlu.OpCode_TEST;
+            protected override byte Operation => Alu.OpCode_TEST;
         }
 
         public class TEST_ImmVal_Reg : InstructionBase<TEST_ImmVal_Reg_Operation> {
@@ -1002,7 +982,7 @@ namespace Maize {
 
         public class TEST_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
             public override string Mnemonic => "TEST";
-            protected override byte Operation => MaizeAlu.OpCode_TEST;
+            protected override byte Operation => Alu.OpCode_TEST;
         }
 
         public class TEST_RegAddr_Reg : InstructionBase<TEST_RegAddr_Reg_Operation> {
@@ -1010,7 +990,7 @@ namespace Maize {
 
         public class TEST_RegVal_Reg_Operation : BinaryMathOperation_RegVal_Reg {
             public override string Mnemonic => "TEST";
-            protected override byte Operation => MaizeAlu.OpCode_TEST;
+            protected override byte Operation => Alu.OpCode_TEST;
         }
 
         public class TEST_RegVal_Reg : InstructionBase<TEST_RegVal_Reg_Operation> {
