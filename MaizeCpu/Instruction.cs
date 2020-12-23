@@ -2,6 +2,13 @@
 using System.Text;
 using Tortilla;
 
+/* One thing that you'll notice upon reading the code, especially if you have any familiarity with C# and 
+with .NET in general, is that I don't use a lot of properties, but rather fields. I did this for speed and 
+simplicity. Inside a CPU, and in assembly code in general, there's not a lot of information hiding, though 
+there is encapsulation to some degree. My primary concern in this code is not to write enterprise-grade 
+interfaces, but rather to get raw speed wherever I can. I'm sacrificing some sacred OO principles in pursuit 
+of performance, and inside the ugly innards of the CPU implementation, it's probably worth it. */
+
 namespace Maize {
     public class Instruction {
         public Instruction() {
@@ -56,14 +63,14 @@ namespace Maize {
         }
 
 
-        protected byte SrcImmSizeFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_ImmSize);
+        protected byte SrcImmSizeFlag => (byte)(Decoder.RegData.B1 & OpFlag_ImmSize);
         protected int SrcImmSize => 1 << SrcImmSizeFlag;
-        protected byte SrcRegisterFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_Reg);
-        protected byte SrcSubRegisterFlag => (byte)(OperandRegister1.RegData.B1 & OpFlag_SubReg);
-        protected byte DestImmSizeFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_ImmSize);
+        protected byte SrcRegisterFlag => (byte)(Decoder.RegData.B1 & OpFlag_Reg);
+        protected byte SrcSubRegisterFlag => (byte)(Decoder.RegData.B1 & OpFlag_SubReg);
+        protected byte DestImmSizeFlag => (byte)(Decoder.RegData.B2 & OpFlag_ImmSize);
         protected int DestImmSize => 1 << DestImmSizeFlag;
-        protected byte DestRegisterFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_Reg);
-        protected byte DestSubRegisterFlag => (byte)(OperandRegister1.RegData.B2 & OpFlag_SubReg);
+        protected byte DestRegisterFlag => (byte)(Decoder.RegData.B2 & OpFlag_Reg);
+        protected byte DestSubRegisterFlag => (byte)(Decoder.RegData.B2 & OpFlag_SubReg);
 
         public byte? Opcode = null;
         public virtual string Mnemonic { get; } = string.Empty;

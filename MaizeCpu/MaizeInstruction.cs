@@ -7,19 +7,40 @@ using System.Text;
 using System.Threading;
 using Tortilla;
 
+/* There are MANY opportunities for consolidating duplicate code here, but I was re-writing and 
+refactoring the code so much that it ended up being easier to just copy and paste initially. At 
+this point, I don't know when I'll revisit the microcode, so I'll leave it as-is for now and 
+consider consolidating later. It might have to wait until I rewrite it in C++ or Rust, though. */
+
+/* One thing that you'll notice upon reading the code, especially if you have any familiarity with C# and 
+with .NET in general, is that I don't use a lot of properties, but rather fields. I did this for speed and 
+simplicity. Inside a CPU, and in assembly code in general, there's not a lot of information hiding, though 
+there is encapsulation to some degree. My primary concern in this code is not to write enterprise-grade 
+interfaces, but rather to get raw speed wherever I can. I'm sacrificing some sacred OO principles in pursuit 
+of performance, and inside the ugly innards of the CPU implementation, it's probably worth it. */
+
 namespace Maize {
+    /* This is where I plan to implement microcode related to CPU exception (bad opcode, divide by 
+    zero, etc.). For now I'm just throwing exceptions directly, but that's probably not how it will 
+    remain. I plan to implement the actual software interrupts for CPU-level exceptions so that 
+    programs can replace the handlers themselves. */
+
     namespace Exceptions {
         public class BadOpcode : InstructionBase<BadOpcode> {
             public override void BuildMicrocode() {
                 Code = new Action[] {
                     () => {
-                        MB.RaiseInterrupt(0x06);
+                        throw new Exception("Unknown opcode");
+                        // MB.RaiseInterrupt(0x06);
                     }
                 };
             }
         }
 
     }
+
+    /* The "instructions" in the Core namespace are virtual instructions inside the CPU rather 
+    than actual instructions exposed to end-user code. */
 
     namespace Core {
         public class ReadOpcodeAndDispatch : InstructionBase<ReadOpcodeAndDispatch> {
@@ -31,11 +52,11 @@ namespace Maize {
                     },
                     () => {
                         MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
-                        OperandRegister1.SetFromDataBus(SubRegister.W0);
+                        Decoder.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
                         P.Increment(1);
-                        var opcode = OperandRegister1.RegData.B0;
+                        var opcode = Decoder.RegData.B0;
                         var instruction = Decoder.InstructionArray[opcode];
                         Decoder.JumpTo(instruction);
                         // InstructionRead?.Invoke(this, Tuple.Create(this.Value, MB.Cpu.PC.Value - 1));
@@ -203,11 +224,10 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         P.Increment(1);
-                        OperandRegister2.RegData.W0 = 0;
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = 0;
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
                         SrcReg.SetFromDataBus((SubRegister)SrcSubRegisterFlag);
-                        Cpu.ZeroFlag = true;
                     }
                 };
             }
@@ -232,7 +252,7 @@ namespace Maize {
         // TODO: This is an experiment in on-the-fly disassembly.
         public class ImmVal_Reg : Instruction {
             public override string ToString() {
-                StringBuilder text = new StringBuilder($"${P.RegData.H0:X8}: {$"{Mnemonic}",-42} ; {Opcode:X2} {OperandRegister1.RegData.B1:X2} {OperandRegister1.RegData.B2:X2}");
+                StringBuilder text = new StringBuilder($"${P.RegData.H0:X8}: {$"{Mnemonic}",-42} ; {Opcode:X2} {Decoder.RegData.B1:X2} {Decoder.RegData.B2:X2}");
                 return text.ToString();
             }
         }
@@ -297,34 +317,6 @@ namespace Maize {
             }
         }
 
-        public class STIM : InstructionBase<STIM> {
-            public override string Mnemonic => "STIM";
-
-            public override void BuildMicrocode() {
-                Code = new Action[] {
-                    () => {
-                        P.Increment(2);
-                        SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
-                        SrcReg.EnableToDataBus((SubRegister)SrcSubRegisterFlag);
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
-                    },
-                    () => {
-                        Decoder.ReadAndEnableImmediate(DestImmSize);
-                    },
-                    () => {
-                        OperandRegister3.RegData.W0 = 0;
-                        OperandRegister3.SetFromDataBus(ImmSizeSubRegMap[DestImmSizeFlag]);
-                    },
-                    () => {
-                        OperandRegister2.EnableToDataBus(ImmSizeSubRegMap[DestImmSizeFlag]);
-                        OperandRegister3.EnableToAddressBus(SubRegister.W0);
-                        MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
-                        MemoryModule.DataRegister.SetFromDataBus(ImmSizeSubRegMap[DestImmSizeFlag]);
-                    }
-                };
-            }
-        }
-
         public class ST_RegVal_RegAddr : InstructionBase<ST_RegVal_RegAddr> {
             public override string Mnemonic => "ST";
 
@@ -366,8 +358,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[SrcSubRegisterFlag]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[SrcSubRegisterFlag]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
@@ -394,8 +386,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
@@ -425,8 +417,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus((SubRegister)DestSubRegisterFlag);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     }
                 };
@@ -449,8 +441,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
@@ -481,8 +473,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus((SubRegister)DestSubRegisterFlag);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     }
                 };
@@ -509,8 +501,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
@@ -545,8 +537,8 @@ namespace Maize {
                         Alu.DestReg.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
-                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        OperandRegister1.RegData.W0 = (byte)(Operation | AluOpSizeMap[DestSubRegisterFlag]);
+                        OperandRegister1.EnableToDataBus(SubRegister.W0);
                         Alu.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
@@ -1118,14 +1110,14 @@ namespace Maize {
                         Decoder.ReadAndEnableImmediate(SrcImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
                         S.EnableToAddressBus(SubRegister.H0);
                         MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.EnableToDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        OperandRegister1.EnableToDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
                         MemoryModule.DataRegister.SetFromDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
                     }
                 };
@@ -1748,7 +1740,7 @@ namespace Maize {
                         Decoder.ReadAndEnableImmediate(SrcImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
                         S.Decrement(4);
@@ -1761,7 +1753,7 @@ namespace Maize {
                         MemoryModule.DataRegister.SetFromDataBus(SubRegister.H0);
                     },
                     () => {
-                        OperandRegister2.EnableToAddressBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        OperandRegister1.EnableToAddressBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
                         P.SetFromAddressBus(SubRegister.H0);
                     }
                 };
@@ -1845,11 +1837,11 @@ namespace Maize {
                     () => {
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
                         SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.H0 = (ushort)(OperandRegister2.RegData.B0 * 4);
-                        OperandRegister2.EnableToAddressBus(SubRegister.H0);
+                        OperandRegister1.RegData.H0 = (ushort)(OperandRegister1.RegData.B0 * 4);
+                        OperandRegister1.EnableToAddressBus(SubRegister.H0);
                         MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
                     },
                     () => {
@@ -1871,7 +1863,7 @@ namespace Maize {
                         Decoder.ReadAndEnableImmediate(SrcImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
                         S.Decrement(8);
@@ -1893,8 +1885,8 @@ namespace Maize {
                         MemoryModule.DataRegister.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.RegData.H0 = (ushort)(OperandRegister2.RegData.B0 * 4);
-                        OperandRegister2.EnableToAddressBus(SubRegister.H0);
+                        OperandRegister1.RegData.H0 = (ushort)(OperandRegister1.RegData.B0 * 4);
+                        OperandRegister1.EnableToAddressBus(SubRegister.H0);
                         MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
                     },
                     () => {
@@ -1911,6 +1903,10 @@ namespace Maize {
             public override void BuildMicrocode() {
                 Code = new Action[] {
                     () => {
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
                         S.EnableToAddressBus(SubRegister.H0);
                         MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
                     },
@@ -1939,19 +1935,24 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         P.Increment(2);
+
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
                         Decoder.ReadAndEnableImmediate(DestImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.EnableToAddressBus(SubRegister.W0);
-                        MB.SetPortAddress(OperandRegister2.RegData.W0);
+                        OperandRegister1.EnableToAddressBus(SubRegister.W0);
+                        MB.SetPortAddress(OperandRegister1.RegData.W0);
                     },
                     () => {
                         SrcReg.EnableToIOBus(SubRegister.W0);
-                        MB.SetPortIO(OperandRegister2.RegData.W0);
+                        MB.SetPortIO(OperandRegister1.RegData.W0);
                     }
                 };
             }
@@ -1964,6 +1965,11 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         P.Increment(2);
+
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
                         DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
                     },
@@ -1985,19 +1991,23 @@ namespace Maize {
             public override void BuildMicrocode() {
                 Code = new Action[] {
                     () => {
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
                         DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
                         P.Increment(2);
                         Decoder.ReadAndEnableImmediate(SrcImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
                         DestReg.EnableToAddressBus(SubRegister.W0);
                         MB.SetPortAddress(DestReg.RegData.W0);
                     },
                     () => {
-                        OperandRegister2.EnableToIOBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        OperandRegister1.EnableToIOBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
                         MB.SetPortIO(DestReg.RegData.W0);
                     }
                 };
@@ -2011,6 +2021,11 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         P.Increment(2);
+
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
                         DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
                     },
@@ -2032,19 +2047,24 @@ namespace Maize {
             public override void BuildMicrocode() {
                 Code = new Action[] {
                     () => {
-                        DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
                         P.Increment(2);
+
+                        if (!Cpu.PrivilegeFlag) {
+                            throw new Exception("Insufficient privilege");
+                        }
+
+                        DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
                         Decoder.ReadAndEnableImmediate(SrcImmSize);
                     },
                     () => {
-                        OperandRegister2.SetFromDataBus(SubRegister.W0);
+                        OperandRegister1.SetFromDataBus(SubRegister.W0);
                     },
                     () => {
-                        OperandRegister2.EnableToAddressBus(SubRegister.W0);
-                        MB.SetPortAddress(OperandRegister2.RegData.W0);
+                        OperandRegister1.EnableToAddressBus(SubRegister.W0);
+                        MB.SetPortAddress(OperandRegister1.RegData.W0);
                     },
                     () => {
-                        MB.EnablePortIO(OperandRegister2.RegData.W0);
+                        MB.EnablePortIO(OperandRegister1.RegData.W0);
                         DestReg.SetFromIOBus((SubRegister)DestSubRegisterFlag);
                     }
                 };

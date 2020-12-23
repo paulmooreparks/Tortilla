@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MaizeCpu": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

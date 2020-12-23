@@ -6,6 +6,8 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+/* New in C# 8.0, and pretty nifty: no need for static Main! */
+
 Program p = new(args);
 return p.Run();
 
@@ -42,6 +44,7 @@ namespace Maize {
 
         void Lifetime() {
             WaitHandle[] handles = new WaitHandle[] { cpuStop };
+            tConsole.Show();
 
             while (true) {
                 int index = WaitHandle.WaitAny(handles);
@@ -55,12 +58,8 @@ namespace Maize {
 
         public int Run() {
             Motherboard.Debug += Hardware_Debug;
-
-            tConsole.Show();
-            Task.Run(PowerOn);
-
-            Lifetime();
-
+            Task.Run(Lifetime);
+            PowerOn();
             Console.WriteLine();
             return 0;
         }

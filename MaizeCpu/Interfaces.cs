@@ -5,6 +5,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+/* One thing that you'll notice upon reading the code, especially if you have any familiarity with C# and 
+with .NET in general, is that I don't use a lot of properties, but rather fields. I did this for speed and 
+simplicity. Inside a CPU, and in assembly code in general, there's not a lot of information hiding, though 
+there is encapsulation to some degree. My primary concern in this code is not to write enterprise-grade 
+interfaces, but rather to get raw speed wherever I can. I'm sacrificing some sacred OO principles in pursuit 
+of performance, and inside the ugly innards of the CPU implementation, it's probably worth it. */
+
 namespace Tortilla {
     public enum ClockState {
         Dynamic =                   0b_0000_0000_0000,

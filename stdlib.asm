@@ -42,4 +42,3 @@ stdlib_strupr_done:
 POP G.H0
 LD G.H0 A
 RET
-
