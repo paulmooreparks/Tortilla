@@ -1,12 +1,13 @@
 # The Maize Virtual CPU 
 ## Implemented on the Tortilla Emulation Platform
 
-This project implements a virtual CPU (called "Maize") on a library that enables the creation of virtual CPUs (called "Tortilla"). 
-See the file [Maize.txt](https://github.com/paulmooreparks/Tortilla/blob/master/Maize.txt) for more details on the CPU assembly 
-language and the system that runs on it.
+This project implements a 64-bit virtual CPU called "Maize" on a library that enables the creation of virtual CPUs (called "Tortilla"). 
+See the file [Maize.txt](https://github.com/paulmooreparks/Tortilla/blob/master/Maize.txt) for more details on the Maize CPU assembly 
+language and the simple operating system that runs on it.
 
-The goal is to create a "BIOS" layer above the virtual devices, a simple OS, a subset of Unix/Linux system calls (interrupt $80), 
-and finally an implementation of a C/C++ compiler (likely Clang or GCC) that will compile and link to Maize machine code.
+The near-term goal is to implement a set of devices to bridge from the virtual CPU environment to the host machine, create a "BIOS" layer 
+above the virtual devices, implement a simple OS and a subset of Unix/Linux system calls (interrupt $80), 
+and finally port a C/C++ compiler (likely Clang or GCC) that will generate Maize machine code.
 
 ## How To Use Maize
 
@@ -21,7 +22,7 @@ assembly file as the command-line parameter.
     
 The above command will output HelloWorld.bin into the same path as HelloWorld.asm.
     
-To run a Maize binary, compile and run the [maize](https://github.com/paulmooreparks/Tortilla/tree/master/Maize) binary, providing 
+To run a Maize binary, compile and run the [maize](https://github.com/paulmooreparks/Tortilla/tree/master/Maize) project, providing 
 the path to the binary in the -img parameter:
 
     maize -img /path/to/HelloWorld.bin
