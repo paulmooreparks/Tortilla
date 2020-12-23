@@ -3,16 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "assembly", "assembly", "{9291D06E-4B41-4C5F-B83F-4895EB9B8D6C}"
-	ProjectSection(SolutionItems) = preProject
-		assembly\bios.asm = assembly\bios.asm
-		assembly\bios.ld = assembly\bios.ld
-		assembly\makefile = assembly\makefile
-		assembly\quesos.asm = assembly\quesos.asm
-		SalsaBios.asm = SalsaBios.asm
-		SalsaBIOS.rom = SalsaBIOS.rom
-	EndProjectSection
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{00C3CE5B-1AB9-4705-8387-CE6D470EC296}"
 	ProjectSection(SolutionItems) = preProject
 		Maize.txt = Maize.txt
@@ -25,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MaizeCpu", "MaizeCpu\MaizeC
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TortillaUiCore", "TortillaUiCore\TortillaUiCore.csproj", "{835672A1-88AD-40AD-B3C5-2C67C4CA1916}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "maize", "Maize\maize.csproj", "{94E906D1-859C-4498-BFA8-A8CB0A731442}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "maize", "Maize\maize.csproj", "{94E906D1-859C-4498-BFA8-A8CB0A731442}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
