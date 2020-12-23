@@ -10,8 +10,8 @@ and finally an implementation of a C/C++ compiler (likely Clang or GCC) that wil
 
 ## How To Use Maize
 
-Maize is currently implemented in .NET 5, which means it will run on Windows, Linux, and macOS. It also means it's quite slow, 
-despite my attempts and squeezing as much performance out of .NET as I could.
+Maize is currently implemented in .NET 5, which means it will run on Windows, Linux, and macOS. It also means it's slower than I'd 
+like it to be, despite my attempts at squeezing as much performance out of .NET as I could.
 
 To compile a Maize assembly file (like [HelloWorld.asm](https://github.com/paulmooreparks/Tortilla/blob/master/HelloWorld.asm)), 
 compile and run the [mazm](https://github.com/paulmooreparks/Tortilla/tree/master/mazm) project, providing the path to the 
@@ -30,15 +30,16 @@ the path to the binary in the -img parameter:
 
 It's very early days for Maize, so don't expect too much in the way of application usability. So far, I've enabled a basic text-
 mode console for input and output. Next, I'll start creating a file-system device. In the future I plan to port Clang or GCC to 
-Maize so that I can port Linux to the virtual CPU.
+work with Maize binaries so that I can eventually port Linux to the virtual CPU.
 
 In the short term, I'm implementing a very basic OS over a simple BIOS. It will provide a basic character-mode CLI to allow 
 building and running simple Maize programs from within the virtual CPU environment. 
 
-I'll eventually port Maize to a much faster language, likely either C++ or Rust. I started out with .NET because I wanted to 
-play with .NET Core, and that got me multi-platform and a lot less headaches for writing code quickly and implementing devices.
+I'll eventually port Maize to a much lower-level language, likely either C++ or Rust. I started out with .NET and C# because I wanted 
+to play with .NET Core, and that bought me immediate multi-platform support and a lot fewer headaches for writing code quickly and 
+for implementing devices.
 
-## Hello, World
+## Hello, World!
 
 Here is a simple "Hello, World!" application written in Maize assembly.
 
