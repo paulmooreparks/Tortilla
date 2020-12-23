@@ -21,8 +21,7 @@ LD $0A L
 LD $0B M
 LD $0C Z
 
-LD $0004 A.Q0
-INT $40
+CALL core_os_dump_registers
 
 ; "Power down" the system
 LD $A9 A                ; Load syscall opcode $A9 (169, sys_reboot) into A register

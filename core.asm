@@ -339,7 +339,6 @@ RET
 LABEL core_os_shut_down             AUTO
 LABEL core_os_idle                  AUTO
 LABEL core_os_put_string            AUTO
-LABEL core_os_strlen                AUTO
 LABEL core_os_dump_registers        AUTO
 
 core_os_core_jump_table:
@@ -347,7 +346,6 @@ ADDRESS core_os_shut_down           ; A.Q0 = $0000
 ADDRESS core_os_idle                ; A.Q1 = $0001
 ADDRESS core_os_put_string          ; A.Q0 = $0002
 ADDRESS core_os_strlen              ; A.Q0 = $0003
-ADDRESS core_os_dump_registers      ; A.Q0 = $0004
 
 core_os_core:
 PUSH B
@@ -731,10 +729,10 @@ RET
 ; #define LINUX_REBOOT_CMD_SW_SUSPEND     0xD000FCE2
 ; #define LINUX_REBOOT_CMD_KEXEC          0x45584543
 
-LABEL core_sys_reboot_exit AUTO
 
 core_sys_reboot:
-CMP $4321FEDC J.H0
+LABEL core_sys_reboot_exit AUTO
+CMP $4321FEDC J.H0         ; This magic number means to power off.
 JNZ core_sys_reboot_exit
 CALL core_os_shut_down
 core_sys_reboot_exit:
@@ -872,17 +870,14 @@ LABEL core_os_strlen_loop AUTO
 LABEL core_os_strlen_done AUTO
 
 PUSH G.H0
-PUSH Z.B0
 CLR A
 core_os_strlen_loop:
-LD @G.H0 Z.B0
-CMP $00 Z.B0
+CMPIND $00 @G.H0
 JZ core_os_strlen_done
 INC A.H0
 INC G.H0
 JMP core_os_strlen_loop
 core_os_strlen_done:
-POP Z.B0
 POP G.H0
 RET
 

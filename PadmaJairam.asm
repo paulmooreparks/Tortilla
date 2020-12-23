@@ -1,4 +1,5 @@
 INCLUDE "core.asm"
+INCLUDE "stdlib.asm"
 
 LABEL _start            $00001000
 LABEL output            AUTO
@@ -33,12 +34,12 @@ LD @color_1 A.B2
 INT $10
 
 ; Write first name
-CLR A
+LD first_name G
+CALL stdlib_strlen
+LD A J
+LD G H
 LD $01 A
 LD $01 G
-LD first_name H.H0 
-LD first_name_end J
-SUB first_name J
 INT $80
 
 ; Change foreground color
@@ -49,12 +50,12 @@ LD @color_2 A.B2
 INT $10
 
 ; Write surname
-CLR A
+LD surname G
+CALL stdlib_strlen
+LD A J
+LD G H
 LD $01 A
 LD $01 G
-LD surname H.H0 
-LD surname_end J
-SUB surname J
 INT $80
 
 ; Set foreground color
@@ -89,10 +90,10 @@ color_2:
 DATA $0B ; Cyan
 
 first_name: 
-STRING "Padma "
+STRING "Padma \0"
 first_name_end:
 
 surname:
-STRING "Jairam"
+STRING "Jairam\0"
 surname_end:
 

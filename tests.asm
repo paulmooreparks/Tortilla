@@ -1,4 +1,5 @@
 INCLUDE "core.asm"
+INCLUDE "stdlib.asm"
 
 ; The CPU starts execution at segment $00000000, address $00001000, 
 ; so we'll put our code there.
@@ -18,13 +19,15 @@ LD $0000,2000 S.H0
 ; Set base pointer
 LD S.H0 S.H1
 
+LD hw_string G
+CALL stdlib_strupr
+
 ; Write string
-LD $01 A                ; Load syscall opcode $01 (write) into A register
-LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
-LD hw_string H.H0       ; Load the pointer to the string into H.H0 register
-LD hw_string_end J      ; Load the pointer to byte past end of string into J register
-SUB hw_string J         ; Subtract pointer to start of string from pointer to end of string,
-                        ; which gives the string length in J register
+CALL stdlib_strlen
+LD A J
+LD G H
+LD $01 A
+LD $01 G
 INT $80                 ; Call interrupt $80 to execute write syscall
 
 ; "Power down" the system
@@ -34,7 +37,4 @@ INT $80
 
 ; This label points to the start of the string we want to output.
 hw_string: 
-STRING "H" ; ello, world!
-; This label automatically points to the the memory location just past the end of the 
-; string above. It's used to calculate the string length.
-hw_string_end:
+STRING "Hello, world!\0""

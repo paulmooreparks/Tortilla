@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Tortilla;
 using Maize;
+using Maize.Instructions;
 using System.Diagnostics;
 
 namespace mazm {
@@ -54,7 +55,7 @@ namespace mazm {
             Opcodes = new Dictionary<string, (KeywordParser, KeywordCompiler, byte)> {
                 { "HALT", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x00) },
                 { "LD",   (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x01) },
-                { "STIM",   (Opcode_2Param_Tokenizer, RegImm_ImmAddr_Compiler, 0x02) },
+                { "ST",   (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x02) },
                 { "ADD",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x03) },
                 { "SUB",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x04) },
                 { "MUL",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x05) },
@@ -68,17 +69,18 @@ namespace mazm {
                 { "SHL",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x0D) },
                 { "SHR",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x0E) },
                 { "CMP",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x0F) },
-                { "TEST", (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x10) },
+                { "TST",  (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x10) },
+                { "CMPIND", (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x11) },
                 { "INT",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x12) },
-                { "ST", (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x13) },
+                { "TSTIND", (Opcode_2Param_Tokenizer, RegImm_RegAddr_Compiler, 0x13) },
                 { "OUTR", (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x14) },
                 { "JMP",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x16) },
                 { "JZ",   (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x17) },
                 { "JNZ",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x18) },
                 { "JLT",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x19) },
-                { "JLE",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1A) },
+                { "JB",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1A) },
                 { "JGT",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1B) },
-                { "JGE",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1C) },
+                { "JA",  (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1C) },
                 { "CALL", (Opcode_1Param_Tokenizer, RegImm_Compiler, 0x1D) },
                 { "OUT",  (Opcode_2Param_Tokenizer, RegImm_Imm_Compiler, 0x1E) },
                 { "IN",   (Opcode_2Param_Tokenizer, RegImm_Reg_Compiler, 0x1F) },
@@ -90,10 +92,10 @@ namespace mazm {
                 { "POP",  (Opcode_1Param_Tokenizer, Reg_Compiler, 0x26) },
                 { "RET",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x27) },
                 { "IRET", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x28) },
-                { "STI", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x29) },
-                { "CLI", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x30) },
-                { "STC", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x31) },
-                { "CLC", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x32) },
+                { "SETINT", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x29) },
+                { "CLRINT", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x30) },
+                { "SETCRY", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x31) },
+                { "CLRCRY", (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0x32) },
                 { "NOP",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0xAA) },
                 { "BRK",  (Opcode_0Param_Tokenizer, NoOperand_Compiler, 0xFF) }
             };

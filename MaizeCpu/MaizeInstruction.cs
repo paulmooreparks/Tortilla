@@ -130,8 +130,8 @@ namespace Maize {
             }
         }
 
-        public class STI : InstructionBase<STI> {
-            public override string Mnemonic => "STI";
+        public class SETINT : InstructionBase<SETINT> {
+            public override string Mnemonic => "SETINT";
 
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -146,8 +146,8 @@ namespace Maize {
             }
         }
 
-        public class CLI : InstructionBase<CLI> {
-            public override string Mnemonic => "CLI";
+        public class CLRINT : InstructionBase<CLRINT> {
+            public override string Mnemonic => "CLRINT";
 
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -162,8 +162,8 @@ namespace Maize {
             }
         }
 
-        public class STC : InstructionBase<STC> {
-            public override string Mnemonic => "STC";
+        public class SETCRY : InstructionBase<SETCRY> {
+            public override string Mnemonic => "SETCRY";
 
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -174,8 +174,8 @@ namespace Maize {
             }
         }
 
-        public class CLC : InstructionBase<CLC> {
-            public override string Mnemonic => "CLC";
+        public class CLRCRY : InstructionBase<CLRCRY> {
+            public override string Mnemonic => "CLRCRY";
 
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -325,7 +325,7 @@ namespace Maize {
             }
         }
 
-        public class ST : InstructionBase<ST> {
+        public class ST_RegVal_RegAddr : InstructionBase<ST_RegVal_RegAddr> {
             public override string Mnemonic => "ST";
 
             public override void BuildMicrocode() {
@@ -406,6 +406,33 @@ namespace Maize {
             }
         }
 
+        public class BinaryMathOperation_RegVal_RegAddr : BinaryMathOperation {
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(2);
+                        SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                        SrcReg.EnableToDataBus((SubRegister)SrcSubRegisterFlag);
+                        Alu.SrcReg.SetFromDataBus(SubRegister.W0);
+                    },
+                    () => {
+                        DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
+                        DestReg.EnableToAddressBus((SubRegister)DestSubRegisterFlag);
+                        MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                    },
+                    () => {
+                        MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                        Alu.DestReg.SetFromDataBus((SubRegister)DestSubRegisterFlag);
+                    },
+                    () => {
+                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
+                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        Alu.SetFromDataBus(SubRegister.W0);
+                    }
+                };
+            }
+        }
+
         public class BinaryMathOperation_ImmVal_Reg : BinaryMathOperation {
             public override void BuildMicrocode() {
                 Code = new Action[] {
@@ -433,6 +460,35 @@ namespace Maize {
                 };
             }
         }
+
+        public class BinaryMathOperation_ImmVal_RegAddr : BinaryMathOperation {
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(2);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        Alu.SrcReg.SetFromDataBus(SubRegister.W0);
+                    },
+                    () => {
+                        DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
+                        DestReg.EnableToAddressBus((SubRegister)DestSubRegisterFlag);
+                        MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                    },
+                    () => {
+                        MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                        Alu.DestReg.SetFromDataBus((SubRegister)DestSubRegisterFlag);
+                    },
+                    () => {
+                        OperandRegister2.RegData.W0 = (byte)(Operation | AluOpSizeMap[(int)ImmSizeSubRegMap[SrcImmSizeFlag]]);
+                        OperandRegister2.EnableToDataBus(SubRegister.W0);
+                        Alu.SetFromDataBus(SubRegister.W0);
+                    }
+                };
+            }
+        }
+
 
         public class BinaryMathOperation_RegAddr_Reg : BinaryMathOperation {
             public override void BuildMicrocode() {
@@ -977,7 +1033,7 @@ namespace Maize {
             protected override byte Operation => Alu.OpCode_TEST;
         }
 
-        public class TEST_ImmVal_Reg : InstructionBase<TEST_ImmVal_Reg_Operation> {
+        public class TST_ImmVal_Reg : InstructionBase<TEST_ImmVal_Reg_Operation> {
         }
 
         public class TEST_RegAddr_Reg_Operation : BinaryMathOperation_RegAddr_Reg {
@@ -993,10 +1049,40 @@ namespace Maize {
             protected override byte Operation => Alu.OpCode_TEST;
         }
 
-        public class TEST_RegVal_Reg : InstructionBase<TEST_RegVal_Reg_Operation> {
+        public class TST_RegVal_Reg : InstructionBase<TEST_RegVal_Reg_Operation> {
         }
 
+        public class TSTIND_RegVal_RegAddr_Operation : BinaryMathOperation_RegVal_RegAddr {
+            public override string Mnemonic => "TSTIND";
+            protected override byte Operation => Alu.OpCode_TEST;
+        }
 
+        public class TSTIND_RegVal_RegAddr : InstructionBase<TSTIND_RegVal_RegAddr_Operation> {
+        }
+
+        public class TSTIND_ImmVal_RegAddr_Operation : BinaryMathOperation_ImmVal_RegAddr {
+            public override string Mnemonic => "TSTIND";
+            protected override byte Operation => Alu.OpCode_TEST;
+        }
+
+        public class TSTIND_ImmVal_RegAddr : InstructionBase<TSTIND_ImmVal_RegAddr_Operation> {
+        }
+
+        public class CMPIND_RegVal_RegAddr_Operation : BinaryMathOperation_RegVal_RegAddr {
+            public override string Mnemonic => "CMPIND";
+            protected override byte Operation => Alu.OpCode_CMP;
+        }
+
+        public class CMPIND_RegVal_RegAddr : InstructionBase<CMPIND_RegVal_RegAddr_Operation> {
+        }
+
+        public class CMPIND_ImmVal_RegAddr_Operation : BinaryMathOperation_ImmVal_RegAddr {
+            public override string Mnemonic => "CMPIND";
+            protected override byte Operation => Alu.OpCode_CMP;
+        }
+
+        public class CMPIND_ImmVal_RegAddr : InstructionBase<CMPIND_ImmVal_RegAddr_Operation> {
+        }
 
 
         public class PUSH_RegVal : InstructionBase<PUSH_RegVal> {
@@ -1291,6 +1377,333 @@ namespace Maize {
                     },
                     () => {
                         if (!Cpu.ZeroFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromDataBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JLT_RegVal : InstructionBase<JLT_RegVal> {
+            public override string Mnemonic => "JLT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JLT_ImmVal : InstructionBase<JLT_ImmVal> {
+            public override string Mnemonic => "JLT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            P.SetFromDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JLT_RegAddr : InstructionBase<JLT_RegAddr> {
+            public override string Mnemonic => "JLT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JLT_ImmAddr : InstructionBase<JLT_ImmAddr> {
+            public override string Mnemonic => "JLT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            MemoryModule.AddressRegister.SetFromDataBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (Cpu.NegativeFlag != Cpu.OverflowFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromDataBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JGT_RegVal : InstructionBase<JGT_RegVal> {
+            public override string Mnemonic => "JGT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JGT_ImmVal : InstructionBase<JGT_ImmVal> {
+            public override string Mnemonic => "JGT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            P.SetFromDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JGT_RegAddr : InstructionBase<JGT_RegAddr> {
+            public override string Mnemonic => "JGT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JGT_ImmAddr : InstructionBase<JGT_ImmAddr> {
+            public override string Mnemonic => "JGT";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            MemoryModule.AddressRegister.SetFromDataBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (!Cpu.ZeroFlag && Cpu.NegativeFlag == Cpu.OverflowFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromDataBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JB_RegVal : InstructionBase<JB_RegVal> {
+            public override string Mnemonic => "JB";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JB_ImmVal : InstructionBase<JB_ImmVal> {
+            public override string Mnemonic => "JB";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            P.SetFromDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JB_RegAddr : InstructionBase<JB_RegAddr> {
+            public override string Mnemonic => "JB";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JB_ImmAddr : InstructionBase<JB_ImmAddr> {
+            public override string Mnemonic => "JB";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            MemoryModule.AddressRegister.SetFromDataBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (Cpu.CarryFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromDataBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JA_RegVal : InstructionBase<JA_RegVal> {
+            public override string Mnemonic => "JA";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+
+        public class JA_ImmVal : InstructionBase<JA_ImmVal> {
+            public override string Mnemonic => "JA";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
+                            P.SetFromDataBus(ImmSizeSubRegMap[SrcImmSizeFlag]);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JA_RegAddr : InstructionBase<JA_RegAddr> {
+            public override string Mnemonic => "JA";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
+                            SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
+                            SrcReg.EnableToAddressBus((SubRegister)SrcSubRegisterFlag);
+                            MemoryModule.AddressRegister.SetFromAddressBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
+                            MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
+                            P.SetFromAddressBus(SubRegister.H0);
+                        }
+                    }
+                };
+            }
+        }
+
+        public class JA_ImmAddr : InstructionBase<JA_ImmAddr> {
+            public override string Mnemonic => "JA";
+
+            public override void BuildMicrocode() {
+                Code = new Action[] {
+                    () => {
+                        P.Increment(1);
+                        Decoder.ReadAndEnableImmediate(SrcImmSize);
+                    },
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
+                            MemoryModule.AddressRegister.SetFromDataBus(SubRegister.W0);
+                        }
+                    },
+                    () => {
+                        if (!Cpu.CarryFlag && !Cpu.ZeroFlag) {
                             MemoryModule.DataRegister.EnableToDataBus(SubRegister.W0);
                             P.SetFromDataBus(SubRegister.H0);
                         }

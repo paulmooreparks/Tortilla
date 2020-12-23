@@ -1,4 +1,5 @@
 INCLUDE "core.asm"
+INCLUDE "stdlib.asm"
 
 ; The CPU starts execution at segment $00000000, address $00001000, 
 ; so we'll put our code there.
@@ -18,15 +19,13 @@ LD $0000`2000 S.H0
 ; Set base pointer
 LD S.H0 S.H1
 
-; The bare-bones kernel provides a set of OS API functions via interrupt $40. 
-; The function ID is placed into the A register, and function arguments are 
-; placed, from left to right, into the G, H, J, K, L, and M registers. Any 
-; additional parameters are pushed onto the stack.
+; The basic ABI is for function arguments to be placed, from left to 
+; right, into the G, H, J, K, L, and M registers. Any additional parameters 
+; are pushed onto the stack.
 
 ; Get string length.
-LD $0003 A              ; OS call for strlen
 LD hw_string G          ; Load the local pointer (current segment) to the string into G register
-INT $40                 ; Call OS function
+CALL stdlib_strlen      ; Call stdlib function
 LD A J                  ; Return value (string length) is in A. Copy this to J for the write call
 
 ; Write string
@@ -43,7 +42,8 @@ LD $01 A                ; Load syscall opcode $01 (write) into A register
 LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
 INT $80                 ; Call interrupt $80 to execute write syscall
 
-; "Power down" the system
+; "Power down" the system, which actually means to exit the Maize CPU loop and return to the host OS.
+
 LD $A9 A                ; Load syscall opcode $A9 (169, sys_reboot) into A register
 LD $4321FEDC J          ; Load "magic" code for power down ($4321FEDC) into J register
 INT $80
