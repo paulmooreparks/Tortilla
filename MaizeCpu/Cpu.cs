@@ -314,16 +314,6 @@ namespace Maize {
             OperandRegister2.IOBus = MB.IOBus;
             MB.ConnectComponent(OperandRegister2);
 
-            OperandRegister3.AddressBus = MB.AddressBus;
-            OperandRegister3.DataBus = MB.DataBus;
-            OperandRegister3.IOBus = MB.IOBus;
-            MB.ConnectComponent(OperandRegister3);
-
-            OperandRegister4.AddressBus = MB.AddressBus;
-            OperandRegister4.DataBus = MB.DataBus;
-            OperandRegister4.IOBus = MB.IOBus;
-            MB.ConnectComponent(OperandRegister4);
-
             MB.ConnectComponent(this);
 
             BuildMicrocode();
@@ -340,8 +330,7 @@ namespace Maize {
 
         public Register OperandRegister1 = new Register();
         public Register OperandRegister2 = new Register();
-        public Register OperandRegister3 = new Register();
-        public Register OperandRegister4 = new Register();
+
         public Register SrcReg = null;
         public Register DestReg = null;
 

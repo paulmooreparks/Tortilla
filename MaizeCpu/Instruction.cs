@@ -19,8 +19,6 @@ namespace Maize {
         public static Decoder Decoder;
         public static Register OperandRegister1;
         public static Register OperandRegister2;
-        public static Register OperandRegister3;
-        public static Register OperandRegister4;
         public static MemoryModule MemoryModule;
         public static Register SrcReg;
         public static Register DestReg;
@@ -58,8 +56,6 @@ namespace Maize {
             DestReg = null;
             OperandRegister1 = Decoder.OperandRegister1;
             OperandRegister2 = Decoder.OperandRegister2;
-            OperandRegister3 = Decoder.OperandRegister3;
-            OperandRegister4 = Decoder.OperandRegister4;
         }
 
 
