@@ -356,10 +356,18 @@ namespace Maize {
         public Instruction[] InstructionArray;
         protected Instruction ActiveInstruction;
 
+        /* For every clock tick, this is the first function called from the clock's Tick method. It 
+        check to see if an interrupt is pending, and it deals with it first if so. If not, it calls 
+        the internal instruction to read and process the next instruction opcode from memory. */
         public override void OnTickExecute(IBusComponent cpuFlags) {
             if (Cycle == 0) {
                 Step = 0;
+
+                /* Default instruction is to read the next opcode from memory and act on it. */
                 ActiveInstruction = Core.ReadOpcodeAndDispatch.Instance;
+
+                /* If there is an interrupt waiting, deal with the interrupt by pushing F and P 
+                registers onto the stack and setting P to the location of the interrupt handler.*/
 
                 if (   (MB.Cpu.F.RegData.W0 & Cpu.Flag_InterruptSet) == Cpu.Flag_InterruptSet
                     && (MB.Cpu.F.RegData.W0 & Cpu.Flag_InterruptEnabled) == Cpu.Flag_InterruptEnabled)
@@ -377,6 +385,7 @@ namespace Maize {
                     // Vector to interrupt handler for interrupt ID
                     UInt32 intAddress = (UInt32)(interruptID * 4);
                     UInt32 startAddress = MB.MemoryModule.ReadHalfWord(intAddress);
+                    MB.Cpu.P.RegData.H1 = 0x00000000; // For now, interrupt handlers are in segment zero. I may change this. 
                     MB.Cpu.P.RegData.H0 = startAddress;
                 }
             }
