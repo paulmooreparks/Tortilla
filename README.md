@@ -29,12 +29,12 @@ the path to the binary in the -img parameter:
 
 ## Project Status
 
-It's very early days for Maize, so don't expect too much in the way of application usability. So far, I've enabled a basic text-
-mode console for input and output. Next, I'll start creating a file-system device. In the future I plan to port Clang or GCC to 
+It's very early days for Maize, so don't expect too much in the way of application usability. So far, I've enabled a basic 
+text-mode console for input and output. Next, I'll start creating a file-system device. In the future I plan to port Clang or GCC to 
 work with Maize binaries so that I can eventually port Linux to the virtual CPU.
 
-In the short term, I'm implementing a very basic OS over a simple BIOS. It will provide a basic character-mode CLI to allow 
-building and running simple Maize programs from within the virtual CPU environment. 
+In the short term, I'm implementing a very basic OS over a simple BIOS ([core.asm](https://github.com/paulmooreparks/Tortilla/blob/master/core.asm)). 
+It will provide a basic character-mode CLI to allow building and running simple Maize programs from within the virtual CPU environment. 
 
 I'll eventually port Maize to a much lower-level language, likely either C++ or Rust. I started out with .NET and C# because I wanted 
 to play with .NET Core, and that bought me immediate multi-platform support and a lot fewer headaches for writing code quickly and 
