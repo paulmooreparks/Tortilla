@@ -1,4 +1,4 @@
-== Instruction Description ==
+= Instruction Description =
 
 Numeric values are represented in Maize assembly and Maize documentation in binary, decimal, or 
 hexadecimal formats. The % character precedes binary-encoded values, the # character precedes 
@@ -61,7 +61,7 @@ Example: Load the quarter-word located at the address stored in D.H0 into sub-re
    LD @D.H0 Z.Q3
 
 
-== Registers ==
+= Registers =
 
 Registers are 64-bits wide (a "word") and are each divided into smaller sub-registers.
 
@@ -84,7 +84,7 @@ Registers are 64-bits wide (a "word") and are each divided into smaller sub-regi
    S  Stack register
 
 
-=== Sub-registers ===
+== Sub-registers ==
 
 Sub-registers are defined as half-word (H), quarter-word (Q), and byte (B) widths. The full 
 64-bit value of a register (for example, register A) may be coded as "A" or "A.W0". The register 
@@ -125,7 +125,7 @@ The value stored in register A could then be represented as follows:
    A.B0 = $10
 
 
-=== Special-purpose Registers ===
+== Special-purpose Registers ==
 
 There are four special-purpose registers.
 
@@ -145,7 +145,7 @@ There are four special-purpose registers.
       the base pointer, and S.H0, which is the current stack pointer.
 
 
-== Execution ==
+= Execution =
 
 The CPU starts in privileged mode, and the program counter is initially set to segment $0000`0000, 
 address $0000`1000. When in privileged mode, the Privilege flag is set, and instructions marked 
@@ -155,7 +155,7 @@ are inaccessible. Program execution may return to privileged mode via hardware i
 software-generated (INT instruction) interrupts.
 
 
-== Opcode Bytes ==
+= Opcode Bytes =
 
 Opcodes are defined in an 8-bit byte separated into two flag bits and six opcode bits.
 
@@ -172,7 +172,7 @@ When bit 5 is cleared (%xx0x`xxxx), then the flag bits (bits 6 and 7) are interp
 When bit 5 is set (%xx1x`xxxx), all eight bits are used to define the numeric opcode value.
 
 
-== Instructions ==
+= Instructions =
 
 Binary      Hex   Mnemonic  Parameters     Description
 ----------  ---   --------  ----------     --------------------------------------------------------------------------------------------------------------------------------------------
@@ -334,30 +334,30 @@ Binary      Hex   Mnemonic  Parameters     Description
                                            
 %0010`0100  $24   DEC       reg            Decrement register by 1.
                                            
-%0011`0101  $25   NOT       reg            Bitwise negate value in register, store result in register.
+%0010`0101  $25   NOT       reg            Bitwise negate value in register, store result in register.
                                            
-%0011`0110  $26   POP       reg            Increment S.H0 by size of register, copy value at S.H0 into register
+%0010`0110  $26   POP       reg            Increment S.H0 by size of register, copy value at S.H0 into register
                                            
-%0011`0111  $27   RET                      Pop P.H0 from stack and continue execution at that address. Used to return from CALL.
+%0010`0111  $27   RET                      Pop P.H0 from stack and continue execution at that address. Used to return from CALL.
                                            
-%0011`1000  $28   IRET                     Pop F and P from stack and continue execution at segment/address in P. Used to return from interrupt (privileged).
+%0010`1000  $28   IRET                     Pop F and P from stack and continue execution at segment/address in P. Used to return from interrupt (privileged).
                                            
-%0011`1001  $29   SETINT                   Set the Interrupt flag, thereby enabling hardware interrupts (privileged)
+%0010`1001  $29   SETINT                   Set the Interrupt flag, thereby enabling hardware interrupts (privileged)
                                            
-%0011`1010  $30   CLRINT                   Clear the Interrupt flag, thereby disabling hardware interrupts (privileged)
+%0011`0000  $30   CLRINT                   Clear the Interrupt flag, thereby disabling hardware interrupts (privileged)
                                            
-%0011`1011  $31   SETCRY                   Set the Carry flag
+%0011`0001  $31   SETCRY                   Set the Carry flag
                                            
-%0011`1100  $32   CLRCRY                   Clear the Carry flag
+%0011`0010  $32   CLRCRY                   Clear the Carry flag
                                            
 %1010`1010  $AA   NOP                      No operation. Used as an instruction placeholder. Eats one CPU cycle.
                                            
 %1111`1111  $FF   BRK                      Trigger a debug break (INT 3)
             
 
-== Register Parameter ==
+= Register Parameter =
 
-= Register bit field =
+== Register bit field ==
 
 %0000xxxx   $0    A register
 %0001xxxx   $1    B register
@@ -376,7 +376,7 @@ Binary      Hex   Mnemonic  Parameters     Description
 %1110xxxx   $E    P register
 %1111xxxx   $F    S register
 
-= Sub-register bit field =
+== Sub-register bit field ==
 
 %xxxx0000   $0   X.B0 (1-byte data)
 %xxxx0001   $1   X.B1 (1-byte data)
@@ -395,28 +395,28 @@ Binary      Hex   Mnemonic  Parameters     Description
 %xxxx1110   $E   X    (8-byte data)
 
 
-== Immediate Parameter ==
+= Immediate Parameter =
 
-= Value Size Bit Field =
+== Value Size Bit Field ==
 
 %xxxx`x000  $00   instruction reads 1 byte immediate (8 bits)
 %xxxx`x001  $01   instruction reads 2-byte immediate (16 bits) 
 %xxxx`x010  $02   instruction reads 4-byte immediate (32 bits) 
 %xxxx`x011  $03   instruction reads 8-byte immediate (64 bits)
 
-= Immediate Operation Bit =
+== Immediate Operation Bit ==
 
 %xxxx`0xxx  Read immediate value as operand
 %xxxx`1xxx  Perform math operation with value (not implemented yet)
 
-= Immediate Value Bit Field =
+== Immediate Value Bit Field ==
 
 %xxxx`x000  instruction reads 1 byte immediate (8 bits)
 %xxxx`x001  instruction reads 2-byte immediate (16 bits) 
 %xxxx`x010  instruction reads 4-byte immediate (32 bits) 
 %xxxx`x011  instruction reads 8-byte immediate (64 bits)
 
-= Immediate Math Bit Field =
+== Immediate Math Bit Field ==
 
 %0000`xxxx  ADD immediate to previous operand
 %0001`xxxx  SUB immediate from previous operand
@@ -436,7 +436,7 @@ Binary      Hex   Mnemonic  Parameters     Description
 %1111`xxxx  reserved
 
 
-== BIOS Interface ==
+= BIOS Interface =
 
 BIOS calls will track as closely as possible to the "standard" BIOS routines found on typical 
 x86 PCs. The x86 registers used in BIOS calls will map to Maize registers as follows:
@@ -455,7 +455,7 @@ DX -> A.Q3
    DH -> A.B7
 
 
-== OS ABI ==
+= OS ABI =
 
 The first six arguments to OS-level routines will be placed, from left to right, into the 
 G, H, J, K, L, and M registers. Any remaining arguments will be pushed onto the stack. 
@@ -490,7 +490,7 @@ INT $80              ; call sys_write
 User applications should follow this convention where reasonable to do so.
 
 
-== Assembler Syntax ==
+= Assembler Syntax =
 
 (This section is incomplete and a bit of a work in progress. Refer to HelloWorld.asm, 
 stdlib.asm, and core.asm for practical examples.)
@@ -511,7 +511,7 @@ STRING "stringvalue"
 ADDRESS address | labelName
 
 
-== Opcodes Sorted Numerically ==
+= Opcodes Sorted Numerically =
 
 %0000`0000  $00   HALT                 
 %0000`0001  $01   LD       reg reg        
@@ -561,12 +561,22 @@ ADDRESS address | labelName
 %0011`1101  $2D            reserved             
 %0011`1110  $2E            reserved             
 %0011`1111  $2F            reserved             
-%0011`1010  $30   CLRINT
-%0011`1011  $31   SETCRY
-%0011`1100  $32   CLRCRY
-%0011`1101  $33            reserved
-%0011`1110  $34   CMPIND   reg regAddr
-%0011`1111  $35   CMPIND   imm regAddr
+%0011`0000  $30   CLRINT
+%0011`0001  $31   SETCRY
+%0011`0010  $32   CLRCRY
+%0011`0011  $33            reserved
+%0011`0100  $34   CMPIND   reg regAddr
+%0011`0101  $35   CMPIND   imm regAddr
+%0011`0110  $36            reserved             
+%0011`0111  $37            reserved             
+%0011`1000  $38            reserved             
+%0011`1001  $39            reserved             
+%0011`1010  $3A            reserved             
+%0011`1011  $3B            reserved             
+%0011`1100  $3C            reserved             
+%0011`1101  $3E            reserved             
+%0011`1110  $3E            reserved             
+%0011`1111  $3F            reserved             
 %0100`0001  $41   LD       imm reg        
 %0100`0010  $42   ST       imm immAddr    
 %0100`0011  $43   ADD      imm reg        
@@ -629,6 +639,38 @@ ADDRESS address | labelName
 %1001`1101  $9D   CALL     regAddr
 %1001`1110  $9E   OUTR     regAddr reg
 %1001`1111  $9F   IN       regAddr reg
+%1010`0000  $A0            reserved
+%1010`0001  $A1            reserved
+%1010`0010  $A2            reserved
+%1010`0011  $A3            reserved
+%1010`0100  $A4            reserved
+%1010`0101  $A5            reserved
+%1010`0110  $A6            reserved
+%1010`0111  $A7            reserved
+%1010`1000  $A8            reserved
+%1010`1001  $A9            reserved
+%1010`1010  $AA   NOP      
+%1010`1011  $AB            reserved
+%1010`1100  $AC            reserved
+%1010`1101  $AD            reserved
+%1010`1110  $AE            reserved
+%1010`1111  $AF            reserved
+%1011`0000  $B0            reserved
+%1011`0001  $B1            reserved
+%1011`0010  $B2            reserved
+%1011`0011  $B3            reserved
+%1011`0100  $B4            reserved
+%1011`0101  $B5            reserved
+%1011`0110  $B6            reserved
+%1011`0111  $B7            reserved
+%1011`1000  $B8            reserved
+%1011`1001  $B9            reserved
+%1011`1010  $BA            reserved
+%1011`1011  $BB            reserved
+%1011`1100  $BC            reserved
+%1011`1101  $BD            reserved
+%1011`1110  $BE            reserved
+%1011`1111  $BF            reserved
 %1100`0001  $C1   LD       immAddr reg    
 %1100`0010  $C2            reserved               
 %1100`0011  $C3   ADD      immAddr reg    
@@ -660,5 +702,36 @@ ADDRESS address | labelName
 %1101`1101  $DD   CALL     immAddr
 %1101`1110  $DE   OUTR     immAddr reg
 %1101`1111  $DF   IN       immAddr reg
-%1010`1010  $AA   NOP      
+%1110`0000  $E0            reserved
+%1110`0001  $E1            reserved
+%1110`0010  $E2            reserved
+%1110`0011  $E3            reserved
+%1110`0100  $E4            reserved
+%1110`0101  $E5            reserved
+%1110`0110  $E6            reserved
+%1110`0111  $E7            reserved
+%1110`1000  $E8            reserved
+%1110`1001  $E9            reserved
+%1110`1010  $EA            reserved
+%1110`1011  $EB            reserved
+%1110`1100  $EC            reserved
+%1110`1101  $ED            reserved
+%1110`1110  $EE            reserved
+%1110`1111  $EF            reserved
+%1111`0000  $F0            reserved
+%1111`0001  $F1            reserved
+%1111`0010  $F2            reserved
+%1111`0011  $F3            reserved
+%1111`0100  $F4            reserved
+%1111`0101  $F5            reserved
+%1111`0110  $F6            reserved
+%1111`0111  $F7            reserved
+%1111`1000  $F8            reserved
+%1111`1001  $F9            reserved
+%1111`1010  $FA            reserved
+%1111`1011  $FB            reserved
+%1111`1100  $FC            reserved
+%1111`1101  $FD            reserved
+%1111`1110  $FE            reserved
+%1111`1111  $FF            reserved
 %1111`1111  $FF   BRK      (INT 3)
