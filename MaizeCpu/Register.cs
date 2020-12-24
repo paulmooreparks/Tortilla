@@ -291,7 +291,7 @@ namespace Maize {
         }
 
         public override string ToString() {
-            return $"0x{RegData.W0:X16}";
+            return $"{RegData}";
         }
     }
 

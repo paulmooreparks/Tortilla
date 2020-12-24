@@ -40,26 +40,11 @@ namespace Maize {
         Tortilla.IConsole tConsole = new TortillaCharacterConsole();
         IMotherboard<UInt64> Motherboard { get; init; }
 
-        ManualResetEvent cpuStop = new(false);
-
-        void Lifetime() {
-            WaitHandle[] handles = new WaitHandle[] { cpuStop };
-            tConsole.Show();
-
-            while (true) {
-                int index = WaitHandle.WaitAny(handles);
-
-                if (index == 0) {
-                    tConsole.Close();
-                    break;
-                }
-            }
-        }
-
         public int Run() {
             Motherboard.Debug += Hardware_Debug;
-            Task.Run(Lifetime);
+            tConsole.Show();
             PowerOn();
+            tConsole.Close();
             Console.WriteLine();
             return 0;
         }
@@ -96,7 +81,6 @@ namespace Maize {
                 Motherboard.EnableDebug(false);
                 Motherboard.Cpu.DecodeInstruction += Cpu_DecodeInstruction;
                 Motherboard.PowerOn();
-                cpuStop.Set();
             }
         }
     }
