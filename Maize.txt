@@ -83,6 +83,9 @@ Registers are 64-bits wide (a "word") and are each divided into smaller sub-regi
    P  Program execution register
    S  Stack register
 
+
+=== Sub-registers ===
+
 Sub-registers are defined as half-word (H), quarter-word (Q), and byte (B) widths. The full 
 64-bit value of a register (for example, register A) may be coded as "A" or "A.W0". The register 
 value may also be accessed as separate half-word (32-bit) values, coded as A.H1 (upper 32 bits) 
@@ -121,13 +124,16 @@ The value stored in register A could then be represented as follows:
    A.B1 = $32
    A.B0 = $10
 
+
+=== Special-purpose Registers ===
+
 There are four special-purpose registers.
 
    F  Flag register, which contains a bit field of individual flags. Flags in F.H1 may only 
       be set in privileged mode.
    
    I  Instruction register, set by the instruction decoder as instructions and parameters are 
-      read from memory. This can only be set by the decoder.
+      read from memory. This register can only be set by the decoder.
    
    P  Program execution register, which is the pointer to the next instruction to be decoded 
       and executed. This is further sub-divided into P.H1, which is the current code segment,
@@ -156,14 +162,14 @@ Opcodes are defined in an 8-bit byte separated into two flag bits and six opcode
 %BBxx`xxxx  Flags bit field (bits 6 and 7)
 %xxBB`BBBB  Opcode bit field (bits 0 through 5)
 
-When bit 5 is set (%xx1x`xxxx), then the flag bits (bits 6 and 7) are interpreted as follows:
+When bit 5 is cleared (%xx0x`xxxx), then the flag bits (bits 6 and 7) are interpreted as follows:
 
 %0xxx`xxxx  source parameter is a value
 %1xxx`xxxx  source parameter is a memory address
 %x0xx`xxxx  source parameter is a register
 %x1xx`xxxx  source parameter is an immediate value
 
-When bit 5 is cleared, all eight bits are used to define the numeric opcode value.
+When bit 5 is set (%xx1x`xxxx), all eight bits are used to define the numeric opcode value.
 
 
 == Instructions ==
