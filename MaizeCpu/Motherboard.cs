@@ -65,7 +65,6 @@ namespace Maize {
 
         public event EventHandler<string> Debug;
         public event EventHandler PoweredOff;
-        public event EventHandler<byte> RaiseException;
 
         public void OnDebug() {
             Debug?.Invoke(this, null);
@@ -75,12 +74,12 @@ namespace Maize {
             PoweredOff?.Invoke(this, null);
         }
 
-        public void OnRaiseException(byte id) {
-            RaiseException?.Invoke(this, id);
-        }
-
         public void RaiseInterrupt(UInt64 id) {
             Cpu.RaiseInterrupt(id);
+        }
+
+        public void RaiseException(UInt64 id) {
+            Cpu.RaiseException(id);
         }
 
         public byte ReadByte(UInt64 address) {

@@ -572,7 +572,7 @@ namespace TortillaUI {
         public event Action<IBusComponent> RequestTickSetFromAddressBus;
         public event Action<IBusComponent> RequestTickSetFromDataBus;
         public event Action<IBusComponent> RequestTickSetFromIOBus;
-        public event Action<IBusComponent> OnRegisterTickStore;
+        public event Action<IBusComponent> RequestTickStore;
         public event Action<IBusComponent> OnRegisterTickLoad;
 
         public void RegisterTickExecute() {
@@ -607,7 +607,7 @@ namespace TortillaUI {
             RequestTickSetFromIOBus?.Invoke(this);
         }
         public void RegisterTickStore() {
-            OnRegisterTickStore?.Invoke(this);
+            RequestTickStore?.Invoke(this);
         }
 
         public void RegisterTickLoad() {

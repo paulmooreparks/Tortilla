@@ -94,7 +94,7 @@ namespace Maize {
         public event Action<IBusComponent> RequestTickSetFromAddressBus;
         public event Action<IBusComponent> RequestTickSetFromDataBus;
         public event Action<IBusComponent> RequestTickSetFromIOBus;
-        public event Action<IBusComponent> OnRegisterTickStore;
+        public event Action<IBusComponent> RequestTickStore;
         public event Action<IBusComponent> OnRegisterTickLoad;
 
         public void RegisterTickExecute() {
@@ -130,7 +130,7 @@ namespace Maize {
         }
 
         protected void RegisterTickStore() {
-            OnRegisterTickStore?.Invoke(this);
+            RequestTickStore?.Invoke(this);
         }
 
         protected void RegisterTickLoad() {

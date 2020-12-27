@@ -21,12 +21,8 @@ LD $0A L
 LD $0B M
 LD $0C Z
 
-CALL core_os_dump_registers
-
-; "Power down" the system
-LD $A9 A                ; Load syscall opcode $A9 (169, sys_reboot) into A register
-LD $4321FEDC J          ; Load "magic" code for power down ($4321FEDC) into J register
-INT $80
+PUSH $FF
+CALL core_exception_handler
 
 ;;;;;;;;;; END ;;;;;;;;;;;;;
 

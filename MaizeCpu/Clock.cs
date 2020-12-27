@@ -148,7 +148,7 @@ namespace Maize {
             component.RequestTickSetFromDataBus += RegisterTickSetFromDataBus;
             component.RequestTickSetFromIOBus += RegisterTickSetFromIOBus;
             component.OnRegisterTickLoad += RegisterTickLoad;
-            component.OnRegisterTickStore += RegisterTickStore;
+            component.RequestTickStore += RegisterTickStore;
 
             compList[compNextIndex] = component;
             ++compNextIndex;

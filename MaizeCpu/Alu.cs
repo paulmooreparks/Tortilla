@@ -797,6 +797,10 @@ namespace Maize {
                 Cpu.OverflowFlag = true;
                 result = unchecked((byte)(DestReg.RegData.B0 / SrcReg.RegData.B0));
             }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.B0;
+                Motherboard.RaiseInterrupt(0x00);
+            }
 
             return UpdateFlags(result);
         }
@@ -810,6 +814,10 @@ namespace Maize {
             catch (OverflowException) {
                 Cpu.OverflowFlag = true;
                 result = unchecked((ushort)(DestReg.RegData.Q0 / SrcReg.RegData.Q0));
+            }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.Q0;
+                Motherboard.RaiseInterrupt(0x00);
             }
 
             return UpdateFlags(result);
@@ -825,6 +833,10 @@ namespace Maize {
                 Cpu.OverflowFlag = true;
                 result = unchecked(DestReg.RegData.H0 / SrcReg.RegData.H0);
             }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.H0;
+                Motherboard.RaiseInterrupt(0x00);
+            }
 
             return UpdateFlags(result);
         }
@@ -838,6 +850,10 @@ namespace Maize {
             catch (OverflowException) {
                 Cpu.OverflowFlag = true;
                 result = unchecked(DestReg.RegData.W0 / SrcReg.RegData.W0);
+            }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.W0;
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -854,6 +870,10 @@ namespace Maize {
                 Cpu.OverflowFlag = true;
                 result = unchecked((byte)(DestReg.RegData.B0 % SrcReg.RegData.B0));
             }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.B0;
+                Motherboard.RaiseInterrupt(0x00);
+            }
 
             return UpdateFlags(result);
         }
@@ -867,6 +887,10 @@ namespace Maize {
             catch (OverflowException) {
                 Cpu.OverflowFlag = true;
                 result = unchecked((ushort)(DestReg.RegData.Q0 % SrcReg.RegData.Q0));
+            }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.Q0;
+                Motherboard.RaiseInterrupt(0x00);
             }
 
             return UpdateFlags(result);
@@ -882,6 +906,10 @@ namespace Maize {
                 Cpu.OverflowFlag = true;
                 result = unchecked(DestReg.RegData.H0 % SrcReg.RegData.H0);
             }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.H0;
+                Motherboard.RaiseInterrupt(0x00);
+            }
 
             return UpdateFlags(result);
         }
@@ -895,6 +923,10 @@ namespace Maize {
             catch (OverflowException) {
                 Cpu.OverflowFlag = true;
                 result = unchecked(DestReg.RegData.W0 % SrcReg.RegData.W0);
+            }
+            catch (DivideByZeroException) {
+                result = DestReg.RegData.W0;
+                Motherboard.RaiseException(0x00);
             }
 
             Cpu.CarryFlag = (result < SrcReg.RegData.W0);

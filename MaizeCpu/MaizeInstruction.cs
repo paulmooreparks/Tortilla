@@ -30,8 +30,7 @@ namespace Maize {
             public override void BuildMicrocode() {
                 Code = new Action[] {
                     () => {
-                        throw new Exception("Unknown opcode");
-                        // MB.RaiseInterrupt(0x06);
+                        MB.RaiseInterrupt(0x06);
                     }
                 };
             }
@@ -144,7 +143,7 @@ namespace Maize {
 
             public virtual void StopClock() {
                 if (!Cpu.PrivilegeFlag) {
-                    throw new Exception("Insufficient privilege");
+                    MB.RaiseInterrupt(0x0D);
                 }
 
                 MB.Clock.Stop();
@@ -158,7 +157,7 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         Cpu.InterruptEnabledFlag = true;
@@ -174,7 +173,7 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         Cpu.InterruptEnabledFlag = false;
@@ -1904,7 +1903,7 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         S.EnableToAddressBus(SubRegister.H0);
@@ -1937,7 +1936,7 @@ namespace Maize {
                         P.Increment(2);
 
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
@@ -1967,7 +1966,7 @@ namespace Maize {
                         P.Increment(2);
 
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
@@ -1992,7 +1991,7 @@ namespace Maize {
                 Code = new Action[] {
                     () => {
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];
@@ -2023,7 +2022,7 @@ namespace Maize {
                         P.Increment(2);
 
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         SrcReg = Decoder.RegisterMap[SrcRegisterFlag >> 4];
@@ -2050,7 +2049,7 @@ namespace Maize {
                         P.Increment(2);
 
                         if (!Cpu.PrivilegeFlag) {
-                            throw new Exception("Insufficient privilege");
+                            MB.RaiseInterrupt(0x0D);
                         }
 
                         DestReg = Decoder.RegisterMap[DestRegisterFlag >> 4];

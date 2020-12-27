@@ -419,7 +419,7 @@ namespace mazm {
                 break;
 
             default:
-                throw new Exception("Invalid register");
+                throw new Exception($"Invalid register '{regStr}'");
             }
 
             if (regStr.Length > 1) {

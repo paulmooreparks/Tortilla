@@ -2,7 +2,7 @@
   "profiles": {
     "maize": {
       "commandName": "Project",
-      "commandLineArgs": "-img \"../../../../HelloWorld.bin\"",
+      "commandLineArgs": "-img \"../../../../scratch.bin\"",
       "nativeDebugging": true
     }
   }

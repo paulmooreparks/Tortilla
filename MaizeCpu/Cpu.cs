@@ -112,6 +112,10 @@ namespace Maize {
             S.IOBus = MB.IOBus;
             MB.ConnectComponent(S);
 
+            /* Set default base pointer and stack pointer */
+            S.RegData.H1 = 0xFFFFF000; // Base pointer
+            S.RegData.H0 = 0xFFFFF000; // Stack pointer
+
             Decoder = new Decoder(MB);
             // Decoder.InstructionRead += InstructionRegister_InstructionRead;
             Decoder.RegisterMap[Instruction.OpFlag_RegA >> 4] = A;
@@ -290,6 +294,25 @@ namespace Maize {
             }
         }
 
+        public void RaiseException(UInt64 id) {
+            // Set interrupt flag
+            var tmp = MB.Cpu.S.RegData.W0;
+
+            /* Capture the stack/base pointers and the instruction register */
+            MB.Cpu.S.RegData.H0 -= 8;
+            MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, tmp);
+            MB.Cpu.S.RegData.H0 -= 8;
+            MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.I.RegData.W0);
+
+            InterruptQueue.Enqueue(id);
+            InterruptSetFlag = true;
+
+            if (!MB.Clock.IsRunning) {
+                MB.Clock.Start();
+                ClockEvent.Set();
+            }
+        }
+
         public void Reset() {
             P.RegData.H0 = 0;
             Decoder.RegData.W0 = 0;
@@ -364,12 +387,10 @@ namespace Maize {
                     MB.Cpu.InterruptSetFlag = false;
                     var interruptID = MB.Cpu.InterruptQueue.Dequeue();
 
-                    if (interruptID != 0) {
-                        MB.Cpu.S.RegData.H0 -= 8;
-                        MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.F.RegData.W0);
-                        MB.Cpu.S.RegData.H0 -= 8;
-                        MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.P.RegData.W0);
-                    }
+                    MB.Cpu.S.RegData.H0 -= 8;
+                    MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.F.RegData.W0);
+                    MB.Cpu.S.RegData.H0 -= 8;
+                    MB.MemoryModule.WriteWord(MB.Cpu.S.RegData.H0, MB.Cpu.P.RegData.W0);
 
                     // Vector to interrupt handler for interrupt ID
                     UInt32 intAddress = (UInt32)(interruptID * 4);
@@ -470,7 +491,7 @@ namespace Maize {
                 /* 0x1E */ Instructions.OUT_RegVal_Imm.Instance,
                 /* 0x1F */ Instructions.IN_RegVal_Reg.Instance,
                 /* 0x20 */ Instructions.PUSH_RegVal.Instance,
-                /* 0x21 */ Instructions.PUSH_ImmVal.Instance,
+                /* 0x21 */ Exceptions.BadOpcode.Instance,
                 /* 0x22 */ Instructions.CLR.Instance,
                 /* 0x23 */ Instructions.INC.Instance,
                 /* 0x24 */ Instructions.DEC.Instance,
@@ -533,7 +554,7 @@ namespace Maize {
                 /* 0x5D */ Instructions.CALL_ImmVal.Instance,
                 /* 0x5E */ Exceptions.BadOpcode.Instance,
                 /* 0x5F */ Instructions.IN_ImmVal_Reg.Instance,
-                /* 0x60 */ Exceptions.BadOpcode.Instance,
+                /* 0x60 */ Instructions.PUSH_ImmVal.Instance,
                 /* 0x61 */ Exceptions.BadOpcode.Instance,
                 /* 0x62 */ Exceptions.BadOpcode.Instance,
                 /* 0x63 */ Exceptions.BadOpcode.Instance,

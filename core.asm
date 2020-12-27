@@ -3,7 +3,7 @@ LABEL core_os_core                  AUTO
 LABEL core_os_core_jump_table       AUTO
 LABEL core_os_key_input             AUTO
 LABEL core_os_print_reg             AUTO
-LABEL core_os_print_reg_label       AUTO
+LABEL core_os_puts                  AUTO
 LABEL core_os_print_newline         AUTO
 LABEL core_os_label_reg_a           AUTO
 LABEL core_os_label_reg_b           AUTO
@@ -22,6 +22,27 @@ LABEL core_os_label_reg_i           AUTO
 LABEL core_os_label_reg_p           AUTO
 LABEL core_os_label_reg_s           AUTO
 LABEL core_os_label_newline         AUTO
+LABEL core_os_dump_registers        AUTO
+LABEL core_os_shut_down             AUTO
+LABEL core_os_strlen                AUTO
+
+LABEL core_os_exception_handler        AUTO
+LABEL core_os_exception_handler_00     AUTO
+LABEL core_os_exception_handler_01     AUTO
+LABEL core_os_exception_handler_02     AUTO
+LABEL core_os_exception_handler_03     AUTO
+LABEL core_os_exception_handler_04     AUTO
+LABEL core_os_exception_handler_05     AUTO
+LABEL core_os_exception_handler_06     AUTO
+LABEL core_os_exception_handler_07     AUTO
+LABEL core_os_exception_handler_08     AUTO
+LABEL core_os_exception_handler_09     AUTO
+LABEL core_os_exception_handler_0A     AUTO
+LABEL core_os_exception_handler_0B     AUTO
+LABEL core_os_exception_handler_0C     AUTO
+LABEL core_os_exception_handler_0D     AUTO
+LABEL core_os_exception_handler_0E     AUTO
+LABEL core_os_exception_handler_0F     AUTO
 
 
 LABEL core_bios_10                  AUTO
@@ -52,22 +73,22 @@ LABEL os_hex_string            AUTO
 
 
 $00000000:
-ADDRESS $0000`0000                  ; INT 00 
-ADDRESS $0000`0000                  ; INT 01 
-ADDRESS $0000`0000                  ; INT 02 
-ADDRESS $0000`0000                  ; INT 03 
-ADDRESS $0000`0000                  ; INT 04
-ADDRESS $0000`0000                  ; INT 05 
-ADDRESS core_exception_handler      ; INT 06 
-ADDRESS $0000`0000                  ; INT 07 
-ADDRESS $0000`0000                  ; INT 08 
-ADDRESS $0000`0000                  ; INT 09 
-ADDRESS $0000`0000                  ; INT 0A 
-ADDRESS $0000`0000                  ; INT 0B 
-ADDRESS $0000`0000                  ; INT 0C 
-ADDRESS $0000`0000                  ; INT 0D 
-ADDRESS $0000`0000                  ; INT 0E 
-ADDRESS $0000`0000                  ; INT 0F 
+ADDRESS core_os_exception_handler_00   ; INT 00 divide by zero
+ADDRESS core_os_exception_handler_01   ; INT 01 
+ADDRESS core_os_exception_handler_02   ; INT 02 
+ADDRESS core_os_exception_handler_03   ; INT 03 
+ADDRESS core_os_exception_handler_04   ; INT 04
+ADDRESS core_os_exception_handler_05   ; INT 05 
+ADDRESS core_os_exception_handler_06   ; INT 06 invalid opcode
+ADDRESS core_os_exception_handler_07   ; INT 07 
+ADDRESS core_os_exception_handler_08   ; INT 08 
+ADDRESS core_os_exception_handler_09   ; INT 09 
+ADDRESS core_os_exception_handler_0A   ; INT 0A 
+ADDRESS core_os_exception_handler_0B   ; INT 0B 
+ADDRESS core_os_exception_handler_0C   ; INT 0C 
+ADDRESS core_os_exception_handler_0D   ; INT 0D 
+ADDRESS core_os_exception_handler_0E   ; INT 0E 
+ADDRESS core_os_exception_handler_0F   ; INT 0F 
 ADDRESS core_bios_10                ; INT 10 Classic BIOS
 ADDRESS $0000`0000                  ; INT 11 
 ADDRESS $0000`0000                  ; INT 12 
@@ -184,7 +205,6 @@ ADDRESS core_syscall                ; INT 80
 
 
 core_os_start:
-LABEL core_exception_handler                AUTO
 LABEL core_bios_nop                         AUTO
 LABEL core_bios_10_clear_screen             AUTO
 LABEL core_bios_10_set_video_mode           AUTO    
@@ -197,9 +217,6 @@ LABEL core_bios_10_read_char_and_attr       AUTO
 LABEL core_bios_10_write_char_and_attr      AUTO 
 LABEL core_bios_10_write_char               AUTO
 LABEL core_bios_10_set_color                AUTO
-
-core_exception_handler:
-HALT
 
 core_bios_10_jump_table:
 ADDRESS core_bios_10_set_video_mode      ; AH = $00
@@ -336,10 +353,8 @@ core_bios_16_set_rate_delay:
 RET
 
 
-LABEL core_os_shut_down             AUTO
 LABEL core_os_idle                  AUTO
 LABEL core_os_put_string            AUTO
-LABEL core_os_dump_registers        AUTO
 
 core_os_core_jump_table:
 ADDRESS core_os_shut_down           ; A.Q0 = $0000
@@ -865,6 +880,33 @@ RET
 os_hex_string: 
 STRING "0123456789ABCDEF"
 
+core_os_puts:
+PUSH A
+PUSH G
+PUSH H
+PUSH J
+CALL core_os_strlen
+LD G H
+LD A J 
+
+LD $01 A                ; Load syscall opcode $01 (write) into A register
+LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
+INT $80                 ; Call interrupt $80 to execute write syscall
+POP J
+POP H
+POP G
+POP A
+RET
+
+core_os_print_newline:
+PUSH A
+PUSH G
+LD core_os_label_newline G
+CALL core_os_puts
+POP G
+POP A
+RET
+
 core_os_strlen:
 LABEL core_os_strlen_loop AUTO
 LABEL core_os_strlen_done AUTO
@@ -882,10 +924,24 @@ POP G.H0
 RET
 
 core_os_dump_registers:
-PUSH P
-PUSH S
-PUSH I
-PUSH F
+RET
+
+core_os_print_reg:
+PUSH G
+PUSH H
+CALL core_os_puts
+LD H G
+CALL os_hex_print_w0
+CALL core_os_print_newline
+POP H
+POP G
+RET
+
+core_os_exception_handler:
+LABEL core_os_exception_label AUTO
+LABEL core_os_exception_segment_label AUTO
+LABEL core_os_exception_address_label AUTO
+
 PUSH Z
 PUSH M
 PUSH L
@@ -947,70 +1003,109 @@ LD core_os_label_reg_z G
 POP H
 CALL core_os_print_reg
 
-LD core_os_label_reg_f G
-POP H
-CALL core_os_print_reg
+; Z.B0 = exception number
+POP Z.B0
 
-LD core_os_label_reg_i G
-POP H
-CALL core_os_print_reg
-
-LD core_os_label_reg_s G
-POP H
-CALL core_os_print_reg
-
+; M.H0 = stack frame
+LD S.H0 M.H0
 LD core_os_label_reg_p G
-POP H
+LD @M.H0 H
+LD H B
 CALL core_os_print_reg
 
-RET
+ADD $08 M.H0
+LD core_os_label_reg_f G
+LD @M.H0 H
+CALL core_os_print_reg
 
-core_os_print_reg:
-PUSH G
-PUSH H
-CALL core_os_print_reg_label
-LD H G
-CALL os_hex_print_w0
-CALL core_os_print_newline
-POP H
-POP G
-RET
+ADD $08 M.H0
+LD core_os_label_reg_i G
+LD @M.H0 H
+CALL core_os_print_reg
 
-core_os_print_reg_label:
-PUSH G
-PUSH H
-PUSH J
-CALL core_os_strlen
-LD G H
-LD A J 
+ADD $08 M.H0
+LD core_os_label_reg_s G
+LD @M.H0 H
+CALL core_os_print_reg
 
-LD $01 A                ; Load syscall opcode $01 (write) into A register
-LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
-INT $80                 ; Call interrupt $80 to execute write syscall
-POP J
-POP H
-POP G
-RET
+LD core_os_exception_label G
+CALL core_os_puts
+LD Z.B0 G.B0
+CALL os_hex_print_b0
+LD core_os_exception_segment_label G
+CALL core_os_puts
+LD B G
+CALL os_hex_print_h1
+LD core_os_exception_address_label G
+CALL core_os_puts
+LD B G
+CALL os_hex_print_h0
+CALL core_os_shut_down
+IRET
 
-core_os_print_newline:
-PUSH A
-PUSH G
-PUSH H
-PUSH J
-CLR H.H1
-LD core_os_label_newline H.H0
-LD H G
-CALL core_os_strlen
-LD A J 
+core_os_exception_handler_00:
+PUSH $00
+JMP core_os_exception_handler
 
-LD $01 A                ; Load syscall opcode $01 (write) into A register
-LD $01 G                ; Load file descriptor $01 (STDOUT) into G register
-INT $80                 ; Call interrupt $80 to execute write syscall
-POP J
-POP H
-POP G
-POP A
-RET
+core_os_exception_handler_01:
+PUSH $01
+JMP core_os_exception_handler
+
+core_os_exception_handler_02:
+PUSH $02
+JMP core_os_exception_handler
+
+core_os_exception_handler_03:
+PUSH $03
+JMP core_os_exception_handler
+
+core_os_exception_handler_04:
+PUSH $04
+JMP core_os_exception_handler
+
+core_os_exception_handler_05:
+PUSH $05
+JMP core_os_exception_handler
+
+core_os_exception_handler_06:
+PUSH $06
+JMP core_os_exception_handler
+
+core_os_exception_handler_07:
+PUSH $07
+JMP core_os_exception_handler
+
+core_os_exception_handler_08:
+PUSH $08
+JMP core_os_exception_handler
+
+core_os_exception_handler_09:
+PUSH $09
+JMP core_os_exception_handler
+
+core_os_exception_handler_0A:
+PUSH $0A
+JMP core_os_exception_handler
+
+core_os_exception_handler_0B:
+PUSH $0B
+JMP core_os_exception_handler
+
+core_os_exception_handler_0C:
+PUSH $0C
+JMP core_os_exception_handler
+
+core_os_exception_handler_0D:
+PUSH $0D
+JMP core_os_exception_handler
+
+core_os_exception_handler_0E:
+PUSH $0E
+JMP core_os_exception_handler
+
+core_os_exception_handler_0F:
+PUSH $0F
+JMP core_os_exception_handler
 
 core_os_label_reg_a:
 STRING "A: $\0"
@@ -1063,3 +1158,11 @@ STRING "S: $\0"
 core_os_label_newline:
 STRING "\n\0"
 
+core_os_exception_label:
+STRING "\nException \0"
+
+core_os_exception_segment_label:
+STRING " at segment \0"
+
+core_os_exception_address_label:
+STRING " address \0"

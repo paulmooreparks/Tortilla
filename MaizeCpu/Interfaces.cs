@@ -13,18 +13,8 @@ interfaces, but rather to get raw speed wherever I can. I'm sacrificing some sac
 of performance, and inside the ugly innards of the CPU implementation, it's probably worth it. */
 
 namespace Tortilla {
-    public enum ClockState {
-        Dynamic =                   0b_0000_0000_0000,
-        TickExecute =               0b_0000_0000_0001,
-        TickEnableToAddressBus =    0b_0000_0000_0010,
-        TickEnableToDataBus =       0b_0000_0000_0100,
-        TickEnableToIOBus =         0b_0000_0000_1000,
-        TickSetFromAddressBus =     0b_0000_0001_0000,
-        TickSetFromDataBus =        0b_0000_0010_0000,
-        TickSetFromIOBus =          0b_0000_0100_1000,
-        TickStore =                 0b_0000_1000_0000,
-        TickLoad =                  0b_0001_0000_0000,
-    }
+    /* This is the wrong place for the Register and SubRegister enums, but I need to find a better way 
+    to specify them in the Enable and Set methods. */
 
     public enum Register {
         A = 0x00,
@@ -63,6 +53,12 @@ namespace Tortilla {
         W0 = 0x0E
     }
 
+    public enum Interrupt {
+        Software,
+        Maskable,
+        NonMaskable
+    }
+
     public interface IClock {
         bool IsRunning { get; }
         void Start();
@@ -99,7 +95,7 @@ namespace Tortilla {
         event Action<IBusComponent> RequestTickSetFromAddressBus;
         event Action<IBusComponent> RequestTickSetFromDataBus;
         event Action<IBusComponent> RequestTickSetFromIOBus;
-        event Action<IBusComponent> OnRegisterTickStore;
+        event Action<IBusComponent> RequestTickStore;
         event Action<IBusComponent> OnRegisterTickLoad;
 
         void OnTickUpdate(IBusComponent cpuFlags);
@@ -120,12 +116,11 @@ namespace Tortilla {
     public interface IMotherboard<DataType> {
         void OnDebug();
         void OnPowerOff();
-        void OnRaiseException(byte id);
         void RaiseInterrupt(DataType id);
+        void RaiseException(DataType id);
 
         event EventHandler<string> Debug;
         event EventHandler PoweredOff;
-        event EventHandler<byte> RaiseException;
 
         IDataBus<DataType> DataBus { get; }
         IDataBus<DataType> AddressBus { get; }
@@ -152,6 +147,7 @@ namespace Tortilla {
         void PowerOff();
         void Reset();
         void RaiseInterrupt(DataType id);
+        void RaiseException(DataType id);
         void Break();
         bool SingleStep { get; set; }
         void Run();
