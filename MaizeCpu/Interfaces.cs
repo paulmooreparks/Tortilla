@@ -168,3 +168,14 @@ namespace Tortilla {
         void Clear();
     }
 }
+
+namespace Maize {
+    namespace Extensions {
+        public static class Extensions {
+            public static bool HasFlags(this byte value, byte flags) {
+                return (value & flags) == flags;
+            }
+        }
+    }
+}
+

@@ -120,7 +120,6 @@ namespace Maize {
                 { 0x9F, ("IN"  , SrcImmReg_DestReg) },
                 { 0xDF, ("IN"  , SrcImmReg_DestReg) },
                 { 0x20, ("PUSH", UnaryReg) },
-                { 0x21, ("PUSH", UnaryImm) },
                 { 0x22, ("CLR" , UnaryReg) },
                 { 0x23, ("INC" , UnaryReg) },
                 { 0x24, ("DEC" , UnaryReg) },
@@ -132,6 +131,7 @@ namespace Maize {
                 { 0x30, ("CLRINT" , NoParams) },
                 { 0x31, ("SETCRY" , NoParams) },
                 { 0x32, ("CLRCRY" , NoParams) },
+                { 0x60, ("PUSH", UnaryImm) },
                 { 0xAA, ("NOP" , NoParams) },
                 { 0xFF, ("BRK" , NoParams) }
             };

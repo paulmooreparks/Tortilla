@@ -326,7 +326,6 @@ Binary      Hex   Mnemonic  Parameters     Description
 %1101`1111  $DF   IN        immAddr reg    Read value from port at immediate address into destination register
                                            
 %0010`0000  $20   PUSH      reg            Copy register value into memory at location in S.H0, decrement S.H0 by size of register
-%0010`0001  $21   PUSH      imm            Copy immediate value into memory at location in S.H0, decrement S.H0 by size of immediate value
                                            
 %0010`0010  $22   CLR       reg            Set register to zero (0).
                                            
@@ -350,6 +349,8 @@ Binary      Hex   Mnemonic  Parameters     Description
                                            
 %0011`0010  $32   CLRCRY                   Clear the Carry flag
                                            
+%0110`0000  $60   PUSH      imm            Copy immediate value into memory at location in S.H0, decrement S.H0 by size of immediate value
+
 %1010`1010  $AA   NOP                      No operation. Used as an instruction placeholder. Eats one CPU cycle.
                                            
 %1111`1111  $FF   BRK                      Trigger a debug break (INT 3)
@@ -546,21 +547,21 @@ ADDRESS address | labelName
 %0001`1110  $1E   OUTR     reg reg
 %0001`1111  $1F   IN       reg reg
 %0010`0000  $20   PUSH     reg
-%0010`0001  $21   PUSH     imm
+%0010`0001  $21            reserved
 %0010`0010  $22   CLR      reg
 %0010`0011  $23   INC      reg
 %0010`0100  $24   DEC      reg
-%0011`0101  $25   NOT      reg
-%0011`0110  $26   POP      reg
-%0011`0111  $27   RET    
-%0011`1000  $28   IRET    
-%0011`1001  $29   SETINT
-%0011`1010  $2A            reserved             
-%0011`1011  $2B            reserved             
-%0011`1100  $2C            reserved             
-%0011`1101  $2D            reserved             
-%0011`1110  $2E            reserved             
-%0011`1111  $2F            reserved             
+%0010`0101  $25   NOT      reg
+%0010`0110  $26   POP      reg
+%0010`0111  $27   RET    
+%0010`1000  $28   IRET    
+%0010`1001  $29   SETINT
+%0010`1010  $2A            reserved             
+%0010`1011  $2B            reserved             
+%0010`1100  $2C            reserved             
+%0010`1101  $2D            reserved             
+%0010`1110  $2E            reserved             
+%0010`1111  $2F            reserved             
 %0011`0000  $30   CLRINT
 %0011`0001  $31   SETCRY
 %0011`0010  $32   CLRCRY
@@ -608,6 +609,39 @@ ADDRESS address | labelName
 %0101`1101  $5D   CALL     imm
 %0101`1110  $5E   OUTR     imm reg
 %0101`1111  $5F   IN       imm reg
+%0110`0000  $60   PUSH     imm
+%0110`0001  $61            reserved
+%0110`0010  $62            reserved
+%0110`0011  $63            reserved
+%0110`0100  $64            reserved
+%0110`0101  $65            reserved
+%0110`0110  $66            reserved
+%0110`0111  $67            reserved
+%0110`1000  $68            reserved
+%0110`1001  $69            reserved
+%0110`1010  $6A            reserved
+%0110`1011  $6B            reserved
+%0110`1100  $6C            reserved
+%0110`1101  $6D            reserved
+%0110`1110  $6E            reserved
+%0110`1111  $6F            reserved
+%0111`0000  $70            reserved
+%0111`0001  $71            reserved
+%0111`0010  $72            reserved
+%0111`0011  $73            reserved
+%0111`0100  $74            reserved
+%0111`0101  $75            reserved
+%0111`0110  $76            reserved
+%0111`0111  $77            reserved
+%0111`1000  $78            reserved
+%0111`1001  $79            reserved
+%0111`1010  $7A            reserved
+%0111`1011  $7B            reserved
+%0111`1100  $7C            reserved
+%0111`1101  $7D            reserved
+%0111`1110  $7E            reserved
+%0111`1111  $7F            reserved
+%1000`0000  $80            reserved
 %1000`0001  $81   LD       regAddr reg    
 %1000`0010  $82            reserved            
 %1000`0011  $83   ADD      regAddr reg    

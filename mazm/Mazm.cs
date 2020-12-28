@@ -9,6 +9,7 @@ using Tortilla;
 using Maize;
 using Maize.Instructions;
 using System.Diagnostics;
+using Maize.Extensions;
 
 namespace mazm {
     using TokenTree = Expression<string>;
