@@ -1,6 +1,5 @@
 ; This file contains the code for the kernel
 
-LABEL core_os_start                    AUTO
 LABEL core_os_core                     AUTO
 LABEL core_os_core_jump_table          AUTO
 LABEL core_os_key_input                AUTO
@@ -33,6 +32,9 @@ LABEL core_bios_10                     AUTO
 LABEL core_bios_16                     AUTO
 LABEL core_syscall                     AUTO
 
+
+;******************************************************************************
+; Interrupt vectors begin at segment $0000`0000 address $0000`0000.
 
 $00000000:
    ADDRESS core_os_exception_handler_00   ; INT 00 divide by zero
@@ -166,8 +168,8 @@ $00000000:
    ADDRESS core_syscall                   ; INT 80
 
 
-core_os_start:
-   ; Just a marker
+;******************************************************************************
+; Just a marker address.
 
 LABEL core_bios_10_jump_table             AUTO
 LABEL core_bios_10_nop                    AUTO
@@ -268,6 +270,17 @@ LABEL core_bios_16_get_enh_keystroke         AUTO
 LABEL core_bios_16_check_enh_keystroke       AUTO
 LABEL core_bios_16_get_ext_shift_states      AUTO
 
+core_bios_16:
+   PUSH B
+   CLR B
+   LD A.B1 B.H0
+   MUL $04 B.H0
+   LD core_bios_16_jump_table B.H1
+   ADD B.H0 B.H1
+   CALL @B.H1
+   POP B
+   IRET
+
 core_bios_16_jump_table:
    ADDRESS core_bios_16_get_keystroke        ; AH = $00
    ADDRESS core_bios_16_check_for_keystroke  ; AH = $01
@@ -288,17 +301,6 @@ core_bios_16_jump_table:
    ADDRESS core_bios_16_nop                  ; AH = $10
    ADDRESS core_bios_16_nop                  ; AH = $11
    ADDRESS core_bios_16_nop                  ; AH = $12
-
-core_bios_16:
-   PUSH B
-   CLR B
-   LD A.B1 B.H0
-   MUL $04 B.H0
-   LD core_bios_16_jump_table B.H1
-   ADD B.H0 B.H1
-   CALL @B.H1
-   POP B
-   IRET
 
 core_bios_16_nop:                    
    RET
@@ -321,14 +323,8 @@ core_bios_16_set_rate_delay:
    RET
 
 
-LABEL core_os_idle                  AUTO
-LABEL core_os_put_string            AUTO
-
-core_os_core_jump_table:
-   ADDRESS core_os_shut_down           ; A.Q0 = $0000
-   ADDRESS core_os_idle                ; A.Q1 = $0001
-   ADDRESS core_os_put_string          ; A.Q0 = $0002
-   ADDRESS core_os_strlen              ; A.Q0 = $0003
+;******************************************************************************
+; Core OS functions that aren't necessarily in the system calls table.
 
 core_os_core:
    PUSH B
@@ -341,14 +337,33 @@ core_os_core:
    POP B
    IRET
 
+LABEL core_os_idle                  AUTO
+LABEL core_os_put_string            AUTO
+
+
+;******************************************************************************
+; The core_os_core function uses this jump table to vector to OS functions.
+
+core_os_core_jump_table:
+   ADDRESS core_os_shut_down           ; A.Q0 = $0000
+   ADDRESS core_os_idle                ; A.Q1 = $0001
+   ADDRESS core_os_put_string          ; A.Q0 = $0002
+   ADDRESS core_os_strlen              ; A.Q0 = $0003
+
+
+;******************************************************************************
+; "Power down" the virtual CPU.
+
 core_os_shut_down:
    CLR A
    OUT A $0001
    RET
 
-; Idle routine is executed when the OS isn't doing any work. HALT stops the clock,
-; and any interrupt will wake the CPU, jump to the interrupt handler, and return 
-; to the JMP instruction, which goes right back to HALT.
+
+;******************************************************************************
+; The idle routine is executed when the OS isn't doing any work. HALT stops the 
+; clock, and any interrupt will wake the CPU, jump to the interrupt handler, 
+; and return to the JMP instruction, which goes right back to HALT.
 
 LABEL core_os_idle_halt AUTO
 
@@ -360,14 +375,18 @@ core_os_idle_halt:
    JMP core_os_idle_halt
 
 
+;******************************************************************************
+; Output a string to the console.
+
+LABEL core_os_put_string_exit    AUTO
+
 core_os_put_string:
-   LABEL core_os_put_string_exit    AUTO
    PUSH B
    PUSH A.H0
    CLR B
    CLR A.H1
    LD $0A B.B1
-   core_os_put_string_next_char:
+core_os_put_string_next_char:
    LD @A.H0 B.B0
    CMP $00 B.B0
    JZ core_os_put_string_exit
@@ -375,13 +394,15 @@ core_os_put_string:
    INC A.H0
    INC A.H1
    JMP core_os_put_string_next_char
-   core_os_put_string_exit:
+core_os_put_string_exit:
    POP A.H0
    POP B
    RET
 
 
+;******************************************************************************
 ; Echo routine
+
 core_os_key_input:
    PUSH A
    CLR A
@@ -390,10 +411,10 @@ core_os_key_input:
    LD $0A A.B1 ; Function to execute
    INT $10     ; BIOS interrupt
    POP A
-   NOP
    IRET
 
 
+;******************************************************************************
 ; Linux syscalls are implemented here.
 
 LABEL core_syscall_jump_table       AUTO
@@ -402,6 +423,13 @@ LABEL core_sys_read                 AUTO    ; $00 #0
 LABEL core_sys_write                AUTO    ; $01 #1
 LABEL core_sys_exit                 AUTO    ; $3C #60
 LABEL core_sys_reboot               AUTO    ; $A9 #169
+
+core_syscall:
+   MUL $04 A.H0
+   LD core_syscall_jump_table A.H1
+   ADD A.H0 A.H1
+   CALL @A.H1
+   IRET
 
 core_syscall_jump_table:
    ADDRESS core_sys_read            ; $00 #0
@@ -662,24 +690,22 @@ core_syscall_jump_table:
    ADDRESS core_sys_nop             ; $FF #
 
 
-core_syscall:
-   MUL $04 A.H0
-   LD core_syscall_jump_table A.H1
-   ADD A.H0 A.H1
-   CALL @A.H1
-   IRET
+;******************************************************************************
+; Placeholder for system calls that haven't been implemented yet, but for which 
+; I want to reserve a place.
 
 core_sys_nop:
    RET
+
+
+;******************************************************************************
+; sys_read system call
 
 core_sys_read:
    RET
 
 
-LABEL core_sys_write_exit AUTO
-LABEL core_sys_write_next_char AUTO
-
-; 
+;******************************************************************************
 ; sys_write system call
 ; 
 ; PARAMETERS
@@ -689,6 +715,9 @@ LABEL core_sys_write_next_char AUTO
 ; 
 ; RETURN
 ; A size_t number of bytes written
+
+LABEL core_sys_write_exit AUTO
+LABEL core_sys_write_next_char AUTO
 
 core_sys_write:
    PUSH B
@@ -711,6 +740,12 @@ core_sys_write_exit:
    POP B
    RET
 
+
+;******************************************************************************
+; sys_reboot system call
+
+; These are the "magic numbers" that affect this system call.
+
 ; #define LINUX_REBOOT_CMD_RESTART        0x01234567
 ; #define LINUX_REBOOT_CMD_HALT           0xCDEF0123
 ; #define LINUX_REBOOT_CMD_CAD_ON         0x89ABCDEF
@@ -730,6 +765,9 @@ core_sys_reboot:
 core_sys_reboot_exit:
    RET
 
+
+;******************************************************************************
+; Output the contents of a register G as a hexadecimal number.
 
 LABEL core_os_hex_print_b0          AUTO
 LABEL core_os_hex_print_b1          AUTO
@@ -868,10 +906,14 @@ core_os_hex_print_low_nybble:
    POP G
    RET
 
+
+;******************************************************************************
 ; The output functions index into this string to perform the output
 core_os_hex_string: 
    STRING "0123456789ABCDEF"
 
+;******************************************************************************
+; Output a string to the console.
 core_os_puts:
    PUSH A
    PUSH G
