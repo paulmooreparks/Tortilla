@@ -175,6 +175,19 @@ namespace Maize {
             public static bool HasFlags(this byte value, byte flags) {
                 return (value & flags) == flags;
             }
+
+            public static bool HasFlags(this UInt16 value, UInt16 flags) {
+                return (value & flags) == flags;
+            }
+
+            public static bool HasFlags(this UInt32 value, UInt32 flags) {
+                return (value & flags) == flags;
+            }
+
+            public static bool HasFlags(this UInt64 value, UInt64 flags) {
+                return (value & flags) == flags;
+            }
+
         }
     }
 }

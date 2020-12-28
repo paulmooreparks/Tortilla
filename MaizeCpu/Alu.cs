@@ -799,7 +799,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.B0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -817,7 +817,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.Q0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -835,7 +835,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.H0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -872,7 +872,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.B0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -890,7 +890,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.Q0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
@@ -908,7 +908,7 @@ namespace Maize {
             }
             catch (DivideByZeroException) {
                 result = DestReg.RegData.H0;
-                Motherboard.RaiseInterrupt(0x00);
+                Motherboard.RaiseException(0x00);
             }
 
             return UpdateFlags(result);
