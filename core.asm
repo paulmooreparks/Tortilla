@@ -259,35 +259,35 @@ core_bios_10_set_color:
    RET
 
 
-LABEL core_bios_16_jump_table       AUTO
-LABEL core_bios_16_get_keystroke            AUTO
-LABEL core_bios_16_check_for_keystroke      AUTO
-LABEL core_bios_16_get_shift_flags          AUTO
-LABEL core_bios_16_set_rate_delay           AUTO
-LABEL core_bios_16_get_enh_keystroke        AUTO
-LABEL core_bios_16_check_enh_keystroke      AUTO
-LABEL core_bios_16_get_ext_shift_states     AUTO
+LABEL core_bios_16_jump_table                AUTO
+LABEL core_bios_16_get_keystroke             AUTO
+LABEL core_bios_16_check_for_keystroke       AUTO
+LABEL core_bios_16_get_shift_flags           AUTO
+LABEL core_bios_16_set_rate_delay            AUTO
+LABEL core_bios_16_get_enh_keystroke         AUTO
+LABEL core_bios_16_check_enh_keystroke       AUTO
+LABEL core_bios_16_get_ext_shift_states      AUTO
 
 core_bios_16_jump_table:
-   ADDRESS core_bios_16_get_keystroke       ; AH = $00
-   ADDRESS core_bios_16_check_for_keystroke ; AH = $01
-   ADDRESS core_bios_16_get_shift_flags     ; AH = $02
-   ADDRESS core_bios_16_set_rate_delay      ; AH = $03
-   ADDRESS core_bios_16_nop                 ; AH = $04
-   ADDRESS core_bios_16_nop                 ; AH = $05
-   ADDRESS core_bios_16_nop                 ; AH = $06
-   ADDRESS core_bios_16_nop                 ; AH = $07
-   ADDRESS core_bios_16_nop                 ; AH = $08
-   ADDRESS core_bios_16_nop                 ; AH = $09
-   ADDRESS core_bios_16_nop                 ; AH = $0A
-   ADDRESS core_bios_16_nop                 ; AH = $0B
-   ADDRESS core_bios_16_nop                 ; AH = $0C
-   ADDRESS core_bios_16_nop                 ; AH = $0D
-   ADDRESS core_bios_16_nop                 ; AH = $0E
-   ADDRESS core_bios_16_nop                 ; AH = $0F
-   ADDRESS core_bios_16_nop                 ; AH = $10
-   ADDRESS core_bios_16_nop                 ; AH = $11
-   ADDRESS core_bios_16_nop                 ; AH = $12
+   ADDRESS core_bios_16_get_keystroke        ; AH = $00
+   ADDRESS core_bios_16_check_for_keystroke  ; AH = $01
+   ADDRESS core_bios_16_get_shift_flags      ; AH = $02
+   ADDRESS core_bios_16_set_rate_delay       ; AH = $03
+   ADDRESS core_bios_16_nop                  ; AH = $04
+   ADDRESS core_bios_16_nop                  ; AH = $05
+   ADDRESS core_bios_16_nop                  ; AH = $06
+   ADDRESS core_bios_16_nop                  ; AH = $07
+   ADDRESS core_bios_16_nop                  ; AH = $08
+   ADDRESS core_bios_16_nop                  ; AH = $09
+   ADDRESS core_bios_16_nop                  ; AH = $0A
+   ADDRESS core_bios_16_nop                  ; AH = $0B
+   ADDRESS core_bios_16_nop                  ; AH = $0C
+   ADDRESS core_bios_16_nop                  ; AH = $0D
+   ADDRESS core_bios_16_nop                  ; AH = $0E
+   ADDRESS core_bios_16_nop                  ; AH = $0F
+   ADDRESS core_bios_16_nop                  ; AH = $10
+   ADDRESS core_bios_16_nop                  ; AH = $11
+   ADDRESS core_bios_16_nop                  ; AH = $12
 
 core_bios_16:
    PUSH B
