@@ -543,7 +543,7 @@ namespace Maize {
                 /* 0x52 */ Instructions.INT_ImmVal.Instance,
                 /* 0x53 */ Instructions.TSTIND_ImmVal_RegAddr.Instance,
                 /* 0x54 */ Instructions.OUTR_ImmVal_Reg.Instance,
-                /* 0x55 */ Exceptions.BadOpcode.Instance,
+                /* 0x55 */ Exceptions.BadOpcode.Instance, // LNGJMP
                 /* 0x56 */ Instructions.JMP_ImmVal.Instance,
                 /* 0x57 */ Instructions.JZ_ImmVal.Instance,
                 /* 0x58 */ Instructions.JNZ_ImmVal.Instance,
@@ -607,7 +607,7 @@ namespace Maize {
                 /* 0x92 */ Exceptions.BadOpcode.Instance,
                 /* 0x93 */ Exceptions.BadOpcode.Instance,
                 /* 0x94 */ Exceptions.BadOpcode.Instance,
-                /* 0x95 */ Exceptions.BadOpcode.Instance,
+                /* 0x95 */ Exceptions.BadOpcode.Instance, // LNGJMP
                 /* 0x96 */ Instructions.JMP_RegAddr.Instance,
                 /* 0x97 */ Instructions.JZ_RegAddr.Instance,
                 /* 0x98 */ Instructions.JNZ_RegAddr.Instance,
@@ -671,7 +671,7 @@ namespace Maize {
                 /* 0xD2 */ Exceptions.BadOpcode.Instance,
                 /* 0xD3 */ Exceptions.BadOpcode.Instance,
                 /* 0xD4 */ Exceptions.BadOpcode.Instance,
-                /* 0xD5 */ Exceptions.BadOpcode.Instance,
+                /* 0xD5 */ Exceptions.BadOpcode.Instance, // LNGJMP
                 /* 0xD6 */ Instructions.JMP_ImmAddr.Instance,
                 /* 0xD7 */ Instructions.JZ_ImmAddr.Instance,
                 /* 0xD8 */ Instructions.JNZ_ImmAddr.Instance,

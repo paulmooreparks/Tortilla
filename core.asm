@@ -426,12 +426,24 @@ core_os_puts_exit:
 ; Output a character to the console.
 
 core_os_putchar:
+   ; Put the character we want to output onto the stack.
+   PUSH G
+   PUSH H
+   PUSH J
    PUSH G.B0
-   LD $01 G
+
+   ; Now S.H0 points at that character on the stack, so copy that address to 
+   ; H.H0, which is the output pointer (const char *).
    LD S.H0 H.H0
-   LD $01 J
+   
+   ; Delegate output to the sys_write call.
+   LD $01 G ; STDOUT file descriptor
+   LD $01 J ; Number of characters to write, starting at @H.H0
    CALL core_sys_write
-   POP A.B0
+   POP J
+   POP H
+   POP G
+   LD G.B0 A.B0
    RET
 
 

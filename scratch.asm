@@ -8,8 +8,5 @@ $00001000:
    CALL stdlib_puts
    CALL stdlib_shutdown
 
-;******************************************************************************
-; This label points to the start of the string we want to output.
-
 hw_string: 
    STRING "Hello, world!\0"

@@ -766,11 +766,52 @@ namespace mazm {
             }
         }
 
+        protected void Imm_Compiler(TokenTree tree, string opcodeStr) {
+            byte opcode = Opcodes[opcodeStr].Item3;
+            var operand1 = tree.Value[0].Key;
+            byte operand1Byte = 0;
+            bool isImmediate = false;
+            bool isLabel = false;
+            RegValue operand1Literal = 0;
+
+            if (IsLiteral(operand1)) {
+                isImmediate = true;
+                operand1Byte |= CompileLiteral(operand1, out operand1Literal);
+            }
+            else if (IsLabel(operand1)) {
+                isLabel = true;
+                operand1Byte |= CompileLabel(operand1, out operand1Literal);
+            }
+            else {
+                throw new Exception("Cannot compile immediate value");
+            }
+
+            CurrentAddress = WriteByte(CurrentAddress, opcode);
+            CurrentAddress = WriteByte(CurrentAddress, operand1Byte);
+
+            if (isImmediate) {
+                if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm16b) {
+                    CurrentAddress = WriteQuarterWord(CurrentAddress, operand1Literal.Q0);
+                }
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm32b) {
+                    CurrentAddress = WriteHalfWord(CurrentAddress, operand1Literal.H0);
+                }
+                else if ((operand1Byte & Instruction.OpFlag_ImmSize) == Instruction.OpFlag_Imm64b) {
+                    CurrentAddress = WriteWord(CurrentAddress, operand1Literal.W0);
+                }
+                else {
+                    CurrentAddress = WriteByte(CurrentAddress, operand1Literal.B0);
+                }
+            }
+            else if (isLabel) {
+                CurrentAddress = WriteLabel(CurrentAddress, operand1, operand1Literal);
+            }
+        }
+
         protected void Reg_Compiler(TokenTree tree, string opcodeStr) {
             byte opcode = Opcodes[opcodeStr].Item3;
             var operand1 = tree.Value[0].Key;
             byte operand1Byte = CompileRegister(operand1);
-            RegValue operand1Literal = 0;
 
             CurrentAddress = WriteByte(CurrentAddress, opcode);
             CurrentAddress = WriteByte(CurrentAddress, operand1Byte);
