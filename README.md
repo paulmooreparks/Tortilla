@@ -11,8 +11,8 @@ and finally port a C/C++ compiler (likely Clang or GCC) that will generate Maize
 
 ## How To Use Maize
 
-Maize is currently implemented in .NET 5, which means it will run on Windows, Linux, and macOS. It also means it's slower than I'd 
-like it to be, despite my attempts at squeezing as much performance out of .NET as I could.
+Maize is currently implemented in [.NET 5](https://dotnet.microsoft.com/download/dotnet/5.0), which means it will run on Windows, Linux, 
+and macOS. It also means it's slower than I'd like it to be, despite my attempts at squeezing as much performance out of .NET as I could.
 
 To compile a Maize assembly file (like [HelloWorld.asm](https://github.com/paulmooreparks/Tortilla/blob/master/HelloWorld.asm)), 
 compile and run the [mazm](https://github.com/paulmooreparks/Tortilla/tree/master/mazm) project, providing the path to the 
