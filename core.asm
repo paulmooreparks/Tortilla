@@ -1,12 +1,10 @@
 ; This file contains the code for the kernel
 
 LABEL core_os_core                     AUTO
-LABEL core_os_core_jump_table          AUTO
 LABEL core_os_key_input                AUTO
 LABEL core_os_print_reg                AUTO
 LABEL core_os_puts                     AUTO
-LABEL core_os_print_newline            AUTO
-LABEL core_os_dump_registers           AUTO
+LABEL core_os_putchar                  AUTO
 LABEL core_os_shut_down                AUTO
 LABEL core_os_strlen                   AUTO
 
@@ -31,6 +29,24 @@ LABEL core_os_exception_handler_0F     AUTO
 LABEL core_bios_10                     AUTO
 LABEL core_bios_16                     AUTO
 LABEL core_syscall                     AUTO
+
+LABEL core_sys_write                   AUTO    ; $01 #1
+LABEL core_os_hex_print_b0             AUTO
+LABEL core_os_hex_print_b1             AUTO
+LABEL core_os_hex_print_b2             AUTO
+LABEL core_os_hex_print_b3             AUTO
+LABEL core_os_hex_print_b4             AUTO
+LABEL core_os_hex_print_b5             AUTO
+LABEL core_os_hex_print_b6             AUTO
+LABEL core_os_hex_print_b7             AUTO
+LABEL core_os_hex_print_q0             AUTO
+LABEL core_os_hex_print_q1             AUTO
+LABEL core_os_hex_print_q2             AUTO
+LABEL core_os_hex_print_q3             AUTO
+LABEL core_os_hex_print_h0             AUTO
+LABEL core_os_hex_print_h1             AUTO
+LABEL core_os_hex_print_w0             AUTO
+LABEL core_os_print_newline            AUTO
 
 
 ;******************************************************************************
@@ -326,6 +342,8 @@ core_bios_16_set_rate_delay:
 ;******************************************************************************
 ; Core OS functions that aren't necessarily in the system calls table.
 
+LABEL core_os_core_jump_table          AUTO
+
 core_os_core:
    PUSH B
    CLR B
@@ -337,8 +355,8 @@ core_os_core:
    POP B
    IRET
 
-LABEL core_os_idle                  AUTO
-LABEL core_os_put_string            AUTO
+LABEL core_os_idle                     AUTO
+LABEL core_os_nop                      AUTO
 
 
 ;******************************************************************************
@@ -347,8 +365,8 @@ LABEL core_os_put_string            AUTO
 core_os_core_jump_table:
    ADDRESS core_os_shut_down           ; A.Q0 = $0000
    ADDRESS core_os_idle                ; A.Q1 = $0001
-   ADDRESS core_os_put_string          ; A.Q0 = $0002
-   ADDRESS core_os_strlen              ; A.Q0 = $0003
+   ADDRESS core_os_puts                ; A.Q0 = $0002
+   ADDRESS core_os_putchar             ; A.Q0 = $0003
 
 
 ;******************************************************************************
@@ -378,25 +396,42 @@ core_os_idle_halt:
 ;******************************************************************************
 ; Output a string to the console.
 
-LABEL core_os_put_string_exit    AUTO
+LABEL core_os_puts_exit AUTO
+LABEL core_os_puts_next_char AUTO
 
-core_os_put_string:
-   PUSH B
-   PUSH A.H0
-   CLR B
-   CLR A.H1
-   LD $0A B.B1
-core_os_put_string_next_char:
-   LD @A.H0 B.B0
-   CMP $00 B.B0
-   JZ core_os_put_string_exit
-   OUT B $7F
-   INC A.H0
-   INC A.H1
-   JMP core_os_put_string_next_char
-core_os_put_string_exit:
-   POP A.H0
-   POP B
+core_os_puts:
+   PUSH G
+   PUSH H
+   PUSH J
+   LD G.H0 H.H0
+   CLR J
+core_os_puts_next_char:
+   CMPIND $00 @G.H0
+   JZ core_os_puts_exit
+   INC J
+   INC G.H0
+   JMP core_os_puts_next_char
+core_os_puts_exit:
+   CLR A
+   LD $01 G
+   CALL core_sys_write
+   POP J
+   POP H
+   POP G
+   LD G.H0 A.H0
+   RET
+
+
+;******************************************************************************
+; Output a character to the console.
+
+core_os_putchar:
+   PUSH G.B0
+   LD $01 G
+   LD S.H0 H.H0
+   LD $01 J
+   CALL core_sys_write
+   POP A.B0
    RET
 
 
@@ -415,12 +450,31 @@ core_os_key_input:
 
 
 ;******************************************************************************
+; Return length of a null-terminated string.
+
+LABEL core_os_strlen_loop AUTO
+LABEL core_os_strlen_done AUTO
+
+core_os_strlen:
+   PUSH G.H0
+   CLR A
+core_os_strlen_loop:
+   CMPIND $00 @G.H0
+   JZ core_os_strlen_done
+   INC A.H0
+   INC G.H0
+   JMP core_os_strlen_loop
+core_os_strlen_done:
+   POP G.H0
+   RET
+
+
+;******************************************************************************
 ; Linux syscalls are implemented here.
 
 LABEL core_syscall_jump_table       AUTO
 LABEL core_sys_nop                  AUTO
 LABEL core_sys_read                 AUTO    ; $00 #0
-LABEL core_sys_write                AUTO    ; $01 #1
 LABEL core_sys_exit                 AUTO    ; $3C #60
 LABEL core_sys_reboot               AUTO    ; $A9 #169
 
@@ -769,21 +823,6 @@ core_sys_reboot_exit:
 ;******************************************************************************
 ; Output the contents of a register G as a hexadecimal number.
 
-LABEL core_os_hex_print_b0          AUTO
-LABEL core_os_hex_print_b1          AUTO
-LABEL core_os_hex_print_b2          AUTO
-LABEL core_os_hex_print_b3          AUTO
-LABEL core_os_hex_print_b4          AUTO
-LABEL core_os_hex_print_b5          AUTO
-LABEL core_os_hex_print_b6          AUTO
-LABEL core_os_hex_print_b7          AUTO
-LABEL core_os_hex_print_q0          AUTO
-LABEL core_os_hex_print_q1          AUTO
-LABEL core_os_hex_print_q2          AUTO
-LABEL core_os_hex_print_q3          AUTO
-LABEL core_os_hex_print_h0          AUTO
-LABEL core_os_hex_print_h1          AUTO
-LABEL core_os_hex_print_w0          AUTO
 LABEL core_os_hex_print_low_nybble  AUTO
 LABEL core_os_hex_string            AUTO
 
@@ -893,46 +932,29 @@ core_os_hex_print_b0:
 
 core_os_hex_print_low_nybble:
    PUSH G
-   PUSH B
-   LD G.B0 B.B0
-   AND $0F B.B0
-   LD $01 A                   ; Load syscall opcode $01 (write) into A register
-   LD $01 G                   ; Load file descriptor $01 (STDOUT) into G register
-   LD core_os_hex_string H.H0      ; Load the pointer to the string into H.H0 register
-   ADD B.B0 H.H0
-   LD $0001 J                 ; Length of 1
-   INT $80                    ; Call interrupt $80 to execute write syscall
-   POP B
+   CLR A
+   LD G.B0 A.B0
+   AND $0F A.B0
+   LD core_os_hex_string G.H0      ; Load the pointer to the string into H.H0 register
+   ADD A.B0 G.H0
+   LD @G.H0 A.B0
+   LD $0A A.B1
+   OUT A $7F
    POP G
    RET
 
 
 ;******************************************************************************
 ; The output functions index into this string to perform the output
+
 core_os_hex_string: 
    STRING "0123456789ABCDEF"
 
+
 ;******************************************************************************
-; Output a string to the console.
-core_os_puts:
-   PUSH A
-   PUSH G
-   PUSH H
-   PUSH J
-   CALL core_os_strlen
-   LD G H
-   LD A J 
-   LD $01 A                   ; Load syscall opcode $01 (write) into A register
-   LD $01 G                   ; Load file descriptor $01 (STDOUT) into G register
-   INT $80                    ; Call interrupt $80 to execute write syscall
-   POP J
-   POP H
-   POP G
-   POP A
-   RET
+; Output a new line to the console.
 
-
-LABEL core_os_label_newline         AUTO
+LABEL core_os_label_newline            AUTO
 
 core_os_print_newline:
    PUSH A
@@ -943,24 +965,9 @@ core_os_print_newline:
    POP A
    RET
 
-LABEL core_os_strlen_loop AUTO
-LABEL core_os_strlen_done AUTO
 
-core_os_strlen:
-   PUSH G.H0
-   CLR A
-   core_os_strlen_loop:
-   CMPIND $00 @G.H0
-   JZ core_os_strlen_done
-   INC A.H0
-   INC G.H0
-   JMP core_os_strlen_loop
-   core_os_strlen_done:
-   POP G.H0
-   RET
-
-core_os_dump_registers:
-   RET
+;******************************************************************************
+;
 
 core_os_print_reg:
    PUSH G
@@ -973,25 +980,29 @@ core_os_print_reg:
    POP G
    RET
 
-LABEL core_os_exception_label AUTO
-LABEL core_os_exception_segment_label AUTO
-LABEL core_os_exception_address_label AUTO
-LABEL core_os_label_reg_a           AUTO
-LABEL core_os_label_reg_b           AUTO
-LABEL core_os_label_reg_c           AUTO
-LABEL core_os_label_reg_d           AUTO
-LABEL core_os_label_reg_e           AUTO
-LABEL core_os_label_reg_g           AUTO
-LABEL core_os_label_reg_h           AUTO
-LABEL core_os_label_reg_j           AUTO
-LABEL core_os_label_reg_k           AUTO
-LABEL core_os_label_reg_l           AUTO
-LABEL core_os_label_reg_m           AUTO
-LABEL core_os_label_reg_z           AUTO
-LABEL core_os_label_reg_f           AUTO
-LABEL core_os_label_reg_i           AUTO
-LABEL core_os_label_reg_p           AUTO
-LABEL core_os_label_reg_s           AUTO
+
+;******************************************************************************
+; 
+
+LABEL core_os_exception_label          AUTO
+LABEL core_os_exception_segment_label  AUTO
+LABEL core_os_exception_address_label  AUTO
+LABEL core_os_label_reg_a              AUTO
+LABEL core_os_label_reg_b              AUTO
+LABEL core_os_label_reg_c              AUTO
+LABEL core_os_label_reg_d              AUTO
+LABEL core_os_label_reg_e              AUTO
+LABEL core_os_label_reg_g              AUTO
+LABEL core_os_label_reg_h              AUTO
+LABEL core_os_label_reg_j              AUTO
+LABEL core_os_label_reg_k              AUTO
+LABEL core_os_label_reg_l              AUTO
+LABEL core_os_label_reg_m              AUTO
+LABEL core_os_label_reg_z              AUTO
+LABEL core_os_label_reg_f              AUTO
+LABEL core_os_label_reg_i              AUTO
+LABEL core_os_label_reg_p              AUTO
+LABEL core_os_label_reg_s              AUTO
 
 core_os_exception_handler:
    ; Maybe I need a PUSHALL instruction...
