@@ -185,7 +185,8 @@ $00000000:
 
 
 ;******************************************************************************
-; Just a marker address.
+;******************************************************************************
+; BIOS $10 implementation
 
 LABEL core_bios_10_jump_table             AUTO
 LABEL core_bios_10_nop                    AUTO
@@ -201,6 +202,27 @@ LABEL core_bios_10_write_char_and_attr    AUTO
 LABEL core_bios_10_write_char             AUTO
 LABEL core_bios_10_set_color              AUTO
 
+
+;******************************************************************************
+; This is the entry point for all BIOS $10 calls. It indexes into the jump 
+; table using the BIOS opcode and forwards the call to the correct function.
+
+core_bios_10:
+   PUSH B
+   CLR B
+   LD A.B1 B.H0  ; The opcode is in A.B1, so copy it over to B.H0 so we can operate on it.
+   MUL $04 B.H0  ; Multiply the opcode by 4 to find its offset in the jump table.
+   LD core_bios_10_jump_table B.H1
+   ADD B.H0 B.H1  ; Add the jump table start address and the calculated offset, and we 
+                  ; get the pointer to the operation's implementing function.
+   CALL @B.H1
+   POP B
+   IRET
+
+
+;******************************************************************************
+; BIOS $10 jump table that translates AH opcodes into functions.
+
 core_bios_10_jump_table:
    ADDRESS core_bios_10_set_video_mode      ; AH = $00
    ADDRESS core_bios_10_set_cursor_shape    ; AH = $01
@@ -215,30 +237,22 @@ core_bios_10_jump_table:
    ADDRESS core_bios_10_write_char          ; AH = $0A
    ADDRESS core_bios_10_set_color           ; AH = $0B
 
-core_bios_10:
-   PUSH B
-   CLR B
-   LD A.B1 B.H0
-   MUL $04 B.H0
-   LD core_bios_10_jump_table B.H1
-   ADD B.H0 B.H1
-   CALL @B.H1
-   POP B
-   IRET
-
 
 core_bios_10_set_video_mode:
    OUT A $7F
    RET
 
+
 core_bios_10_set_cursor_shape:       
    OUT A $7F
    RET
          
+
 core_bios_10_set_cursor_pos:         
    OUT A $7F
    RET
          
+
 core_bios_10_get_cursor_pos:
    PUSH B
    CLR B
@@ -246,36 +260,48 @@ core_bios_10_get_cursor_pos:
    POP B
    RET
          
+
 core_bios_10_nop:                    
    RET
          
+
 core_bios_10_scroll_up:              
    OUT A $7F
    RET
          
+
 core_bios_10_scroll_down:            
    OUT A $7F
    RET
          
+
 core_bios_10_read_char_and_attr:     
    RET
          
+
 core_bios_10_write_char_and_attr:    
    OUT A $7F
    RET
+
 
 core_bios_10_write_char:
    OUT A $7F
    RET
 
+
 core_bios_10_clear_screen:
    OUT A $7F
    RET
+
 
 core_bios_10_set_color:
    OUT A $7F
    RET
 
+
+;******************************************************************************
+;******************************************************************************
+; BIOS $16 implementation
 
 LABEL core_bios_16_jump_table                AUTO
 LABEL core_bios_16_get_keystroke             AUTO
@@ -285,6 +311,10 @@ LABEL core_bios_16_set_rate_delay            AUTO
 LABEL core_bios_16_get_enh_keystroke         AUTO
 LABEL core_bios_16_check_enh_keystroke       AUTO
 LABEL core_bios_16_get_ext_shift_states      AUTO
+
+
+;******************************************************************************
+; BIOS $10 entry point
 
 core_bios_16:
    PUSH B
@@ -296,6 +326,10 @@ core_bios_16:
    CALL @B.H1
    POP B
    IRET
+
+
+;******************************************************************************
+; BIOS $16 jump table
 
 core_bios_16_jump_table:
    ADDRESS core_bios_16_get_keystroke        ; AH = $00
@@ -318,9 +352,11 @@ core_bios_16_jump_table:
    ADDRESS core_bios_16_nop                  ; AH = $11
    ADDRESS core_bios_16_nop                  ; AH = $12
 
+
 core_bios_16_nop:                    
    RET
          
+
 core_bios_16_get_keystroke:
    PUSH B
    CLR B
@@ -329,16 +365,20 @@ core_bios_16_get_keystroke:
    POP B
    RET
 
+
 core_bios_16_check_for_keystroke:
    RET
 
+
 core_bios_16_get_shift_flags:
    RET
+
 
 core_bios_16_set_rate_delay:
    RET
 
 
+;******************************************************************************
 ;******************************************************************************
 ; Core OS functions that aren't necessarily in the system calls table.
 

@@ -3,14 +3,15 @@ INCLUDE "stdlib.asm"
 
 LABEL _start            $00001000
 LABEL output            AUTO
-LABEL first_name        AUTO
-LABEL surname           AUTO
+LABEL first_word        AUTO
+LABEL second_word       AUTO
+LABEL message           AUTO
+LABEL prompt            AUTO
 LABEL color_1           AUTO
 LABEL color_2           AUTO
 
 ; Startup routine
 _start:
-   LD $0000,2000,0000,2000 S
 
    ; Set background color
    CLR A
@@ -31,14 +32,9 @@ _start:
    LD @color_1 A.B2
    INT $10
 
-   ; Write first name
-   LD first_name G
-   CALL stdlib_strlen
-   LD A J
-   LD G H
-   LD $01 A
-   LD $01 G
-   INT $80
+   ; Write first word
+   LD first_word G
+   CALL stdlib_puts
 
    ; Change foreground color
    CLR A
@@ -47,14 +43,9 @@ _start:
    LD @color_2 A.B2 
    INT $10
 
-   ; Write surname
-   LD surname G
-   CALL stdlib_strlen
-   LD A J
-   LD G H
-   LD $01 A
-   LD $01 G
-   INT $80
+   ; Write second word
+   LD second_word G
+   CALL stdlib_puts
 
    ; Set foreground color
    CLR A
@@ -67,14 +58,23 @@ _start:
    CLR A
    LD $02 A.B1   
    LD $00 A.B6   
-   LD $05 A.B7   
+   LD $02 A.B7   
    INT $10
 
-   ; Write '>' character
+   ; Write message
+   LD message G
+   CALL stdlib_puts
+
+   ; Move cursor
    CLR A
-   LD $0A A.B1   
-   LD $3E A.B0 ; '>'
+   LD $02 A.B1   
+   LD $00 A.B6   
+   LD $04 A.B7   
    INT $10
+
+   ; Write prompt
+   LD prompt G 
+   CALL stdlib_puts
 
    ; We're done doing setup, so go halt the CPU and wait for interrupts
    LD $01 A
@@ -87,9 +87,14 @@ color_1:
 color_2:
    DATA $0B ; Cyan
 
-first_name: 
-   STRING "Padma \0"
+first_word: 
+   STRING "Maize \0"
 
-surname:
-   STRING "Jairam\0"
+second_word:
+   STRING "CLI\0"
 
+message:
+   STRING "Okay, it's not a CLI yet, but it's the framework for one. Type characters to see echo, or CTRL-C to exit.\0"
+
+prompt:
+   STRING "> \0"
