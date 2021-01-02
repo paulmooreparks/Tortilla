@@ -56,6 +56,35 @@ stdlib_strupr_done:
 
 
 ;******************************************************************************
+; strlwr
+
+LABEL stdlib_strlwr_loop AUTO
+LABEL stdlib_strlwr_done AUTO
+LABEL stdlib_strlwr_continue AUTO
+
+stdlib_strlwr:
+   PUSH G.H0
+   CLR A
+stdlib_strlwr_loop:
+   CMPIND $00 @G.H0
+   JZ stdlib_strlwr_done
+   CMPIND $41 @G.H0
+   JB stdlib_strlwr_continue
+   CMPIND $5A @G.H0
+   JA stdlib_strlwr_continue
+   LD @G.H0 A.B0
+   ADD $20 A.B0
+   ST A.B0 @G.H0
+stdlib_strlwr_continue:
+   INC G.H0
+   JMP stdlib_strlwr_loop
+stdlib_strlwr_done:
+   POP G.H0
+   LD G.H0 A
+   RET
+
+
+;******************************************************************************
 ; puts
 
 stdlib_puts:

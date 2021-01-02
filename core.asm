@@ -480,10 +480,11 @@ core_os_putchar:
    LD $01 G ; STDOUT file descriptor
    LD $01 J ; Number of characters to write, starting at @H.H0
    CALL core_sys_write
+   
+   POP A.B0
    POP J
    POP H
    POP G
-   LD G.B0 A.B0
    RET
 
 
