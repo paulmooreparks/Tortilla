@@ -1,7 +1,7 @@
 # The Maize Virtual CPU 
 ## Implemented on the Tortilla Emulation Platform
 
-UPDATE UPDATE UPDATE
+**UPDATE UPDATE UPDATE**
 This version of the project is no longer being updated. 
 Please see the [new version implemented in C++](https://github.com/paulmooreparks/Maize) instead.
 
