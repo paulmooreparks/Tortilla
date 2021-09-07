@@ -565,6 +565,14 @@ namespace Maize {
         public class DEC : InstructionBase<DEC_Operation> {
         }
 
+        public class NOT_Operation : UnaryMathOperation_Reg {
+            public override string Mnemonic => "NOT";
+            protected override byte Operation => Alu.OpCode_NOT;
+        }
+
+        public class NOT : InstructionBase<NOT_Operation> {
+        }
+
         public class ADD_ImmAddr_Reg_Operation : BinaryMathOperation_ImmAddr_Reg {
             public override string Mnemonic => "ADD";
             protected override byte Operation => Alu.OpCode_ADD;
